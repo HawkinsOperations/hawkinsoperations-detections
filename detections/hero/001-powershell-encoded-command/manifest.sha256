@@ -1,2 +1,7 @@
-# Placeholder checksum manifest for Hero Rule 001
-# Run checksum generation in validation/proof integration step.
+57363efc1cc0d64b35c7a7ef40cfad64be91f02cc4b6a83402771563d6311f23  attack-mapping.json
+08f086208f195eba6b57e527f149d20b64d8707530d09eb2a002bb414eec2a7a  bypass.md
+2522b2af19280046751b0791f466a65151f827c0e73dad132767928b75fe1f7f  README.md
+46e28f1102e12f9b02e0e73ccf9d3317665417f3abc0bf99bed7bb14fa9d50b3  rule.yml
+96b1569270c7ca969568e792d320d44c94a926d1379fa496dcd541d043a5f5d2  tests/negative-event-sysmon-1.json
+0bdc66dca6e208a416ca14bd879bf7fa66adb364c3034eed8d4734ff18e4ac10  tests/positive-event-sysmon-1.json
+048281443057e6bc9bf6a46000782c21dc8ac05d9ad22ccd2f870f2e5edc3454  tuning.md
