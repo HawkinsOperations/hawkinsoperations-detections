@@ -1,0 +1,21 @@
+name: baseline-detection-contract
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  baseline-hero-artifact-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Validate Baseline Hero Detection Contract
+        # Scope is intentionally narrow right now:
+        # - validates detections/hero/* baseline artifacts and schema shape
+        # - does not yet validate non-hero detections or cross-repo linkage
+        run: python3 ./scripts/verify_detection_contract.py
