@@ -1,0 +1,10 @@
+{
+  "EventID": 1,
+  "Channel": "Microsoft-Windows-Sysmon/Operational",
+  "UtcTime": "2026-04-21 00:01:00.000",
+  "Image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+  "CommandLine": "powershell.exe -NoProfile -File C:\\Scripts\\daily-maintenance.ps1",
+  "ParentImage": "C:\\Windows\\System32\\svchost.exe",
+  "User": "NT AUTHORITY\\SYSTEM"
+}
+

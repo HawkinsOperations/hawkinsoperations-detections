@@ -30,6 +30,11 @@ This repository contains detection logic as source content. It is the authoring 
 - Rule quality checks
 - Change history with rationale
 
+## Hero Detections
+
+- `001-powershell-encoded-command`  
+  Path: `detections/hero/001-powershell-encoded-command/`
+
 ## Related Repositories
 
 - Validation: `hawkinsoperations-validation`

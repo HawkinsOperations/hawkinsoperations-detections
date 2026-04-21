@@ -1,0 +1,10 @@
+{
+  "detection_id": "HOD-001",
+  "mitre_attack": {
+    "tactic_ids": ["TA0002"],
+    "technique_ids": ["T1059.001"],
+    "tactic_names": ["Execution"],
+    "technique_names": ["PowerShell"]
+  }
+}
+

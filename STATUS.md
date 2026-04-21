@@ -2,13 +2,12 @@
 
 ## Current Milestone
 
-Governance baseline initialized.
+Governance baseline initialized and Hero Rule 001 implemented.
 
 ## Next Gate
 
-Add first curated detection artifact with linked validation and proof references.
+Link Hero Rule 001 to validation harness output and proof ledger entry.
 
 ## Blocking Risks
 
 - None currently recorded.
-
