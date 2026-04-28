@@ -2,6 +2,10 @@
 
 Detection content and rule engineering for HawkinsOps V2.
 
+Owner identity: Raylee Hawkins, Detection Engineer | SOC Automation | Detection-as-Code | Security Automation.
+
+Official links: [Raylee Hawkins on LinkedIn](https://www.linkedin.com/in/raylee-hawkins) · [Raylee Hawkins on GitHub](https://github.com/raylee-hawkins) · [HawkinsOps detection engineering portfolio](https://hawkinsops.com) · [HawkinsOperations GitHub organization](https://github.com/HawkinsOperations) · [RayleeOps public operating journal](https://rayleeops.com)
+
 ## Purpose
 
 This repository contains detection logic as source content. It is the authoring layer for production-bound security detections.

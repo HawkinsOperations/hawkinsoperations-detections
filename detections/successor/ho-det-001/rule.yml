@@ -1,0 +1,86 @@
+title: Suspicious PowerShell EncodedCommand Execution
+detection_id: HO-DET-001
+status: SOURCE_EXISTS
+proof_level: "1 SOURCE_EXISTS"
+trust_class: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+approval_status: NOT_APPROVED
+runtime_active: "NO"
+validation_status: NOT_YET
+signal_observed: "NO"
+evidence_linked: "NO"
+description: >
+  Source artifact for a successor-system detection that identifies PowerShell
+  or pwsh process execution using encoded command flags or encoded payload
+  patterns. This source record establishes file existence only.
+author: HawkinsOperations
+date: 2026-04-25
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+mitre_attack:
+  mapping_status: CANDIDATE
+  tactic_ids:
+    - TA0002
+  tactic_names:
+    - Execution
+  technique_ids:
+    - T1059.001
+  technique_names:
+    - PowerShell
+data_source:
+  product: windows
+  category: process_creation
+  expected_event_id: "Sysmon Event ID 1 when available"
+backend_target: generic_yaml_source_record
+source_assumptions:
+  - Process image or process name is available.
+  - Process command line is available.
+  - Matching is intended to be case-insensitive where the backend supports it.
+  - Backend-specific conversion, deployment, tuning, and validation are not part of this source artifact.
+detection:
+  selection_image:
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+    OriginalFileName|contains:
+      - PowerShell
+      - pwsh
+  selection_cli:
+    CommandLine|contains:
+      - ' -enc '
+      - ' -enc:'
+      - ' /enc '
+      - ' /enc:'
+      - ' -encodedcommand '
+      - ' -encodedcommand:'
+      - ' /encodedcommand '
+      - ' /encodedcommand:'
+      - FromBase64String(
+  condition: selection_image and selection_cli
+falsepositives:
+  - Legitimate administrative tooling, automation, deployment scripts, or endpoint management workflows can use encoded PowerShell commands.
+  - Environment-specific tuning and allowlisting are required before any runtime claim.
+level: medium
+allowed_claim: Detection source exists for HO-DET-001.
+blocked_claims:
+  - This detection is active.
+  - This detection passed validation.
+  - This catches attacks.
+  - This proves coverage.
+  - This is public-safe.
+  - The repo proves runtime behavior.
+promotion_boundaries:
+  source_exists_supports:
+    - The HO-DET-001 source artifact exists at this repository path.
+  source_exists_does_not_support:
+    - static validation
+    - test definition
+    - test validation
+    - runtime-active status
+    - signal-observed status
+    - evidence-linked status
+    - public-safe status
+related_reference:
+  hod_001_encoded_command_artifacts: >
+    Related HOD-001 encoded-command artifacts may inform future review, but
+    they are not HO-DET-001 truth by copy, similarity, or AI interpretation.
