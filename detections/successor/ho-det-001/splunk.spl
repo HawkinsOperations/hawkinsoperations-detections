@@ -1,7 +1,3 @@
-# HO-DET-001 - Suspicious PowerShell EncodedCommand Execution
-# Scope: Splunk-primary synthetic source for controlled validation only.
-# This artifact does not claim deployment, live firing, runtime status, or public approval.
-
 index=windows (EventCode=1 OR EventID=1)
 (
   Image="*\\powershell.exe" OR Image="*\\pwsh.exe"
