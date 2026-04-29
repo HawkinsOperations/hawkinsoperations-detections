@@ -1,0 +1,10 @@
+index=windows (EventCode=1 OR EventID=1)
+(
+  Image="*\\powershell.exe" OR Image="*\\pwsh.exe"
+  OR OriginalFileName="*PowerShell*" OR OriginalFileName="*pwsh*"
+)
+| eval ho_command_line=lower(coalesce(CommandLine, ProcessCommandLine, command_line, ""))
+| where match(ho_command_line, "(^|\\s)(-|/)(enc|encodedcommand)(:|\\s|$)")
+    OR like(ho_command_line, "%frombase64string(%")
+| table _time, host, Computer, User, Image, OriginalFileName, CommandLine, ParentImage
+| sort -_time
