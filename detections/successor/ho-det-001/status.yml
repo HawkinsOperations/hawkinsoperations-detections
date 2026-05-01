@@ -1,0 +1,38 @@
+detection_id: HO-DET-001
+source_status: SOURCE_EXISTS
+splunk_source_status: SOURCE_EXISTS
+validation_status: TEST_VALIDATED_SYNTHETIC_SCOPE
+validation_enforcement_status: CI_ENFORCED_FOR_SYNTHETIC_SCOPE
+proof_level: TEST_VALIDATED_SYNTHETIC_SCOPE
+public_safe_status: NOT_PUBLIC_SAFE
+runtime_active: "NO"
+signal_observed: "NO"
+evidence_linked_public_proof: "NO"
+canonical_detection_source: detections/successor/ho-det-001/rule.yml
+canonical_splunk_source: detections/successor/ho-det-001/splunk.spl
+canonical_validation_result: hawkinsoperations-validation/reports/ho-det-001/validation-result.json
+canonical_case_packet: hawkinsoperations-validation/validation/successor/ho-det-001/case-packet.json
+canonical_proof_record: hawkinsoperations-proof/proof/records/HO-DET-001.md
+validation_enforcement_pr: HawkinsOperations/hawkinsoperations-validation#10
+validation_enforcement_merge_commit: 8b48500d2ebbaacd93ac88e77a31dccf1d3b4e25
+
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - evidence-linked public proof
+  - public-safe
+  - live Splunk fired as public proof
+  - production-ready
+  - fleet-wide
+  - Cribl-routed
+  - Wazuh-routed
+  - AWS-live
+  - HO-GPU-01 runtime-active
+  - autonomous SOC
+  - AI-approved disposition
+
+allowed_claims:
+  - HO-DET-001 source exists.
+  - HO-DET-001 Splunk source exists.
+  - HO-DET-001 passed synthetic validation against controlled positive and negative process-creation fixtures.
+  - HO-DET-001 validation enforcement exists for the exact synthetic validation scope.
