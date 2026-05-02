@@ -1,0 +1,76 @@
+title: Denied IAM API Activity From CloudTrail-Style Events
+detection_id: AWS-DET-001
+status: SOURCE_EXISTS
+proof_level: "1 SOURCE_EXISTS"
+trust_class: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+approval_status: NOT_APPROVED
+runtime_active: "NO"
+validation_status: NOT_YET
+signal_observed: "NO"
+evidence_linked: "NO"
+description: >
+  Fixture-only detection candidate for denied or unauthorized IAM API activity
+  represented in CloudTrail-style JSON events. This source establishes file
+  existence only until fixture validation is run and recorded.
+author: HawkinsOperations
+date: 2026-05-01
+references:
+  - https://attack.mitre.org/techniques/T1098/
+mitre_attack:
+  mapping_status: CANDIDATE
+  tactic_ids:
+    - TA0003
+  tactic_names:
+    - Persistence
+  technique_ids:
+    - T1098
+  technique_names:
+    - Account Manipulation
+data_source:
+  product: aws
+  category: cloudtrail_fixture
+  expected_event_source: iam.amazonaws.com
+backend_target: cloudtrail_json_fixture
+source_assumptions:
+  - Event source is available as eventSource.
+  - Event name is available as eventName.
+  - Error code or error message is available when the API call is denied.
+  - Matching is intended for fixture validation only.
+detection:
+  selection_source:
+    eventSource:
+      - iam.amazonaws.com
+  selection_error:
+    errorCode|contains:
+      - AccessDenied
+      - UnauthorizedOperation
+      - Client.UnauthorizedOperation
+    errorMessage|contains:
+      - not authorized
+      - denied
+  condition: selection_source and selection_error
+falsepositives:
+  - Expected failed IAM administration attempts in controlled tests.
+  - Permission boundary testing.
+  - Misconfigured automation using denied IAM APIs.
+level: medium
+allowed_claim: AWS-DET-001 source exists as a fixture-only CloudTrail-style detection candidate.
+blocked_claims:
+  - AWS-live proof
+  - AWS CloudTrail live proof
+  - cloud runtime-active proof
+  - production proof
+  - public-safe runtime proof
+  - signal-observed public proof
+promotion_boundaries:
+  source_exists_supports:
+    - The AWS-DET-001 source artifact exists at this repository path.
+  source_exists_does_not_support:
+    - live AWS collection
+    - CloudTrail live proof
+    - runtime-active cloud status
+    - signal-observed status
+    - production status
+    - public-safe status
+

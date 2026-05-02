@@ -1,0 +1,1 @@
+$.Records[?(@.eventSource=="iam.amazonaws.com" && (@.errorCode =~ /AccessDenied|UnauthorizedOperation|Client\.UnauthorizedOperation/ || @.errorMessage =~ /not authorized|denied/i))]
