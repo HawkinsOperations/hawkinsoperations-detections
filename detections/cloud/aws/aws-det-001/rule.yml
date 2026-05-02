@@ -1,18 +1,19 @@
 title: Denied IAM API Activity From CloudTrail-Style Events
 detection_id: AWS-DET-001
-status: SOURCE_EXISTS
-proof_level: "1 SOURCE_EXISTS"
-trust_class: SOURCE_EXISTS
+status: TEST_VALIDATED_SYNTHETIC_SCOPE
+proof_level: TEST_VALIDATED_SYNTHETIC_SCOPE
+trust_class: TEST_VALIDATED_SYNTHETIC_SCOPE
 public_safe_status: NOT_PUBLIC_SAFE
 approval_status: NOT_APPROVED
 runtime_active: "NO"
-validation_status: NOT_YET
+validation_status: TEST_VALIDATED_SYNTHETIC_SCOPE
 signal_observed: "NO"
 evidence_linked: "NO"
 description: >
   Fixture-only detection candidate for denied or unauthorized IAM API activity
-  represented in CloudTrail-style JSON events. This source establishes file
-  existence only until fixture validation is run and recorded.
+  represented in CloudTrail-style JSON events. This source is fixture-validated
+  against controlled CloudTrail-style cases only; it does not establish AWS-live,
+  CloudTrail-live, runtime, signal, production, or public-safe proof.
 author: HawkinsOperations
 date: 2026-05-01
 references:
@@ -55,7 +56,7 @@ falsepositives:
   - Permission boundary testing.
   - Misconfigured automation using denied IAM APIs.
 level: medium
-allowed_claim: AWS-DET-001 source exists as a fixture-only CloudTrail-style detection candidate.
+allowed_claim: AWS-DET-001 passed fixture-only validation against controlled CloudTrail-style IAM denial fixtures.
 blocked_claims:
   - AWS-live proof
   - AWS CloudTrail live proof
@@ -64,9 +65,10 @@ blocked_claims:
   - public-safe runtime proof
   - signal-observed public proof
 promotion_boundaries:
-  source_exists_supports:
+  test_validated_synthetic_scope_supports:
     - The AWS-DET-001 source artifact exists at this repository path.
-  source_exists_does_not_support:
+    - AWS-DET-001 passed fixture-only validation against controlled CloudTrail-style IAM denial fixtures.
+  test_validated_synthetic_scope_does_not_support:
     - live AWS collection
     - CloudTrail live proof
     - runtime-active cloud status
