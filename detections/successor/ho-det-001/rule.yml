@@ -1,18 +1,20 @@
 title: Suspicious PowerShell EncodedCommand Execution
 detection_id: HO-DET-001
-status: SOURCE_EXISTS
-proof_level: "1 SOURCE_EXISTS"
-trust_class: SOURCE_EXISTS
+status: TEST_VALIDATED_SYNTHETIC_SCOPE
+proof_level: TEST_VALIDATED_SYNTHETIC_SCOPE
+trust_class: TEST_VALIDATED_SYNTHETIC_SCOPE
 public_safe_status: NOT_PUBLIC_SAFE
 approval_status: NOT_APPROVED
 runtime_active: "NO"
-validation_status: NOT_YET
+validation_status: TEST_VALIDATED_SYNTHETIC_SCOPE
 signal_observed: "NO"
 evidence_linked: "NO"
 description: >
   Source artifact for a successor-system detection that identifies PowerShell
   or pwsh process execution using encoded command flags or encoded payload
-  patterns. This source record establishes file existence only.
+  patterns. This source record is synthetically validated against controlled
+  process-creation fixtures only; it does not establish runtime, signal, or
+  public-safe proof.
 author: HawkinsOperations
 date: 2026-04-25
 references:
@@ -61,21 +63,19 @@ falsepositives:
   - Legitimate administrative tooling, automation, deployment scripts, or endpoint management workflows can use encoded PowerShell commands.
   - Environment-specific tuning and allowlisting are required before any runtime claim.
 level: medium
-allowed_claim: Detection source exists for HO-DET-001.
+allowed_claim: HO-DET-001 passed synthetic validation against controlled positive and negative process-creation fixtures.
 blocked_claims:
   - This detection is active.
-  - This detection passed validation.
+  - This detection passed runtime validation.
   - This catches attacks.
   - This proves coverage.
   - This is public-safe.
   - The repo proves runtime behavior.
 promotion_boundaries:
-  source_exists_supports:
+  test_validated_synthetic_scope_supports:
     - The HO-DET-001 source artifact exists at this repository path.
-  source_exists_does_not_support:
-    - static validation
-    - test definition
-    - test validation
+    - HO-DET-001 passed synthetic validation against controlled positive and negative process-creation fixtures.
+  test_validated_synthetic_scope_does_not_support:
     - runtime-active status
     - signal-observed status
     - evidence-linked status
