@@ -30,6 +30,10 @@ blocked_claims:
   - HO-GPU-01 runtime-active
   - autonomous SOC
   - AI-approved disposition
+  - analyst-approved disposition
+  - enterprise deployed
+  - complete AutoSOC
+  - production AutoSOC triage
 
 allowed_claims:
   - HO-DET-001 source exists.
