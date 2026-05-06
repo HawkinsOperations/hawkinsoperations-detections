@@ -4,11 +4,11 @@ Detection content and rule engineering for HawkinsOperations.
 
 Owner identity: Raylee Hawkins, Detection Engineer | SOC Automation | Detection-as-Code | Security Automation.
 
-Official links: [Raylee Hawkins on LinkedIn](https://www.linkedin.com/in/raylee-hawkins) · [Raylee Hawkins on GitHub](https://github.com/raylee-hawkins) · [HawkinsOps detection engineering portfolio](https://hawkinsops.com) · [HawkinsOperations GitHub organization](https://github.com/HawkinsOperations) · [RayleeOps public operating journal](https://rayleeops.com)
+Official links: [Raylee Hawkins on LinkedIn](https://www.linkedin.com/in/raylee-hawkins) · [Raylee Hawkins on GitHub](https://github.com/raylee-hawkins) · [HawkinsOps legacy/reference portfolio](https://hawkinsops.com) · [HawkinsOperations GitHub organization](https://github.com/HawkinsOperations) · [RayleeOps public operating journal](https://rayleeops.com)
 
 ## Purpose
 
-This repository contains detection logic as source content. It is the authoring layer for production-bound security detections.
+This repository contains detection logic as source content. It is the authoring layer for promotion-bound security detections; source presence does not prove runtime activity, signal observation, or production deployment.
 
 ## HawkinsOperations Closed SOC Loop 001
 
@@ -18,7 +18,7 @@ This repository contains detection logic as source content. It is the authoring 
 - Current HO-DET-001 ceiling: TEST_VALIDATED_SYNTHETIC_SCOPE
 - HawkinsOperations is the governed successor system; HawkinsOps and older surfaces are legacy/reference unless revalidated.
 - Truth surface: detection source truth. This repository proves source existence and detection-authoring structure only.
-- Sprint thesis: speed with enforcement through deterministic validation, CI/CD gates, evidence records, proof contracts, and bounded public claims.
+- Sprint thesis: speed with enforcement through deterministic validation, required checks where configured, evidence records, proof contracts, and bounded public claims.
 - AI is labor. Governance is authority.
 - Build loud. Verify hard. Claim tight. Ship receipts.
 - Website/public pages route to proof records; they do not replace proof.
