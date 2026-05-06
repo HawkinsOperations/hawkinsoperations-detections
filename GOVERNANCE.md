@@ -20,5 +20,4 @@ Repository: `hawkinsoperations-detections`
 
 - Required governance files must exist.
 - CI gate must pass before merge.
-- Public-safe output only; internal control-plane data stays out.
-
+- Sanitized repo output only; internal control-plane data stays out. This repository does not make public-safe proof claims.

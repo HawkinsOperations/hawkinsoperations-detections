@@ -15,4 +15,7 @@ Link Hero Rule 001 to validation harness output and proof ledger entry.
 
 ## Blocking Risks
 
-- None currently recorded.
+- Non-hero detection families are not covered by the current baseline contract check.
+- Semantic detection quality is not enforced by the current baseline contract check.
+- Cross-repo detection-to-validation-to-proof linkage is not enforced here.
+- Claim-boundary scanning is not enforced here.
