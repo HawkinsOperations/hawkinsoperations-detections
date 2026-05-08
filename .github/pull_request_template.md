@@ -1,22 +1,78 @@
 ## Summary
 
-Describe the detection change and why it is needed.
+Describe the detection, governance, validation-linkage, or claim-boundary change and why it is needed.
 
-## Detection Scope
+## Scope
 
+- Repo:
+- Branch:
+- Exact affected files:
+- Out of scope:
 - Detection ID(s):
 - Rule path(s):
 - ATT&CK impact:
 
-## Validation/Proof Linkage
+## Truth Surface
+
+Classify the truth surface affected by this PR:
+
+- [ ] Repo/source truth
+- [ ] Validation truth
+- [ ] Runtime contract or runtime-state reference
+- [ ] Signal/evidence reference
+- [ ] Public proof or public wording
+- [ ] Reviewer routing / governance documentation
+- [ ] Other:
+
+## Claim Boundary
+
+State what this PR can safely claim and what it does not prove.
+
+## Validation / Proof Linkage
 
 - Validation reference:
 - Proof reference (if available):
 
-## Manual Governance Checklist
+## Testing / Validation
+
+List checks run, checks not run, and any required status checks.
+
+Green CI/status checks are not merge authority.
+
+## Security / Privacy
+
+State whether private-term, public-safety, secret, hostname, LAN IP, raw-log, screenshot, CSV export, or local evidence-path risk was reviewed.
+
+## Human Review Authority
+
+Codex review is AI labor, not human governance.
+
+Visible human GitHub review activity is required before merge when this PR affects governance, proof, validation, detection logic, CI enforcement, website/public wording, inventory, or claim-bearing artifacts.
+
+Solo authority is acceptable when disclosed. Fake independence is not.
+
+Do not use a second GitHub account controlled by Raylee for fake independent approval.
+
+Before merge recommendation, prepare a merge-readiness packet with repo, PR number/link, branch, changed files, merge state, check/status summary, review/comment status, unresolved Codex feedback, unresolved conversations, private-term risk, claim-boundary impact, proof-boundary impact, public surface impact, whether visible human governance review exists, paste-ready Raylee review comment, and final state: MERGE_READY, NEEDS_HUMAN_REVIEW, NEEDS_CHANGES, or BLOCKED.
+
+MERGE_APPROVED is required before merge, auto-merge, or final merge recommendation.
+
+## HawkinsOperations Guardrails
+
+Website/GitHub rendering is not proof.
+
+This PR must not promote runtime-active, signal-observed, evidence-linked public proof, public-safe, production-ready, fleet-wide, Cribl-routed, Wazuh-routed, AWS-live, autonomous SOC, or AI-approved status unless separately supported by scoped evidence and Raylee approval.
+
+## Checklist
 
 - [ ] No direct `main` push used for this change
-- [ ] Local verify completed before requesting merge
-- [ ] CI checks are green
-- [ ] Claim boundaries remain explicit (no production-efficacy overclaim)
-- [ ] No secrets, host-local paths, or internal-only control-plane data
+- [ ] Exact affected files listed
+- [ ] No unrelated dirty state included
+- [ ] Claim boundary included
+- [ ] Testing/validation listed
+- [ ] Private-term/public-safety review completed or explicitly not run
+- [ ] No runtime/signal/public-safe overclaim added
+- [ ] Required session log appended if this was meaningful work
+- [ ] Visible human governance review completed or explicitly not required
+- [ ] Codex/bot review comments addressed, dismissed with reason, or marked non-blocking
+- [ ] Merge-readiness packet prepared before merge recommendation
