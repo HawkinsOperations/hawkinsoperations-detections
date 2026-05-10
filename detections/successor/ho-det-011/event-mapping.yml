@@ -1,0 +1,144 @@
+detection_id: HO-DET-011
+truth_surface: detection_source
+mapping_status: SOURCE_EXISTS
+validation_status: VALIDATION_PLANNED
+description: >
+  Source-only event mapping for suspicious Windows service creation or service
+  binary change behavior. This mapping prepares future synthetic validation and
+  does not prove runtime activity, signal observation, public-safe status, or
+  evidence-linked public proof.
+telemetry_correction:
+  windows_system_7045: Windows System Event ID 7045 is Service Control Manager service-install telemetry.
+  windows_security_4697: Windows Security Event ID 4697 may be available where service-install auditing is enabled.
+  sysmon_1: Sysmon Event ID 1 provides process context for service creation tooling.
+sources:
+  windows_system_7045:
+    channel: System
+    provider: Service Control Manager
+    event_id: 7045
+    role: primary_service_install_event
+    expected_fields:
+      service_name:
+        common_names:
+          - ServiceName
+          - param1
+      service_image_path:
+        common_names:
+          - ImagePath
+          - ServiceFileName
+          - param2
+      service_type:
+        common_names:
+          - ServiceType
+      start_type:
+        common_names:
+          - StartType
+      account_name:
+        common_names:
+          - AccountName
+  windows_security_4697:
+    channel: Security
+    event_id: 4697
+    role: service_install_audit_event_where_available
+    expected_fields:
+      service_name:
+        common_names:
+          - ServiceName
+      service_image_path:
+        common_names:
+          - ServiceFileName
+          - ImagePath
+      service_type:
+        common_names:
+          - ServiceType
+      start_type:
+        common_names:
+          - StartType
+      subject_user:
+        common_names:
+          - SubjectUserName
+          - AccountName
+  sysmon_event_1:
+    channel: Microsoft-Windows-Sysmon/Operational
+    provider: Sysmon
+    event_id: 1
+    role: process_context_for_service_creation_tooling
+    expected_fields:
+      process_image:
+        common_names:
+          - Image
+      command_line:
+        common_names:
+          - CommandLine
+      parent_image:
+        common_names:
+          - ParentImage
+      user:
+        common_names:
+          - User
+splunk_fields:
+  event_id:
+    candidates:
+      - EventCode
+      - EventID
+      - event_id
+  host:
+    candidates:
+      - host
+      - Computer
+  service_name:
+    candidates:
+      - ServiceName
+      - service_name
+      - param1
+      - winlog_event_data_ServiceName
+  service_image_path:
+    candidates:
+      - ImagePath
+      - ServiceFileName
+      - service_file_name
+      - param2
+      - winlog_event_data_ImagePath
+      - winlog_event_data_ServiceFileName
+  process_image:
+    candidates:
+      - Image
+      - process_path
+      - winlog_event_data_Image
+  command_line:
+    candidates:
+      - CommandLine
+      - ProcessCommandLine
+      - command_line
+      - winlog_event_data_CommandLine
+wazuh_fields:
+  event_id:
+    candidates:
+      - win.system.eventID
+  service_name:
+    candidates:
+      - win.eventdata.serviceName
+      - win.eventdata.param1
+  service_image_path:
+    candidates:
+      - win.eventdata.imagePath
+      - win.eventdata.serviceFileName
+      - win.eventdata.param2
+  process_image:
+    candidates:
+      - win.eventdata.image
+  command_line:
+    candidates:
+      - win.eventdata.commandLine
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - live Splunk fired
+  - Wazuh-routed
+  - production-ready
+  - fleet-wide
+  - attack coverage
+  - service-creation coverage completeness
+  - validation passed

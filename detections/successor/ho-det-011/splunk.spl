@@ -1,0 +1,58 @@
+/*
+HO-DET-011 source-only SPL candidate.
+Validation is planned. This query does not claim live Splunk firing, runtime
+activity, signal observation, public-safe status, or evidence-linked public proof.
+
+Telemetry correction:
+- Windows System Event ID 7045 is Service Control Manager service-install telemetry.
+- Windows Security Event ID 4697 may exist where service-install auditing is enabled.
+- Sysmon Event ID 1 can add process context for service creation tooling.
+*/
+
+(
+  index=windows sourcetype="WinEventLog:System" (EventCode=7045 OR EventID=7045)
+)
+OR
+(
+  index=windows sourcetype="WinEventLog:Security" (EventCode=4697 OR EventID=4697)
+)
+OR
+(
+  index=windows (sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" OR sourcetype="WinEventLog:Microsoft-Windows-Sysmon/Operational")
+  (EventCode=1 OR EventID=1)
+  (Image="*\\sc.exe" OR Image="*\\powershell.exe" OR Image="*\\pwsh.exe" OR Image="*\\cmd.exe")
+)
+| eval ho_event_id=coalesce(EventCode, EventID, event_id)
+| eval ho_service_name=coalesce(ServiceName, service_name, param1, winlog_event_data_ServiceName, "")
+| eval ho_service_path=lower(coalesce(ImagePath, ServiceFileName, service_file_name, param2, winlog_event_data_ImagePath, winlog_event_data_ServiceFileName, ""))
+| eval ho_process_image=lower(coalesce(Image, process_path, winlog_event_data_Image, ""))
+| eval ho_command_line=lower(coalesce(CommandLine, ProcessCommandLine, command_line, winlog_event_data_CommandLine, ""))
+| eval ho_is_service_event=if(ho_event_id="7045" OR ho_event_id="4697", 1, 0)
+| eval ho_is_service_tooling=if(match(ho_process_image, "\\\\(sc|powershell|pwsh|cmd)\\.exe$"), 1, 0)
+| eval ho_suspicious_service_path=if(
+    like(ho_service_path, "%\\appdata\\%")
+    OR like(ho_service_path, "%\\temp\\%")
+    OR like(ho_service_path, "%\\programdata\\%")
+    OR like(ho_service_path, "%\\public\\%")
+    OR like(ho_service_path, "%\\downloads\\%")
+    OR like(ho_service_path, "%powershell%")
+    OR like(ho_service_path, "%pwsh%")
+    OR like(ho_service_path, "%cmd.exe%")
+    OR like(ho_service_path, "%rundll32%")
+    OR like(ho_service_path, "%regsvr32%")
+    OR like(ho_service_path, "%mshta%")
+    OR like(ho_service_path, "%wscript%")
+    OR like(ho_service_path, "%cscript%"),
+    1, 0)
+| eval ho_suspicious_creation_cli=if(
+    like(ho_command_line, "% sc.exe create %")
+    OR like(ho_command_line, "%sc create %")
+    OR like(ho_command_line, "%new-service%")
+    OR like(ho_command_line, "% binpath=%")
+    OR like(ho_command_line, "% -encodedcommand%")
+    OR like(ho_command_line, "%frombase64string%"),
+    1, 0)
+| where (ho_is_service_event=1 AND ho_suspicious_service_path=1)
+    OR (ho_is_service_tooling=1 AND ho_suspicious_creation_cli=1)
+| table _time, host, Computer, User, ho_event_id, ho_service_name, ho_service_path, Image, ParentImage, CommandLine
+| sort -_time
