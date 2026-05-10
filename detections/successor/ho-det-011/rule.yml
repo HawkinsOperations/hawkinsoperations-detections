@@ -1,0 +1,151 @@
+title: HO-DET-011 Suspicious Windows Service Creation or Service Binary Change
+detection_id: HO-DET-011
+status: experimental/source-only
+proof_level: SOURCE_EXISTS
+trust_class: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+approval_status: NOT_APPROVED
+runtime_active: "NO"
+validation_status: VALIDATION_PLANNED
+signal_observed: "NO"
+evidence_linked: "NO"
+description: >
+  Sigma-style source artifact for suspicious Windows service creation or service
+  binary change behavior. This source uses Windows System Event ID 7045 from
+  Service Control Manager, Windows Security Event ID 4697 where audit policy
+  records service installation, and Sysmon Event ID 1 process context where
+  available. It does not establish runtime, signal, validation, or public-safe
+  proof.
+author: HawkinsOperations
+date: 2026-05-10
+references:
+  - https://attack.mitre.org/techniques/T1543/003/
+tags:
+  - attack.persistence
+  - attack.privilege_escalation
+  - attack.t1543.003
+mitre_attack:
+  mapping_status: CANDIDATE
+  tactic_ids:
+    - TA0003
+    - TA0004
+  tactic_names:
+    - Persistence
+    - Privilege Escalation
+  technique_ids:
+    - T1543.003
+  technique_names:
+    - Windows Service
+logsource:
+  product: windows
+  service: system
+  definition: >
+    Primary service-install telemetry is Windows System Event ID 7045 from
+    Service Control Manager. Windows Security Event ID 4697 and Sysmon Event ID
+    1 are related context sources where available.
+data_source:
+  primary:
+    product: windows
+    channel: System
+    provider: Service Control Manager
+    event_id: 7045
+  related:
+    - product: windows
+      channel: Security
+      event_id: 4697
+    - product: windows
+      provider: Sysmon
+      event_id: 1
+backend_target: generic_yaml_source_record
+source_assumptions:
+  - Service name and service image path are available for service-install events.
+  - Process image and command line may be available through Sysmon Event ID 1 or equivalent process telemetry.
+  - Matching is intended to be case-insensitive where the backend supports it.
+  - Backend-specific deployment, routing, tuning, and validation are not part of this source artifact.
+detection:
+  selection_system_7045:
+    EventID: 7045
+    Provider_Name|contains:
+      - Service Control Manager
+  selection_security_4697:
+    EventID: 4697
+  selection_sysmon_tooling:
+    EventID: 1
+    Image|endswith:
+      - '\sc.exe'
+      - '\powershell.exe'
+      - '\pwsh.exe'
+      - '\cmd.exe'
+  selection_suspicious_image_path:
+    ImagePath|contains:
+      - '\AppData\'
+      - '\Temp\'
+      - '\ProgramData\'
+      - '\Public\'
+      - '\Downloads\'
+      - 'powershell'
+      - 'pwsh'
+      - 'cmd.exe'
+      - 'rundll32'
+      - 'regsvr32'
+      - 'mshta'
+      - 'wscript'
+      - 'cscript'
+  selection_suspicious_service_file_name:
+    ServiceFileName|contains:
+      - '\AppData\'
+      - '\Temp\'
+      - '\ProgramData\'
+      - '\Public\'
+      - '\Downloads\'
+      - 'powershell'
+      - 'pwsh'
+      - 'cmd.exe'
+      - 'rundll32'
+      - 'regsvr32'
+      - 'mshta'
+      - 'wscript'
+      - 'cscript'
+  selection_suspicious_command_line:
+    CommandLine|contains:
+      - ' create '
+      - ' New-Service'
+      - ' sc.exe create'
+      - ' binPath='
+      - ' -EncodedCommand'
+      - 'FromBase64String'
+  condition: >
+    (selection_system_7045 or selection_security_4697) and
+    (selection_suspicious_image_path or selection_suspicious_service_file_name) or
+    selection_sysmon_tooling and selection_suspicious_command_line
+falsepositives:
+  - Authorized software installation and upgrade workflows.
+  - Endpoint management, monitoring, backup, print, driver, or remote support agents.
+  - Administrator-created services during approved maintenance windows.
+  - Security tooling that installs or updates service components.
+level: medium
+allowed_claim: HO-DET-011 source artifacts exist and are prepared for future synthetic validation.
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - live Splunk fired
+  - Wazuh-routed
+  - production-ready
+  - fleet-wide
+  - attack coverage
+  - service-creation coverage completeness
+  - validation passed
+promotion_boundaries:
+  source_exists_supports:
+    - HO-DET-011 source artifacts exist in this repository path.
+    - HO-DET-011 is prepared for future synthetic validation.
+  source_exists_does_not_support:
+    - runtime-active status
+    - signal-observed status
+    - evidence-linked public proof
+    - public-safe status
+    - live Splunk firing
+    - Wazuh-routed telemetry
+    - validation passage

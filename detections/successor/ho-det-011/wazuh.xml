@@ -1,0 +1,47 @@
+<!--
+  HO-DET-011 source-only Wazuh XML candidate.
+  Validation is planned. This file does not claim Wazuh-routed live telemetry,
+  runtime activity, signal observation, public-safe status, or evidence-linked
+  public proof.
+
+  Telemetry correction:
+  - Windows System Event ID 7045 is Service Control Manager service-install telemetry.
+  - Windows Security Event ID 4697 may exist where service-install auditing is enabled.
+  - Sysmon Event ID 1 can add process context for service creation tooling.
+-->
+<group name="windows,service_creation,ho_det_011,source_only,">
+  <rule id="910011" level="8">
+    <if_group>windows</if_group>
+    <field name="win.system.eventID" type="pcre2">7045|4697</field>
+    <description>HO-DET-011 candidate: Windows service installation event requiring suspicious service path review</description>
+    <mitre>
+      <id>T1543.003</id>
+    </mitre>
+    <options>no_full_log</options>
+    <group>ho-det-011,source-only,validation-planned,</group>
+  </rule>
+
+  <rule id="910012" level="10">
+    <if_sid>910011</if_sid>
+    <field name="win.eventdata.imagePath" type="pcre2">(?i)(\\AppData\\|\\Temp\\|\\ProgramData\\|\\Public\\|\\Downloads\\|powershell|pwsh|cmd\.exe|rundll32|regsvr32|mshta|wscript|cscript)</field>
+    <description>HO-DET-011 candidate: service install with suspicious service image path</description>
+    <mitre>
+      <id>T1543.003</id>
+    </mitre>
+    <options>no_full_log</options>
+    <group>ho-det-011,source-only,validation-planned,blocked-claims-runtime-signal-public,</group>
+  </rule>
+
+  <rule id="910013" level="8">
+    <if_group>windows,sysmon</if_group>
+    <field name="win.system.eventID">1</field>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(sc|powershell|pwsh|cmd)\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)(\ssc(\.exe)?\s+create\s|new-service|binpath=|-encodedcommand|frombase64string)</field>
+    <description>HO-DET-011 candidate: process context for service creation tooling</description>
+    <mitre>
+      <id>T1543.003</id>
+    </mitre>
+    <options>no_full_log</options>
+    <group>ho-det-011,source-only,validation-planned,process-context,</group>
+  </rule>
+</group>
