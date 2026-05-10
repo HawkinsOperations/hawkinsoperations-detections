@@ -76,7 +76,7 @@ detection:
       - '\powershell.exe'
       - '\pwsh.exe'
       - '\cmd.exe'
-  selection_suspicious_service_path:
+  selection_suspicious_image_path:
     ImagePath|contains:
       - '\AppData\'
       - '\Temp\'
@@ -91,6 +91,7 @@ detection:
       - 'mshta'
       - 'wscript'
       - 'cscript'
+  selection_suspicious_service_file_name:
     ServiceFileName|contains:
       - '\AppData\'
       - '\Temp\'
@@ -115,7 +116,7 @@ detection:
       - 'FromBase64String'
   condition: >
     (selection_system_7045 or selection_security_4697) and
-    selection_suspicious_service_path or
+    (selection_suspicious_image_path or selection_suspicious_service_file_name) or
     selection_sysmon_tooling and selection_suspicious_command_line
 falsepositives:
   - Authorized software installation and upgrade workflows.
