@@ -91,6 +91,20 @@ detection:
       - 'mshta'
       - 'wscript'
       - 'cscript'
+    ServiceFileName|contains:
+      - '\AppData\'
+      - '\Temp\'
+      - '\ProgramData\'
+      - '\Public\'
+      - '\Downloads\'
+      - 'powershell'
+      - 'pwsh'
+      - 'cmd.exe'
+      - 'rundll32'
+      - 'regsvr32'
+      - 'mshta'
+      - 'wscript'
+      - 'cscript'
   selection_suspicious_command_line:
     CommandLine|contains:
       - ' create '

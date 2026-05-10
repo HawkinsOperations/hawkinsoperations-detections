@@ -1,14 +1,3 @@
-/*
-HO-DET-011 source-only SPL candidate.
-Validation is planned. This query does not claim live Splunk firing, runtime
-activity, signal observation, public-safe status, or evidence-linked public proof.
-
-Telemetry correction:
-- Windows System Event ID 7045 is Service Control Manager service-install telemetry.
-- Windows Security Event ID 4697 may exist where service-install auditing is enabled.
-- Sysmon Event ID 1 can add process context for service creation tooling.
-*/
-
 (
   index=windows sourcetype="WinEventLog:System" (EventCode=7045 OR EventID=7045)
 )
@@ -23,6 +12,7 @@ OR
   (Image="*\\sc.exe" OR Image="*\\powershell.exe" OR Image="*\\pwsh.exe" OR Image="*\\cmd.exe")
 )
 | eval ho_event_id=coalesce(EventCode, EventID, event_id)
+| eval ho_source_boundary="HO-DET-011 source-only candidate; validation planned; no live firing, runtime, signal, public-safe, or evidence-linked public proof claim"
 | eval ho_service_name=coalesce(ServiceName, service_name, param1, winlog_event_data_ServiceName, "")
 | eval ho_service_path=lower(coalesce(ImagePath, ServiceFileName, service_file_name, param2, winlog_event_data_ImagePath, winlog_event_data_ServiceFileName, ""))
 | eval ho_process_image=lower(coalesce(Image, process_path, winlog_event_data_Image, ""))

@@ -12,7 +12,7 @@
 <group name="windows,service_creation,ho_det_011,source_only,">
   <rule id="910011" level="8">
     <if_group>windows</if_group>
-    <field name="win.system.eventID">7045|4697</field>
+    <field name="win.system.eventID" type="pcre2">7045|4697</field>
     <description>HO-DET-011 candidate: Windows service installation event requiring suspicious service path review</description>
     <mitre>
       <id>T1543.003</id>
@@ -23,7 +23,7 @@
 
   <rule id="910012" level="10">
     <if_sid>910011</if_sid>
-    <field name="win.eventdata.imagePath">(?i)(\\AppData\\|\\Temp\\|\\ProgramData\\|\\Public\\|\\Downloads\\|powershell|pwsh|cmd\.exe|rundll32|regsvr32|mshta|wscript|cscript)</field>
+    <field name="win.eventdata.imagePath" type="pcre2">(?i)(\\AppData\\|\\Temp\\|\\ProgramData\\|\\Public\\|\\Downloads\\|powershell|pwsh|cmd\.exe|rundll32|regsvr32|mshta|wscript|cscript)</field>
     <description>HO-DET-011 candidate: service install with suspicious service image path</description>
     <mitre>
       <id>T1543.003</id>
@@ -35,8 +35,8 @@
   <rule id="910013" level="8">
     <if_group>windows,sysmon</if_group>
     <field name="win.system.eventID">1</field>
-    <field name="win.eventdata.image">(?i)\\(sc|powershell|pwsh|cmd)\.exe$</field>
-    <field name="win.eventdata.commandLine">(?i)(\ssc(\.exe)?\s+create\s|new-service|binpath=|-encodedcommand|frombase64string)</field>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(sc|powershell|pwsh|cmd)\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)(\ssc(\.exe)?\s+create\s|new-service|binpath=|-encodedcommand|frombase64string)</field>
     <description>HO-DET-011 candidate: process context for service creation tooling</description>
     <mitre>
       <id>T1543.003</id>
