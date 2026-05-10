@@ -6,34 +6,67 @@ splunk_source_status: SOURCE_EXISTS
 wazuh_source_status: SOURCE_EXISTS
 event_mapping_status: SOURCE_EXISTS
 validation_status: VALIDATION_PLANNED
+tuning_status: SOURCE_TUNING_NOTES_ADDED
 proof_level: SOURCE_EXISTS
 public_safe_status: NOT_PUBLIC_SAFE
 runtime_active: false
 signal_observed: false
 evidence_linked_public_proof: false
 proof_status: BLOCKED
+fixtures_in_detections_repo: false
 canonical_readme: detections/successor/ho-det-011/README.md
 canonical_sigma_source: detections/successor/ho-det-011/rule.yml
 canonical_splunk_source: detections/successor/ho-det-011/splunk.spl
 canonical_wazuh_source: detections/successor/ho-det-011/wazuh.xml
 canonical_event_mapping: detections/successor/ho-det-011/event-mapping.yml
+planned_validation_repo_scope: hawkinsoperations-validation
+planned_validation_fixture_set: REQUIRED_SEPARATE_SCOPE
+planned_platform_case_packet_guardrail: REQUIRED_SEPARATE_SCOPE
+planned_proof_record: REQUIRED_SEPARATE_SCOPE
 telemetry_sources:
   - Windows System Event ID 7045 from Service Control Manager service-install telemetry.
   - Windows Security Event ID 4697 where service-install auditing is enabled.
   - Sysmon Event ID 1 process context for service creation tooling where available.
+tuning_focus:
+  suspicious_fields:
+    - ImagePath
+    - ServiceFileName
+    - CommandLine where available
+    - process image where available
+    - parent process where available
+  suspicious_indicators:
+    - user-writable service image paths
+    - temp/download/public/profile service image paths
+    - interpreter-backed service targets
+    - script-like service targets
+    - service creation command-line patterns
+  benign_review_patterns:
+    - installer and updater services
+    - driver, print, backup, monitoring, security, and remote-support agents
+    - approved endpoint management workflows
+    - known managed application directories
 allowed_claims:
   - HO-DET-011 source artifacts exist.
   - HO-DET-011 is prepared for future synthetic validation.
   - Detection source includes Sigma/SPL/Wazuh/event-mapping/status surfaces.
+  - HO-DET-011 includes source-level tuning notes for suspicious service paths and benign review patterns.
 blocked_claims:
   - runtime-active
   - signal-observed
   - public-safe
   - evidence-linked public proof
   - live Splunk fired
+  - Splunk-fired
   - Wazuh-routed
+  - Cribl-routed
+  - Security Onion observed
+  - Suricata observed
+  - Zeek observed
   - production-ready
   - fleet-wide
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
   - attack coverage
   - service-creation coverage completeness
   - validation passed

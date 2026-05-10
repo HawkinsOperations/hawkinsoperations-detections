@@ -111,6 +111,11 @@ splunk_fields:
       - ProcessCommandLine
       - command_line
       - winlog_event_data_CommandLine
+  parent_image:
+    candidates:
+      - ParentImage
+      - parent_process_path
+      - winlog_event_data_ParentImage
 wazuh_fields:
   event_id:
     candidates:
@@ -130,15 +135,50 @@ wazuh_fields:
   command_line:
     candidates:
       - win.eventdata.commandLine
+  parent_image:
+    candidates:
+      - win.eventdata.parentImage
+tuning_fields:
+  required_for_primary_service_path_review:
+    - event_id
+    - service_name
+    - service_image_path
+  useful_for_reviewer_triage:
+    - process_image
+    - command_line
+    - parent_image
+    - account_name
+    - host
+  suspicious_path_indicators:
+    - user-writable paths
+    - temporary paths
+    - public/download/profile paths
+    - interpreter-backed service targets
+    - script-like service targets
+  benign_context_indicators:
+    - approved installer or updater service
+    - driver, print, backup, monitoring, security, or remote-support agent
+    - managed application directory
+    - approved maintenance window
+validation_fixture_boundary:
+  detections_repo_fixtures_found: false
+  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
 blocked_claims:
   - runtime-active
   - signal-observed
   - public-safe
   - evidence-linked public proof
+  - Cribl-routed
   - live Splunk fired
   - Wazuh-routed
+  - Security Onion observed
+  - Suricata observed
+  - Zeek observed
   - production-ready
   - fleet-wide
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
   - attack coverage
   - service-creation coverage completeness
   - validation passed
