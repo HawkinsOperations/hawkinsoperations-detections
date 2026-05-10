@@ -1,0 +1,109 @@
+# HawkinsOperations Detection Factory Index
+
+## Purpose
+
+This file exposes the HawkinsOperations detection factory and its promotion state. It enumerates detection candidates, the surfaces they ride on, and the truth state of each candidate so reviewers can read detection breadth without inferring proof.
+
+This index does not create proof. It does not promote proof. It is source-truth metadata only. Source existence, validation passage, and runtime evidence are separate planes and remain governed by their own repositories and approvals.
+
+## Current Boundary
+
+- Repo truth is not runtime truth.
+- Source existence is not validation.
+- Validation is not signal observation.
+- Private runtime evidence is not public-safe proof.
+- GitHub or website rendering is not proof.
+- Proof promotion belongs in `hawkinsoperations-proof`.
+- Validation behavior belongs in `hawkinsoperations-validation`.
+
+## Detection Surfaces
+
+The HawkinsOperations detection factory is intentionally multi-surface. Each candidate is associated with one or more of:
+
+- Sigma YAML
+- Splunk SPL
+- Wazuh XML
+- Security Onion / NDR
+- Suricata candidate
+- Zeek log candidate
+- CloudTrail JSON fixture
+- Sysmon field mapping
+- Windows Event ID mapping
+- Linux auth/audit
+- Cowrie honeypot
+- Cribl pipeline contract
+- Python validators and scanners (support tooling only — not the detection product)
+
+Python in this factory is QA machinery: validator logic, replay harnesses, proof-integrity checks, claim-boundary scanners, and fixture runners. The detection product is the detection content itself across the surfaces above.
+
+## Truth States
+
+Only the following truth states are used in this index:
+
+- `SOURCE_EXISTS` — A detection source artifact is committed in this repository.
+- `VALIDATION_PLANNED` — The candidate is identified and validation work is on the roadmap; no source or validation artifact has been promoted yet.
+- `TEST_DEFINED` — A controlled test fixture or harness contract exists for the candidate.
+- `TEST_VALIDATED_SYNTHETIC_SCOPE` — The detection passed deterministic validation against controlled positive and negative fixtures only.
+- `RUNTIME_EVIDENCE_CANDIDATE` — Runtime evidence is targeted but not captured; no runtime claim is supported.
+- `PRIVATE_RUNTIME_EVIDENCE_CAPTURED` — Internal/controlled runtime evidence has been captured and is not public-safe.
+- `LAB_RUNTIME_VALIDATED` — Validated in a controlled lab path; not equivalent to production behavior.
+- `PUBLIC_SAFE_PROOF_READY` — Sanitized, reviewed, and approved for promotion through the proof repository.
+- `BOUNDARY_CONTRACT_ONLY` — The artifact describes a visibility, field-preservation, or scope contract; it does not assert detection of a specific behavior.
+- `BLOCKED` — The candidate cannot proceed under current authorization or evidence boundaries.
+- `UNKNOWN` — State has not been classified.
+
+A higher state is never inferred from a lower one. State changes require evidence and approval routed through the appropriate repository.
+
+## Detection Factory Matrix
+
+| ID | Detection | Detection surface | Artifact format | Primary telemetry source | Current truth state | Existing artifact | Next source artifact | Next validation gate | Next runtime/evidence gate | Blocked claims |
+|---|---|---|---|---|---|---|---|---|---|---|
+| HO-DET-001 | Suspicious PowerShell EncodedCommand | Splunk SPL + Sigma/Sysmon mapping | `.spl` + `.yml` + Sysmon mapping | Sysmon Event ID 1 process creation | `TEST_VALIDATED_SYNTHETIC_SCOPE` | `detections/successor/ho-det-001/rule.yml`, `detections/successor/ho-det-001/splunk.spl`, `detections/hero/001-powershell-encoded-command/` | Field-mapping reference for non-Sysmon process-creation sources | Expanded fixture matrix in validation repo for false-positive boundary | Runtime evidence remains internal/private; not promoted | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-DET-002 | PowerShell suspicious flags and hidden execution behavior | Sigma + Splunk SPL | `.yml` + `.spl` | Sysmon Event ID 1 process creation | `VALIDATION_PLANNED` | none | Sigma source for `-NoP`, `-W Hidden`, `-Exec Bypass`, `-NonI` flag combinations | Synthetic positive/negative fixture set in validation repo | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-DET-003 | certutil download/decode behavior | Sigma + Splunk SPL | `.yml` + `.spl` | Sysmon Event ID 1 process creation | `VALIDATION_PLANNED` | none | Sigma source for `certutil` with `-urlcache`, `-decode`, `-decodehex` patterns | Synthetic fixture set covering download and decode variants | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-DET-004 | bitsadmin transfer behavior | Sigma + Splunk SPL | `.yml` + `.spl` | Sysmon Event ID 1 process creation | `VALIDATION_PLANNED` | none | Sigma source for `bitsadmin /transfer` and related arguments | Synthetic fixture set with positive transfers and benign service usage | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-DET-005 | mshta launching script or remote content | Sigma + Splunk SPL | `.yml` + `.spl` | Sysmon Event ID 1 process creation | `VALIDATION_PLANNED` | none | Sigma source for `mshta.exe` invoking `vbscript:`, `javascript:`, or remote `.hta` | Synthetic fixture set covering script and remote-content variants | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-DET-006 | rundll32 suspicious script/proxy execution | Sigma + Splunk SPL | `.yml` + `.spl` | Sysmon Event ID 1 process creation | `VALIDATION_PLANNED` | none | Sigma source for `rundll32` with `javascript:` or unusual export targets | Synthetic fixture set distinguishing benign DLL loading from script-proxy abuse | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-DET-007 | regsvr32 scriptlet/scrobj behavior | Sigma + Splunk SPL | `.yml` + `.spl` | Sysmon Event ID 1 process creation | `VALIDATION_PLANNED` | none | Sigma source for `regsvr32` with `/i:`, `scrobj.dll`, or remote `.sct` | Synthetic fixture set covering scriptlet and remote-COM variants | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-DET-008 | Suspicious child process from Office, browser, or user shell | Sigma + Sysmon field mapping | `.yml` + Sysmon mapping table | Sysmon Event ID 1 with parent-image context | `VALIDATION_PLANNED` | none | Sigma source plus parent/child mapping table for productivity and browser parents | Synthetic fixture set covering common office macros and browser child-spawn | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-DET-009 | Local user creation | Wazuh XML + Windows Event ID + Splunk SPL | `.xml` + Event ID mapping + `.spl` | Windows Security Event ID 4720 | `VALIDATION_PLANNED` | none | Wazuh XML rule plus Event ID 4720 mapping plus equivalent SPL | Synthetic event fixture set with positive creations and tuning notes | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-DET-010 | Local administrators group membership change | Wazuh XML + Windows Event ID + Splunk SPL | `.xml` + Event ID mapping + `.spl` | Windows Security Event IDs 4732 and 4728 | `VALIDATION_PLANNED` | none | Wazuh XML rule plus Event ID 4732/4728 mapping plus equivalent SPL | Synthetic event fixture set with positive privileged-group changes | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-DET-011 | Windows service creation or service binary change | Sigma + Wazuh XML + Splunk SPL | `.yml` + `.xml` + `.spl` | Windows System Event ID 7045 / Windows Security Event ID 4697 where available, plus Sysmon Event ID 1 context | `VALIDATION_PLANNED` | none | Sigma source plus Wazuh XML rule plus SPL covering Event ID 7045 and image-path heuristics | Synthetic fixture set distinguishing benign service install from suspicious binary path | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-DET-012 | Scheduled task creation with suspicious action path | Sigma + Splunk SPL | `.yml` + `.spl` | Windows Security Event ID 4698 and Sysmon Event ID 1 for `schtasks.exe` | `VALIDATION_PLANNED` | none | Sigma source for `schtasks /create` and Event ID 4698 with suspicious action path | Synthetic fixture set covering action-path heuristics | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-DET-013 | SSH failed-login burst followed by success candidate | Linux auth/audit + Wazuh XML + Splunk SPL | auth log mapping + `.xml` + `.spl` | Linux `auth.log` / `secure` and `sshd` events | `VALIDATION_PLANNED` | none | Field-mapping doc for `sshd` failed/accepted events plus Wazuh XML correlation rule plus SPL | Synthetic auth log fixture set replaying failed-burst-then-success and benign control | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-DET-014 | sudo or root command pattern outside expected admin lane | Linux auth/audit + Wazuh XML | auth log mapping + `.xml` | Linux `auth.log` / `secure` `sudo` events | `VALIDATION_PLANNED` | none | Field-mapping doc for `sudo` user/command/cwd plus Wazuh XML rule with allowlisted admin lane | Synthetic fixture set covering allowlisted and unexpected sudo invocations | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-DET-015 | Wazuh agent lifecycle anomaly | Wazuh manager event + Wazuh XML | `.xml` + manager event mapping | Wazuh manager `ossec-monitord` agent disconnect/restart events | `VALIDATION_PLANNED` | none | Wazuh XML rule plus manager event mapping for disconnect, restart, and version-change patterns | Synthetic manager event fixture set covering normal restart and unexpected disconnect | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-DET-016 | Cowrie honeypot login or session command capture | Cowrie event detection + Wazuh or Splunk route | Cowrie event mapping + `.xml` or `.spl` candidate | Cowrie JSON event log | `VALIDATION_PLANNED` | none | Cowrie event field mapping plus Wazuh XML or SPL candidate covering login and command-input events | Synthetic Cowrie event fixture set covering credential-spray and post-login command capture | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe |
+| HO-NDR-001 | Security Onion packet/module visibility boundary | Security Onion / NDR visibility contract | sanitized JSON contract + verifier | Security Onion sensor module enablement metadata | `BOUNDARY_CONTRACT_ONLY` | none | Sanitized JSON visibility contract plus verifier description | Validation harness that asserts contract shape, not packet content | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe, PCAP availability, permanent SPAN, durable monitoring |
+| HO-NDR-002 | Suspicious scan visibility candidate | Suricata candidate + Zeek log candidate | Suricata candidate + Zeek field mapping | Suricata alert event and Zeek `conn.log` field set | `VALIDATION_PLANNED` | none | Suricata candidate rule plus Zeek `conn.log` field mapping for scan-shaped flow patterns | Synthetic flow fixture set or sanitized Zeek log fixture set | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe, Zeek coverage completeness, Suricata detection quality |
+| AWS-DET-001 | Denied IAM API activity from CloudTrail-style events | CloudTrail JSON fixture | JSON fixture + `rule.yml` with `eventSource`/`errorCode` matchers | CloudTrail-style JSON event with `iam.amazonaws.com` source | `TEST_VALIDATED_SYNTHETIC_SCOPE` | `detections/cloud/aws/aws-det-001/rule.yml`, `detections/cloud/aws/aws-det-001/cloudtrail.jsonpath` | Expanded fixture set covering additional denial error codes | Boundary fixture set distinguishing denial from misconfiguration noise | Runtime evidence not in scope; AWS-live remains explicitly blocked | AWS-live, AWS CloudTrail live, cloud runtime-active, public-safe runtime, signal-observed public proof |
+| HO-PIPE-001 | Cribl marker delivery and required-field preservation candidate | Cribl pipeline contract + Splunk rawdata marker | pipeline contract + field-preservation matrix | Cribl pipeline configuration metadata and downstream Splunk index marker fields | `BOUNDARY_CONTRACT_ONLY` | none | Sanitized pipeline contract document plus required-field preservation matrix | Verifier that asserts contract shape and required-field set, not delivered traffic | Runtime evidence not in scope at this stage | runtime-active, signal-observed, evidence-linked public proof, public-safe, Cribl-routed live, fleet-wide deployment |
+
+## First Five Build Targets
+
+After HO-DET-001, the next five candidates are selected for the best mix of safe validation, enterprise relevance, multi-surface value, and fastest proof-loop path:
+
+- **HO-DET-002 — PowerShell suspicious flags and hidden execution behavior.** Reuses the HO-DET-001 telemetry source and fixture pattern, expands the same authoring lane to a second Sigma + SPL pair, and lets the validation harness exercise additional positive/negative shapes without new infrastructure.
+- **HO-DET-003 — certutil download/decode behavior.** Living-off-the-land binary with high enterprise SOC relevance, narrow argument surface, and a clean false-positive boundary that maps cleanly to a synthetic fixture set.
+- **HO-DET-010 — Local administrators group membership change.** Adds Wazuh XML and Windows Event ID surfaces to the visible factory, exercises the auth-event lane, and is one of the most consistently expected SOC detections in enterprise reviews.
+- **HO-DET-011 — Windows service creation or service binary change.** Combines Sigma, Wazuh XML, and SPL on a single candidate, expanding multi-surface visibility, and pairs naturally with the existing process-creation fixture lane.
+- **HO-NDR-001 — Security Onion packet/module visibility boundary.** Establishes the NDR plane as a contract-only artifact, makes the visibility boundary explicit before any NDR detection claims, and is the safest first step toward Suricata/Zeek work.
+
+These targets keep the next round inside `TEST_VALIDATED_SYNTHETIC_SCOPE` for detection candidates and `BOUNDARY_CONTRACT_ONLY` for the NDR plane. They do not require new runtime systems, do not promote runtime claims, and do not require evidence promotion through the proof repository.
+
+## V1 Firewall
+
+These candidates are curated for the current HawkinsOperations architecture. They are not copied from any prior HawkinsOps V1 detection inventory, do not migrate V1 detections, and do not import V1 wording or metrics. Older inventories are referenced, if at all, only as historical inspiration for broad detection categories. V1 metrics are not current HawkinsOperations truth and must not be cited as such.
+
+## Blocked Claims
+
+This index does not claim, and must not be cited as evidence for, any of the following: runtime-active, signal-observed, evidence-linked public proof, public-safe, live Splunk firing, production triage, analyst-approved disposition, HO-GPU-01 runtime-active, Cribl-routed, Wazuh-routed, AWS-live, autonomous SOC, production-ready SOC, fleet-wide deployment, enterprise deployed, AI-approved disposition, AI-decided disposition, production AutoSOC, production NDR, permanent SPAN, durable monitoring, PCAP availability, long-term retention, cross-source corroboration, Zeek coverage completeness, or Suricata detection quality.
+
+The presence of a candidate in this matrix is not evidence that the candidate has been validated, signaled, deployed, or proven. The current truth state column is the only authoritative state for each candidate, and is itself bounded by the truth state definitions above.
+
+## Next Gate
+
+- Source artifacts for the next five build targets are authored in this repository under `detections/`.
+- Validation fixtures and harnesses for those candidates are authored in `hawkinsoperations-validation`.
+- Runtime evidence may only be pursued after explicit runtime approval, and remains internal/non-public until reviewed.
+- Proof promotion may only occur through `hawkinsoperations-proof` after evidence review, privacy review, stale-state review, wording review, and Raylee approval.
