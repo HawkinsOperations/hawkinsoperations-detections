@@ -59,7 +59,10 @@ data_source:
 backend_target: generic_yaml_source_record
 source_assumptions:
   - Service name and service image path are available for service-install events.
+  - Windows System 7045 service image path data may appear as ImagePath, ServiceFileName, or backend-normalized parameter fields.
+  - Windows Security 4697 service image path data may appear as ServiceFileName or backend-normalized equivalents.
   - Process image and command line may be available through Sysmon Event ID 1 or equivalent process telemetry.
+  - Command-line review is opportunistic; service-install telemetry can exist without creator process command-line context.
   - Matching is intended to be case-insensitive where the backend supports it.
   - Backend-specific deployment, routing, tuning, and validation are not part of this source artifact.
 detection:
@@ -83,6 +86,9 @@ detection:
       - '\ProgramData\'
       - '\Public\'
       - '\Downloads\'
+      - '\Users\Public\'
+      - '\Windows\Temp\'
+      - '\PerfLogs\'
       - 'powershell'
       - 'pwsh'
       - 'cmd.exe'
@@ -91,6 +97,12 @@ detection:
       - 'mshta'
       - 'wscript'
       - 'cscript'
+      - '.ps1'
+      - '.vbs'
+      - '.js'
+      - '.hta'
+      - '.bat'
+      - '.cmd'
   selection_suspicious_service_file_name:
     ServiceFileName|contains:
       - '\AppData\'
@@ -98,6 +110,9 @@ detection:
       - '\ProgramData\'
       - '\Public\'
       - '\Downloads\'
+      - '\Users\Public\'
+      - '\Windows\Temp\'
+      - '\PerfLogs\'
       - 'powershell'
       - 'pwsh'
       - 'cmd.exe'
@@ -106,23 +121,42 @@ detection:
       - 'mshta'
       - 'wscript'
       - 'cscript'
+      - '.ps1'
+      - '.vbs'
+      - '.js'
+      - '.hta'
+      - '.bat'
+      - '.cmd'
   selection_suspicious_command_line:
     CommandLine|contains:
       - ' create '
       - ' New-Service'
       - ' sc.exe create'
+      - ' sc create'
       - ' binPath='
       - ' -EncodedCommand'
       - 'FromBase64String'
   condition: >
-    (selection_system_7045 or selection_security_4697) and
-    (selection_suspicious_image_path or selection_suspicious_service_file_name) or
-    selection_sysmon_tooling and selection_suspicious_command_line
+    ((selection_system_7045 or selection_security_4697) and
+    (selection_suspicious_image_path or selection_suspicious_service_file_name)) or
+    (selection_sysmon_tooling and selection_suspicious_command_line)
 falsepositives:
   - Authorized software installation and upgrade workflows.
   - Endpoint management, monitoring, backup, print, driver, or remote support agents.
   - Administrator-created services during approved maintenance windows.
   - Security tooling that installs or updates service components.
+tuning_guidance:
+  suspicious_path_review:
+    - Prioritize services whose binary path is under user-writable or temporary directories.
+    - Review interpreter-backed service paths and script-like targets before escalation.
+    - Compare ImagePath and ServiceFileName because backends may normalize either field.
+  command_line_review:
+    - Review sc.exe create, sc create, New-Service, binPath=, EncodedCommand, and FromBase64String patterns where process telemetry exists.
+    - Do not require command-line context for Windows System 7045 or Windows Security 4697 service-install events.
+  benign_review_patterns:
+    - Signed vendor installers and approved software deployment tools.
+    - Driver, print, backup, monitoring, security, and remote-support agents.
+    - Known managed application paths and approved maintenance windows.
 level: medium
 allowed_claim: HO-DET-011 source artifacts exist and are prepared for future synthetic validation.
 blocked_claims:
@@ -130,10 +164,17 @@ blocked_claims:
   - signal-observed
   - public-safe
   - evidence-linked public proof
+  - Cribl-routed
   - live Splunk fired
   - Wazuh-routed
+  - Security Onion observed
+  - Suricata observed
+  - Zeek observed
   - production-ready
   - fleet-wide
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
   - attack coverage
   - service-creation coverage completeness
   - validation passed
@@ -149,3 +190,6 @@ promotion_boundaries:
     - live Splunk firing
     - Wazuh-routed telemetry
     - validation passage
+validation_fixture_boundary:
+  detections_repo_fixtures_found: false
+  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE

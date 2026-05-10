@@ -23,7 +23,7 @@
 
   <rule id="910012" level="10">
     <if_sid>910011</if_sid>
-    <field name="win.eventdata.imagePath" type="pcre2">(?i)(\\AppData\\|\\Temp\\|\\ProgramData\\|\\Public\\|\\Downloads\\|powershell|pwsh|cmd\.exe|rundll32|regsvr32|mshta|wscript|cscript)</field>
+    <field name="win.eventdata.imagePath" type="pcre2">(?i)(\\AppData\\|\\Temp\\|\\ProgramData\\|\\Public\\|\\Downloads\\|\\Users\\Public\\|\\Windows\\Temp\\|\\PerfLogs\\|powershell|pwsh|cmd\.exe|rundll32|regsvr32|mshta|wscript|cscript|\.ps1|\.vbs|\.js|\.hta|\.bat|\.cmd)</field>
     <description>HO-DET-011 candidate: service install with suspicious service image path</description>
     <mitre>
       <id>T1543.003</id>
@@ -32,7 +32,18 @@
     <group>ho-det-011,source-only,validation-planned,blocked-claims-runtime-signal-public,</group>
   </rule>
 
-  <rule id="910013" level="8">
+  <rule id="910013" level="10">
+    <if_sid>910011</if_sid>
+    <field name="win.eventdata.serviceFileName" type="pcre2">(?i)(\\AppData\\|\\Temp\\|\\ProgramData\\|\\Public\\|\\Downloads\\|\\Users\\Public\\|\\Windows\\Temp\\|\\PerfLogs\\|powershell|pwsh|cmd\.exe|rundll32|regsvr32|mshta|wscript|cscript|\.ps1|\.vbs|\.js|\.hta|\.bat|\.cmd)</field>
+    <description>HO-DET-011 candidate: service install with suspicious ServiceFileName value</description>
+    <mitre>
+      <id>T1543.003</id>
+    </mitre>
+    <options>no_full_log</options>
+    <group>ho-det-011,source-only,validation-planned,service-file-name,</group>
+  </rule>
+
+  <rule id="910014" level="8">
     <if_group>windows,sysmon</if_group>
     <field name="win.system.eventID">1</field>
     <field name="win.eventdata.image" type="pcre2">(?i)\\(sc|powershell|pwsh|cmd)\.exe$</field>

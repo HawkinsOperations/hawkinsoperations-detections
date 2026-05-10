@@ -17,6 +17,7 @@ OR
 | eval ho_service_path=lower(coalesce(ImagePath, ServiceFileName, service_file_name, param2, winlog_event_data_ImagePath, winlog_event_data_ServiceFileName, ""))
 | eval ho_process_image=lower(coalesce(Image, process_path, winlog_event_data_Image, ""))
 | eval ho_command_line=lower(coalesce(CommandLine, ProcessCommandLine, command_line, winlog_event_data_CommandLine, ""))
+| eval ho_parent_image=lower(coalesce(ParentImage, parent_process_path, winlog_event_data_ParentImage, ""))
 | eval ho_is_service_event=if(ho_event_id="7045" OR ho_event_id="4697", 1, 0)
 | eval ho_is_service_tooling=if(match(ho_process_image, "\\\\(sc|powershell|pwsh|cmd)\\.exe$"), 1, 0)
 | eval ho_suspicious_service_path=if(
@@ -25,6 +26,9 @@ OR
     OR like(ho_service_path, "%\\programdata\\%")
     OR like(ho_service_path, "%\\public\\%")
     OR like(ho_service_path, "%\\downloads\\%")
+    OR like(ho_service_path, "%\\users\\public\\%")
+    OR like(ho_service_path, "%\\windows\\temp\\%")
+    OR like(ho_service_path, "%\\perflogs\\%")
     OR like(ho_service_path, "%powershell%")
     OR like(ho_service_path, "%pwsh%")
     OR like(ho_service_path, "%cmd.exe%")
@@ -32,7 +36,13 @@ OR
     OR like(ho_service_path, "%regsvr32%")
     OR like(ho_service_path, "%mshta%")
     OR like(ho_service_path, "%wscript%")
-    OR like(ho_service_path, "%cscript%"),
+    OR like(ho_service_path, "%cscript%")
+    OR like(ho_service_path, "%.ps1%")
+    OR like(ho_service_path, "%.vbs%")
+    OR like(ho_service_path, "%.js%")
+    OR like(ho_service_path, "%.hta%")
+    OR like(ho_service_path, "%.bat%")
+    OR like(ho_service_path, "%.cmd%"),
     1, 0)
 | eval ho_suspicious_creation_cli=if(
     like(ho_command_line, "% sc.exe create %")
@@ -42,7 +52,18 @@ OR
     OR like(ho_command_line, "% -encodedcommand%")
     OR like(ho_command_line, "%frombase64string%"),
     1, 0)
+| eval ho_likely_benign_context=if(
+    like(ho_service_path, "%\\program files\\%")
+    OR like(ho_service_path, "%\\program files (x86)\\%")
+    OR like(ho_service_path, "%\\windows\\system32\\drivers\\%")
+    OR match(ho_service_name, "(?i)(update|updater|agent|backup|monitor|driver|print|security|remote|support)"),
+    1, 0)
+| eval ho_tuning_note=case(
+    ho_suspicious_service_path=1, "review service path, signer/vendor context, account, parent process, and maintenance window",
+    ho_suspicious_creation_cli=1, "review service creation command line and requested binPath",
+    ho_likely_benign_context=1, "likely benign context candidate; validate against approved software inventory",
+    true(), "review context before escalation")
 | where (ho_is_service_event=1 AND ho_suspicious_service_path=1)
     OR (ho_is_service_tooling=1 AND ho_suspicious_creation_cli=1)
-| table _time, host, Computer, User, ho_event_id, ho_service_name, ho_service_path, Image, ParentImage, CommandLine
+| table _time, host, Computer, User, ho_event_id, ho_service_name, ho_service_path, Image, ParentImage, CommandLine, ho_parent_image, ho_likely_benign_context, ho_tuning_note
 | sort -_time
