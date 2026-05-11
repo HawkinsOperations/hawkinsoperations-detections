@@ -1,0 +1,213 @@
+detection_id: HO-DET-012
+truth_surface: detection_source
+mapping_status: SOURCE_EXISTS
+validation_status: VALIDATION_PLANNED
+description: >
+  Source-only event mapping for suspicious Windows scheduled task creation or
+  update behavior. This mapping prepares future synthetic validation and does
+  not prove runtime activity, signal observation, routing, public-safe status, or evidence-linked public proof claims.
+telemetry_boundary:
+  windows_security_4698: Windows Security Event ID 4698 may record scheduled task creation where audit policy and collection support it.
+  windows_security_4702: Windows Security Event ID 4702 may record scheduled task update where audit policy and collection support it.
+  task_scheduler_106: Microsoft-Windows-TaskScheduler/Operational Event ID 106 may record task registration when the operational log is enabled and collected.
+  task_scheduler_140: Microsoft-Windows-TaskScheduler/Operational Event ID 140 may record task update when the operational log is enabled and collected.
+  sysmon_1: Sysmon Event ID 1 provides process context for scheduled-task creation tooling where available.
+sources:
+  windows_security_4698:
+    channel: Security
+    event_id: 4698
+    role: scheduled_task_created_event_where_available
+    expected_fields:
+      task_name:
+        common_names:
+          - TaskName
+      task_content:
+        common_names:
+          - TaskContent
+          - Task
+          - Actions
+      subject_user:
+        common_names:
+          - SubjectUserName
+          - AccountName
+  windows_security_4702:
+    channel: Security
+    event_id: 4702
+    role: scheduled_task_updated_event_where_available
+    expected_fields:
+      task_name:
+        common_names:
+          - TaskName
+      task_content:
+        common_names:
+          - TaskContent
+          - Task
+          - Actions
+      subject_user:
+        common_names:
+          - SubjectUserName
+          - AccountName
+  task_scheduler_operational_106:
+    channel: Microsoft-Windows-TaskScheduler/Operational
+    provider: Microsoft-Windows-TaskScheduler
+    event_id: 106
+    role: task_registered_event_where_available
+    expected_fields:
+      task_name:
+        common_names:
+          - TaskName
+          - TaskNamePath
+      task_action:
+        common_names:
+          - Action
+          - Actions
+  task_scheduler_operational_140:
+    channel: Microsoft-Windows-TaskScheduler/Operational
+    provider: Microsoft-Windows-TaskScheduler
+    event_id: 140
+    role: task_updated_event_where_available
+    expected_fields:
+      task_name:
+        common_names:
+          - TaskName
+          - TaskNamePath
+      task_action:
+        common_names:
+          - Action
+          - Actions
+  sysmon_event_1:
+    channel: Microsoft-Windows-Sysmon/Operational
+    provider: Sysmon
+    event_id: 1
+    role: process_context_for_scheduled_task_creation_tooling
+    expected_fields:
+      process_image:
+        common_names:
+          - Image
+      command_line:
+        common_names:
+          - CommandLine
+      parent_image:
+        common_names:
+          - ParentImage
+      user:
+        common_names:
+          - User
+splunk_fields:
+  event_id:
+    candidates:
+      - EventCode
+      - EventID
+      - event_id
+  host:
+    candidates:
+      - host
+      - Computer
+  task_name:
+    candidates:
+      - TaskName
+      - task_name
+      - winlog_event_data_TaskName
+      - winlog_event_data_Task
+  task_action:
+    candidates:
+      - TaskContent
+      - Task
+      - Actions
+      - Action
+      - winlog_event_data_TaskContent
+      - winlog_event_data_Actions
+      - winlog_event_data_Action
+  process_image:
+    candidates:
+      - Image
+      - process_path
+      - winlog_event_data_Image
+  command_line:
+    candidates:
+      - CommandLine
+      - ProcessCommandLine
+      - command_line
+      - winlog_event_data_CommandLine
+  parent_image:
+    candidates:
+      - ParentImage
+      - parent_process_path
+      - winlog_event_data_ParentImage
+wazuh_fields:
+  event_id:
+    candidates:
+      - win.system.eventID
+  task_name:
+    candidates:
+      - win.eventdata.taskName
+      - win.eventdata.TaskName
+  task_action:
+    candidates:
+      - win.eventdata.taskContent
+      - win.eventdata.action
+      - win.eventdata.actions
+  process_image:
+    candidates:
+      - win.eventdata.image
+  command_line:
+    candidates:
+      - win.eventdata.commandLine
+  parent_image:
+    candidates:
+      - win.eventdata.parentImage
+tuning_fields:
+  required_for_primary_task_action_review:
+    - event_id
+    - task_name
+    - task_action
+  useful_for_reviewer_triage:
+    - process_image
+    - command_line
+    - parent_image
+    - user
+    - host
+  suspicious_action_indicators:
+    - user-writable paths
+    - temporary paths
+    - public/download/profile paths
+    - interpreter-backed task actions
+    - script-like task targets
+    - encoded or obfuscated command lines
+  weak_context_only:
+    - updater-like task names
+    - one-character task names
+    - random-looking task names
+    - names pretending to be Windows or vendor tasks
+  benign_context_indicators:
+    - approved software deployment task
+    - vendor updater task
+    - endpoint management task
+    - backup, monitoring, security, or remote-support task
+    - managed application directory
+    - approved maintenance window
+validation_fixture_boundary:
+  detections_repo_fixtures_found: false
+  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - public-safe runtime proof
+  - Splunk-fired
+  - live Splunk fired
+  - Wazuh-routed
+  - Cribl-routed
+  - Security Onion observed
+  - Suricata observed
+  - Zeek observed
+  - production-ready
+  - production triage
+  - fleet-wide
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
+  - attack coverage completeness
+  - scheduled-task coverage completeness
+  - validation passed

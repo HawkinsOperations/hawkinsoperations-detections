@@ -1,0 +1,198 @@
+title: HO-DET-012 Suspicious Scheduled Task Creation
+detection_id: HO-DET-012
+status: experimental/source-only
+proof_level: SOURCE_EXISTS
+trust_class: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+approval_status: NOT_APPROVED
+runtime_active: "NO"
+validation_status: VALIDATION_PLANNED
+signal_observed: "NO"
+evidence_linked: "NO"
+description: >
+  Sigma-style source artifact for suspicious Windows scheduled task creation,
+  registration, or update behavior. This source uses Windows Security Event IDs
+  4698 and 4702 where audit policy records scheduled task changes,
+  Microsoft-Windows-TaskScheduler/Operational Event IDs 106 and 140 where the
+  operational log is enabled and collected, and Sysmon Event ID 1 process
+  context where available. It does not establish runtime, signal, validation, routing, or public-safe proof claims.
+author: HawkinsOperations
+date: 2026-05-11
+references:
+  - https://attack.mitre.org/techniques/T1053/005/
+tags:
+  - attack.persistence
+  - attack.privilege_escalation
+  - attack.t1053.005
+mitre_attack:
+  mapping_status: CANDIDATE
+  tactic_ids:
+    - TA0003
+    - TA0004
+  tactic_names:
+    - Persistence
+    - Privilege Escalation
+  technique_ids:
+    - T1053.005
+  technique_names:
+    - Scheduled Task
+logsource:
+  product: windows
+  definition: >
+    Primary task-change telemetry is Windows Security Event ID 4698 for task
+    creation and Event ID 4702 for task update where audit policy records
+    scheduled task changes. TaskScheduler Operational Event IDs 106 and 140 and
+    Sysmon Event ID 1 are related context sources where available.
+data_source:
+  primary:
+    product: windows
+    channel: Security
+    event_ids:
+      - 4698
+      - 4702
+  related:
+    - product: windows
+      channel: Microsoft-Windows-TaskScheduler/Operational
+      event_ids:
+        - 106
+        - 140
+    - product: windows
+      provider: Sysmon
+      event_id: 1
+backend_target: generic_yaml_source_record
+source_assumptions:
+  - Task name, task path, task content, or task action fields may be available for scheduled-task events.
+  - Windows Security 4698 and 4702 availability depends on audit policy and collection.
+  - TaskScheduler Operational 106 and 140 availability depends on that log being enabled and collected.
+  - Sysmon Event ID 1 or equivalent process telemetry can provide task creation tooling context.
+  - Command-line review is opportunistic; scheduled-task telemetry can exist without creator process command-line context.
+  - Suspicious task names are weak review context and should not be standalone matches without suspicious action, path, or tooling evidence.
+  - Matching is intended to be case-insensitive where the backend supports it.
+  - Backend-specific deployment, routing, tuning, and validation are not part of this source artifact.
+detection:
+  selection_security_task_change:
+    EventID:
+      - 4698
+      - 4702
+  selection_taskscheduler_operational:
+    EventID:
+      - 106
+      - 140
+    Provider_Name|contains:
+      - TaskScheduler
+  selection_sysmon_tooling:
+    EventID: 1
+    Image|endswith:
+      - '\schtasks.exe'
+      - '\powershell.exe'
+      - '\pwsh.exe'
+      - '\cmd.exe'
+      - '\wscript.exe'
+      - '\cscript.exe'
+      - '\mshta.exe'
+      - '\rundll32.exe'
+      - '\regsvr32.exe'
+  selection_suspicious_task_action:
+    TaskContent|contains:
+      - '\AppData\'
+      - '\Temp\'
+      - '\ProgramData\'
+      - '\Public\'
+      - '\Users\Public\'
+      - '\Downloads\'
+      - '\Windows\Temp\'
+      - '\PerfLogs\'
+      - 'powershell'
+      - 'pwsh'
+      - 'cmd.exe'
+      - 'wscript'
+      - 'cscript'
+      - 'mshta'
+      - 'rundll32'
+      - 'regsvr32'
+      - '.ps1'
+      - '.vbs'
+      - '.js'
+      - '.hta'
+      - '.bat'
+      - '.cmd'
+  selection_suspicious_command_line:
+    CommandLine|contains:
+      - 'schtasks /create'
+      - 'schtasks.exe /create'
+      - 'Register-ScheduledTask'
+      - 'New-ScheduledTaskAction'
+      - ' -EncodedCommand'
+      - 'FromBase64String'
+      - ' -WindowStyle Hidden'
+      - ' /min'
+      - ' /tr '
+  selection_weak_task_name_context:
+    TaskName|contains:
+      - 'update'
+      - 'updater'
+      - 'windows'
+      - 'security'
+      - 'svc'
+  condition: >
+    ((selection_security_task_change or selection_taskscheduler_operational) and
+    selection_suspicious_task_action) or
+    (selection_sysmon_tooling and selection_suspicious_command_line)
+falsepositives:
+  - Authorized enterprise software deployment tools.
+  - Vendor updater, browser updater, and application updater tasks.
+  - Endpoint management, backup, monitoring, security, and remote-support agents.
+  - Administrator-created automation during approved maintenance windows.
+  - Signed vendor binaries under Program Files or Program Files (x86).
+tuning_guidance:
+  suspicious_action_review:
+    - Prioritize scheduled tasks whose action path is under user-writable or temporary directories.
+    - Review interpreter-backed task actions and script-like targets before escalation.
+    - Treat suspicious task names as weak context unless paired with suspicious action, path, or tooling evidence.
+  command_line_review:
+    - Review schtasks /create, Register-ScheduledTask, New-ScheduledTaskAction, EncodedCommand, FromBase64String, hidden execution, minimized execution, and /tr targets where process telemetry exists.
+    - Do not require command-line context for Windows Security or TaskScheduler Operational task-change events.
+  benign_review_patterns:
+    - Signed vendor installers and approved software deployment tools.
+    - Browser or application updater tasks.
+    - Backup, monitoring, security, endpoint management, and remote-support agents.
+    - Known managed application paths and approved maintenance windows.
+level: medium
+allowed_claim: HO-DET-012 source artifacts exist and are prepared for future synthetic validation.
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - public-safe runtime proof
+  - Splunk-fired
+  - live Splunk fired
+  - Wazuh-routed
+  - Cribl-routed
+  - Security Onion observed
+  - Suricata observed
+  - Zeek observed
+  - production-ready
+  - production triage
+  - fleet-wide
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
+  - attack coverage completeness
+  - scheduled-task coverage completeness
+  - validation passed
+promotion_boundaries:
+  source_exists_supports:
+    - HO-DET-012 source artifacts exist in this repository path.
+    - HO-DET-012 is prepared for future synthetic validation.
+  source_exists_does_not_support:
+    - runtime-active status
+    - signal-observed status
+    - evidence-linked public proof
+    - public-safe status
+    - live Splunk firing
+    - Wazuh-routed telemetry
+    - validation passage
+validation_fixture_boundary:
+  detections_repo_fixtures_found: false
+  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE

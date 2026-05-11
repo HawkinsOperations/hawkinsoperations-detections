@@ -1,0 +1,46 @@
+<!--
+  HO-DET-012 source-only Wazuh XML candidate.
+  Validation is planned. This file does not claim Wazuh-routed live telemetry, runtime activity, signal observation, public-safe status, or evidence-linked public proof.
+
+  Telemetry boundary:
+  - Windows Security Event ID 4698 records scheduled task creation where audit policy and collection support it.
+  - Windows Security Event ID 4702 records scheduled task update where audit policy and collection support it.
+  - Microsoft-Windows-TaskScheduler/Operational Event IDs 106 and 140 may exist when the operational log is enabled and collected.
+  - Sysmon Event ID 1 can add process context for scheduled-task creation tooling.
+-->
+<group name="windows,scheduled_task,ho_det_012,source_only,">
+  <rule id="910021" level="7">
+    <if_group>windows</if_group>
+    <field name="win.system.eventID" type="pcre2">4698|4702|106|140</field>
+    <description>HO-DET-012 candidate: Windows scheduled task creation or update event requiring task action review</description>
+    <mitre>
+      <id>T1053.005</id>
+    </mitre>
+    <options>no_full_log</options>
+    <group>ho-det-012,source-only,validation-planned,</group>
+  </rule>
+
+  <rule id="910022" level="10">
+    <if_sid>910021</if_sid>
+    <field name="win.eventdata.taskContent" type="pcre2">(?i)(\\AppData\\|\\Temp\\|\\ProgramData\\|\\Public\\|\\Users\\Public\\|\\Downloads\\|\\Windows\\Temp\\|\\PerfLogs\\|powershell|pwsh|cmd\.exe|wscript|cscript|mshta|rundll32|regsvr32|\.ps1|\.vbs|\.js|\.hta|\.bat|\.cmd)</field>
+    <description>HO-DET-012 candidate: scheduled task action with suspicious path, interpreter, or script target</description>
+    <mitre>
+      <id>T1053.005</id>
+    </mitre>
+    <options>no_full_log</options>
+    <group>ho-det-012,source-only,validation-planned,blocked-claims-runtime-signal-public,</group>
+  </rule>
+
+  <rule id="910023" level="8">
+    <if_group>windows,sysmon</if_group>
+    <field name="win.system.eventID">1</field>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(schtasks|powershell|pwsh|cmd|wscript|cscript|mshta|rundll32|regsvr32)\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)(schtasks(\.exe)?\s+/create|register-scheduledtask|new-scheduledtaskaction|-encodedcommand|frombase64string|-windowstyle\s+hidden|\s/min\s|\s/tr\s)</field>
+    <description>HO-DET-012 candidate: process context for scheduled task creation tooling</description>
+    <mitre>
+      <id>T1053.005</id>
+    </mitre>
+    <options>no_full_log</options>
+    <group>ho-det-012,source-only,validation-planned,process-context,</group>
+  </rule>
+</group>
