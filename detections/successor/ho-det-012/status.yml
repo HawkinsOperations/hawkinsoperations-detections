@@ -1,0 +1,97 @@
+detection_id: HO-DET-012
+truth_surface: detection_source
+source_status: SOURCE_EXISTS
+sigma_source_status: SOURCE_EXISTS
+splunk_source_status: SOURCE_EXISTS
+wazuh_source_status: SOURCE_EXISTS
+event_mapping_status: SOURCE_EXISTS
+validation_status: VALIDATION_PLANNED
+tuning_status: SOURCE_TUNING_NOTES_ADDED
+proof_level: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+runtime_active: false
+signal_observed: false
+evidence_linked_public_proof: false
+proof_status: BLOCKED
+fixtures_in_detections_repo: false
+canonical_readme: detections/successor/ho-det-012/README.md
+canonical_sigma_source: detections/successor/ho-det-012/rule.yml
+canonical_splunk_source: detections/successor/ho-det-012/splunk.spl
+canonical_wazuh_source: detections/successor/ho-det-012/wazuh.xml
+canonical_event_mapping: detections/successor/ho-det-012/event-mapping.yml
+planned_validation_repo_scope: hawkinsoperations-validation
+planned_validation_fixture_set: REQUIRED_SEPARATE_SCOPE
+planned_platform_case_packet_guardrail: REQUIRED_SEPARATE_SCOPE
+planned_proof_record: REQUIRED_SEPARATE_SCOPE
+mitre_attack:
+  primary_technique: T1053.005
+  primary_technique_name: Scheduled Task
+  tactics:
+    - Persistence
+    - Privilege Escalation
+telemetry_sources:
+  - Windows Security Event ID 4698 for scheduled task creation where audit policy and collection support it.
+  - Windows Security Event ID 4702 for scheduled task update where audit policy and collection support it.
+  - Microsoft-Windows-TaskScheduler/Operational Event ID 106 for task registration where enabled and collected.
+  - Microsoft-Windows-TaskScheduler/Operational Event ID 140 for task update where enabled and collected.
+  - Sysmon Event ID 1 process context for scheduled-task creation tooling where available.
+tuning_focus:
+  suspicious_fields:
+    - TaskContent
+    - TaskName
+    - Action
+    - Actions
+    - CommandLine where available
+    - process image where available
+    - parent process where available
+  suspicious_indicators:
+    - user-writable task action paths
+    - temp/download/public/profile task action paths
+    - interpreter-backed task actions
+    - script-like task targets
+    - scheduled-task creation command-line patterns
+    - encoded or obfuscated command-line patterns
+  weak_context_only:
+    - updater-like fake task names
+    - one-character or random-looking task names
+    - task names pretending to be Windows or vendor tasks
+  benign_review_patterns:
+    - enterprise software deployment tools
+    - vendor updater tasks
+    - endpoint management platforms
+    - backup, monitoring, security, and remote-support agents
+    - approved admin automation
+    - approved maintenance windows
+    - managed application directories
+allowed_claims:
+  - HO-DET-012 source artifacts exist.
+  - HO-DET-012 is prepared for future synthetic validation.
+  - Detection source includes Sigma/SPL/Wazuh/event-mapping/status surfaces.
+  - HO-DET-012 documents scheduled-task telemetry assumptions and false-positive review guidance.
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - public-safe runtime proof
+  - Splunk-fired
+  - live Splunk fired
+  - Wazuh-routed
+  - Cribl-routed
+  - Security Onion observed
+  - Suricata observed
+  - Zeek observed
+  - production-ready
+  - production triage
+  - fleet-wide
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
+  - attack coverage completeness
+  - scheduled-task coverage completeness
+  - validation passed
+next_gate:
+  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
+  synthetic_validation_harness: REQUIRED_SEPARATE_SCOPE
+  runtime_evidence: BLOCKED
+  public_proof: BLOCKED
