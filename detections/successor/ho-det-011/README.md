@@ -2,7 +2,7 @@
 
 ## Purpose
 
-HO-DET-011 defines source artifacts for suspicious Windows service creation or service binary change behavior. This folder prepares the detection source for future synthetic validation across Sigma-style YAML, Splunk SPL, Wazuh XML, event mapping, and status metadata.
+HO-DET-011 defines source artifacts for suspicious Windows service creation or service binary change behavior. This folder prepares the detection source for future controlled-test validation across Sigma-style YAML, Splunk SPL, Wazuh XML, event mapping, and status metadata.
 
 This source does not prove runtime activity, signal observation, validation passage, or public-safe proof.
 
@@ -91,7 +91,7 @@ This package supports only these source-quality claims:
 
 - HO-DET-011 detection source artifacts exist in this repository.
 - HO-DET-011 includes Sigma-style YAML, Splunk SPL, Wazuh XML, event mapping, status metadata, and tuning notes.
-- HO-DET-011 is prepared for separately scoped synthetic validation.
+- HO-DET-011 is prepared for separately scoped controlled-test validation.
 
 ## Blocked Claims
 
@@ -118,4 +118,4 @@ This source must not be cited as evidence for:
 
 ## Next Gate
 
-The next gate is a validation-repo fixture set and deterministic synthetic validation harness for HO-DET-011. That work must be scoped separately and must not be inferred from these source files.
+The next gate is a validation-repo fixture set and deterministic controlled-test validation harness for HO-DET-011. That work must be scoped separately and must not be inferred from these source files.

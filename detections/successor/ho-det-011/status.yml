@@ -47,7 +47,7 @@ tuning_focus:
     - known managed application directories
 allowed_claims:
   - HO-DET-011 source artifacts exist.
-  - HO-DET-011 is prepared for future synthetic validation.
+  - HO-DET-011 is prepared for future controlled-test validation.
   - Detection source includes Sigma/SPL/Wazuh/event-mapping/status surfaces.
   - HO-DET-011 includes source-level tuning notes for suspicious service paths and benign review patterns.
 blocked_claims:
@@ -72,6 +72,6 @@ blocked_claims:
   - validation passed
 next_gate:
   validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
-  synthetic_validation_harness: REQUIRED_SEPARATE_SCOPE
+  controlled_test_validation_harness: REQUIRED_SEPARATE_SCOPE
   runtime_evidence: BLOCKED
   public_proof: BLOCKED

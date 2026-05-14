@@ -6,7 +6,7 @@ Fixture-only source candidate for denied or unauthorized IAM API activity in Clo
 
 - Detection ID: `AWS-DET-001`
 - Source class: CloudTrail-style JSON fixtures
-- Current ceiling: `TEST_VALIDATED_SYNTHETIC_SCOPE`
+- Current ceiling: `CONTROLLED_TEST_VALIDATED`
 - Public-safe status: `NOT_PUBLIC_SAFE`
 
 This source does not use AWS credentials, live AWS APIs, production telemetry, or CloudTrail live evidence.

@@ -158,7 +158,7 @@ tuning_guidance:
     - Backup, monitoring, security, endpoint management, and remote-support agents.
     - Known managed application paths and approved maintenance windows.
 level: medium
-allowed_claim: HO-DET-012 source artifacts exist and are prepared for future synthetic validation.
+allowed_claim: HO-DET-012 source artifacts exist and are prepared for future controlled-test validation.
 blocked_claims:
   - runtime-active
   - signal-observed
@@ -184,7 +184,7 @@ blocked_claims:
 promotion_boundaries:
   source_exists_supports:
     - HO-DET-012 source artifacts exist in this repository path.
-    - HO-DET-012 is prepared for future synthetic validation.
+    - HO-DET-012 is prepared for future controlled-test validation.
   source_exists_does_not_support:
     - runtime-active status
     - signal-observed status
