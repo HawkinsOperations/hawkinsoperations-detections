@@ -4,7 +4,7 @@ mapping_status: SOURCE_EXISTS
 validation_status: VALIDATION_PLANNED
 description: >
   Source-only event mapping for suspicious Windows service creation or service
-  binary change behavior. This mapping prepares future synthetic validation and
+  binary change behavior. This mapping prepares future controlled-test validation and
   does not prove runtime activity, signal observation, public-safe status, or
   evidence-linked public proof.
 telemetry_correction:

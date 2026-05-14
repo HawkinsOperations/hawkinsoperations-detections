@@ -4,7 +4,7 @@ Detection content and rule engineering for HawkinsOperations.
 
 Owner identity: Raylee Hawkins, Detection Engineer | SOC Automation | Detection-as-Code | Security Automation.
 
-Official links: [Raylee Hawkins on LinkedIn](https://www.linkedin.com/in/raylee-hawkins) · [Raylee Hawkins on GitHub](https://github.com/raylee-hawkins) · [HawkinsOps legacy/reference portfolio](https://hawkinsops.com) · [HawkinsOperations GitHub organization](https://github.com/HawkinsOperations) · [RayleeOps public operating journal](https://rayleeops.com)
+Official links: [Raylee Hawkins on LinkedIn](https://www.linkedin.com/in/raylee-hawkins) Â· [Raylee Hawkins on GitHub](https://github.com/raylee-hawkins) Â· [HawkinsOps legacy/reference portfolio](https://hawkinsops.com) Â· [HawkinsOperations GitHub organization](https://github.com/HawkinsOperations) Â· [RayleeOps public operating journal](https://rayleeops.com)
 
 ## Purpose
 
@@ -15,7 +15,7 @@ This repository contains detection logic as source content. It is the authoring 
 - GitHub Projects: pending access / attachment. Current org project route: https://github.com/orgs/HawkinsOperations/projects
 - Reviewer entry point: https://github.com/HawkinsOperations/.github/blob/main/profile/START_HERE.md
 - HO-DET-001 public proof route: https://github.com/HawkinsOperations/hawkinsoperations-proof/blob/main/proof/records/HO-DET-001.md
-- Current HO-DET-001 ceiling: TEST_VALIDATED_SYNTHETIC_SCOPE
+- Current HO-DET-001 ceiling: CONTROLLED_TEST_VALIDATED
 - HawkinsOperations is the governed successor system; HawkinsOps and older surfaces are legacy/reference unless revalidated.
 - Truth surface: detection source truth. This repository proves source existence and detection-authoring structure only.
 - Sprint thesis: speed with enforcement through deterministic validation, required checks where configured, evidence records, proof contracts, and bounded public claims.

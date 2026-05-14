@@ -1,9 +1,9 @@
 detection_id: HO-DET-001
 source_status: SOURCE_EXISTS
 splunk_source_status: SOURCE_EXISTS
-validation_status: TEST_VALIDATED_SYNTHETIC_SCOPE
-validation_enforcement_status: CI_ENFORCED_FOR_SYNTHETIC_SCOPE
-proof_level: TEST_VALIDATED_SYNTHETIC_SCOPE
+validation_status: CONTROLLED_TEST_VALIDATED
+validation_enforcement_status: CI_ENFORCED_FOR_CONTROLLED_TEST_SCOPE
+proof_level: CONTROLLED_TEST_VALIDATED
 public_safe_status: NOT_PUBLIC_SAFE
 runtime_active: "NO"
 signal_observed: "NO"
@@ -38,5 +38,5 @@ blocked_claims:
 allowed_claims:
   - HO-DET-001 source exists.
   - HO-DET-001 Splunk source exists.
-  - HO-DET-001 passed synthetic validation against controlled positive and negative process-creation fixtures.
-  - HO-DET-001 validation enforcement exists for the exact synthetic validation scope.
+  - HO-DET-001 passed controlled-test validation against controlled positive and negative process-creation fixtures.
+  - HO-DET-001 validation enforcement exists for the exact controlled-test validation scope.

@@ -65,7 +65,7 @@ tuning_focus:
     - managed application directories
 allowed_claims:
   - HO-DET-012 source artifacts exist.
-  - HO-DET-012 is prepared for future synthetic validation.
+  - HO-DET-012 is prepared for future controlled-test validation.
   - Detection source includes Sigma/SPL/Wazuh/event-mapping/status surfaces.
   - HO-DET-012 documents scheduled-task telemetry assumptions and false-positive review guidance.
 blocked_claims:
@@ -92,6 +92,6 @@ blocked_claims:
   - validation passed
 next_gate:
   validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
-  synthetic_validation_harness: REQUIRED_SEPARATE_SCOPE
+  controlled_test_validation_harness: REQUIRED_SEPARATE_SCOPE
   runtime_evidence: BLOCKED
   public_proof: BLOCKED

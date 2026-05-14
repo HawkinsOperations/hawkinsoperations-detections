@@ -4,7 +4,7 @@ mapping_status: SOURCE_EXISTS
 validation_status: VALIDATION_PLANNED
 description: >
   Source-only event mapping for suspicious Windows scheduled task creation or
-  update behavior. This mapping prepares future synthetic validation and does
+  update behavior. This mapping prepares future controlled-test validation and does
   not prove runtime activity, signal observation, routing, public-safe status, or evidence-linked public proof claims.
 telemetry_boundary:
   windows_security_4698: Windows Security Event ID 4698 may record scheduled task creation where audit policy and collection support it.

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-HO-DET-012 defines source artifacts for suspicious Windows scheduled task creation, registration, or update behavior. This folder prepares the detection source for future synthetic validation across Sigma-style YAML, Splunk SPL, Wazuh XML, event mapping, and status metadata.
+HO-DET-012 defines source artifacts for suspicious Windows scheduled task creation, registration, or update behavior. This folder prepares the detection source for future controlled-test validation across Sigma-style YAML, Splunk SPL, Wazuh XML, event mapping, and status metadata.
 
 This source does not prove runtime activity, signal observation, validation passage, public-safe proof, routed telemetry, or production readiness.
 
@@ -103,7 +103,7 @@ Suggested future fixture coverage:
 This package supports only these source-quality claims:
 
 - HO-DET-012 source artifacts exist in this repository.
-- HO-DET-012 is prepared for future synthetic validation.
+- HO-DET-012 is prepared for future controlled-test validation.
 - Detection source includes Sigma/SPL/Wazuh/event-mapping/status surfaces.
 - HO-DET-012 documents scheduled-task telemetry assumptions and false-positive review guidance.
 
@@ -135,4 +135,4 @@ This source must not be cited as evidence for:
 
 ## Next Gate
 
-The next gate is a validation-repo fixture set and deterministic synthetic validation harness for HO-DET-012. That work must be scoped separately and must not be inferred from these source files.
+The next gate is a validation-repo fixture set and deterministic controlled-test validation harness for HO-DET-012. That work must be scoped separately and must not be inferred from these source files.
