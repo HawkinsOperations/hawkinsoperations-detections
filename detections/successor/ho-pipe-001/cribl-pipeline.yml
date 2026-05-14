@@ -1,0 +1,41 @@
+pipeline_id: ho_det_001_sysmon_runtime_signal_003
+artifact_id: HO-PIPE-001
+artifact_class: cribl_pipeline_source
+status: SOURCE_EXISTS
+public_safe: false
+claim_boundary: >-
+  Source-controlled Cribl pipeline configuration only. This artifact does not
+  prove runtime-active deployment, production routing, public-safe proof,
+  fleet-wide deployment, live Splunk firing, or Cribl-routed telemetry.
+
+runtime_source_path: /opt/cribl/local/cribl/pipelines/ho_det_001_sysmon_runtime_signal_003/conf.yml
+
+cribl_pipeline:
+  output: default
+  streamtags: []
+  asyncFuncTimeout: 1000
+  description: >-
+    Drop nonmatching HO-DET-001 control/noise events before default HEC output;
+    pass only events containing the runtime signal marker.
+  functions:
+    - id: drop
+      filter: "!(String(CommandLine || '').includes('HO_DET_001_CRIBL_ROUTED_RUNTIME_SIGNAL_003') || String(_raw || '').includes('HO_DET_001_CRIBL_ROUTED_RUNTIME_SIGNAL_003') || String(message || '').includes('HO_DET_001_CRIBL_ROUTED_RUNTIME_SIGNAL_003'))"
+      disabled: false
+      conf: {}
+      description: >-
+        Drop events that do not contain the HO-DET-001 runtime signal marker
+        before splunk_hec_wazuh_test output.
+
+runtime_observation_boundary:
+  status: excluded_from_source_control
+  rationale: >-
+    Private/internal controlled-lab observations, counts, markers, and Splunk
+    result details are intentionally excluded from this source repository.
+    Runtime evidence must remain in governed private evidence/log surfaces until
+    separate public-safe review and promotion approval.
+  blocked_wording:
+    - public-safe proof
+    - production-ready reduction
+    - fleet-wide deployment
+    - generalized keep-event throughput beyond this source artifact
+    - Cribl-routed public telemetry
