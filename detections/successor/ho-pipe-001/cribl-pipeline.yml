@@ -1,0 +1,47 @@
+pipeline_id: ho_det_001_sysmon_runtime_signal_003
+artifact_id: HO-PIPE-001
+artifact_class: cribl_pipeline_source
+status: SOURCE_EXISTS
+public_safe: false
+claim_boundary: >-
+  Source-controlled Cribl pipeline configuration only. This artifact does not
+  prove runtime-active deployment, production routing, public-safe proof,
+  fleet-wide deployment, live Splunk firing, or Cribl-routed telemetry.
+
+runtime_source_reference: cribl_local_pipeline_config_redacted
+
+cribl_pipeline:
+  output: default
+  streamtags: []
+  asyncFuncTimeout: 1000
+  description: >-
+    Drop nonmatching HO-DET-001 control/noise events before default HEC output;
+    pass only events containing the runtime signal marker.
+  functions:
+    - id: drop
+      filter: "!(String(CommandLine || '').includes('HO_DET_001_CRIBL_ROUTED_RUNTIME_SIGNAL_003') || String(_raw || '').includes('HO_DET_001_CRIBL_ROUTED_RUNTIME_SIGNAL_003') || String(message || '').includes('HO_DET_001_CRIBL_ROUTED_RUNTIME_SIGNAL_003'))"
+      disabled: false
+      conf: {}
+      description: >-
+        Drop events that do not contain the HO-DET-001 runtime signal marker
+        before splunk_hec_wazuh_test output.
+
+runtime_observation_boundary:
+  status: excluded_from_source_control
+  rationale: >-
+    Runtime path details, private/internal controlled-lab observations, counts,
+    markers, and Splunk result details are intentionally withheld from this
+    source repository. This is a source artifact only. Runtime evidence must
+    remain in governed private evidence/log surfaces until separate public-safe
+    review and promotion approval. Reduction calculations must not be derived
+    from this source artifact; controlled measurements must pair a private
+    send-side record with a scoped downstream observation.
+  blocked_wording:
+    - public-safe proof
+    - production-ready reduction
+    - fleet-wide deployment
+    - production routing
+    - live Splunk firing
+    - reduction calculation from this source artifact alone
+    - generalized keep-event throughput beyond this source artifact
+    - Cribl-routed public telemetry
