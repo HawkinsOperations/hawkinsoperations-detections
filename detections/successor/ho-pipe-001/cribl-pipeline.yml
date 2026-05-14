@@ -8,7 +8,7 @@ claim_boundary: >-
   prove runtime-active deployment, production routing, public-safe proof,
   fleet-wide deployment, live Splunk firing, or Cribl-routed telemetry.
 
-runtime_source_path: /opt/cribl/local/cribl/pipelines/ho_det_001_sysmon_runtime_signal_003/conf.yml
+runtime_source_reference: cribl_local_pipeline_config_redacted
 
 cribl_pipeline:
   output: default
@@ -29,13 +29,16 @@ cribl_pipeline:
 runtime_observation_boundary:
   status: excluded_from_source_control
   rationale: >-
-    Private/internal controlled-lab observations, counts, markers, and Splunk
-    result details are intentionally excluded from this source repository.
-    Runtime evidence must remain in governed private evidence/log surfaces until
-    separate public-safe review and promotion approval.
+    Runtime path details, private/internal controlled-lab observations, counts,
+    markers, and Splunk result details are intentionally withheld from this
+    source repository. This is a source artifact only. Runtime evidence must
+    remain in governed private evidence/log surfaces until separate public-safe
+    review and promotion approval.
   blocked_wording:
     - public-safe proof
     - production-ready reduction
     - fleet-wide deployment
+    - production routing
+    - live Splunk firing
     - generalized keep-event throughput beyond this source artifact
     - Cribl-routed public telemetry
