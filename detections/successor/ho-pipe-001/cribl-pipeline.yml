@@ -33,12 +33,15 @@ runtime_observation_boundary:
     markers, and Splunk result details are intentionally withheld from this
     source repository. This is a source artifact only. Runtime evidence must
     remain in governed private evidence/log surfaces until separate public-safe
-    review and promotion approval.
+    review and promotion approval. Reduction calculations must not be derived
+    from this source artifact; controlled measurements must pair a private
+    send-side record with a scoped downstream observation.
   blocked_wording:
     - public-safe proof
     - production-ready reduction
     - fleet-wide deployment
     - production routing
     - live Splunk firing
+    - reduction calculation from this source artifact alone
     - generalized keep-event throughput beyond this source artifact
     - Cribl-routed public telemetry
