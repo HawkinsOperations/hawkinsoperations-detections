@@ -5,24 +5,56 @@ sigma_source_status: SOURCE_EXISTS
 splunk_source_status: SOURCE_EXISTS
 wazuh_source_status: SOURCE_EXISTS
 event_mapping_status: SOURCE_EXISTS
-validation_status: VALIDATION_PLANNED
+validation_status: CONTROLLED_TEST_VALIDATED
+validation_scope: controlled-test Windows service creation fixtures only
+validation_result: pass
+validation_total_cases: 17
+validation_positive_cases: 7
+validation_negative_cases: 10
+validation_matched_positive_count: 7
+validation_missed_positives: 0
+validation_false_positive_negatives: 0
 tuning_status: SOURCE_TUNING_NOTES_ADDED
-proof_level: SOURCE_EXISTS
+proof_level: PRIVATE_RUNTIME_EVIDENCE_CAPTURED
+trust_class: PRIVATE_RUNTIME_EVIDENCE_CAPTURED
 public_safe_status: NOT_PUBLIC_SAFE
 runtime_active: false
 signal_observed: false
 evidence_linked_public_proof: false
-proof_status: BLOCKED
+proof_status: PRIVATE_RUNTIME_EVIDENCE_CAPTURED
+runtime_evidence_status: PRIVATE_RUNTIME_EVIDENCE_CAPTURED_LOCAL_WINDOWS_ONLY
+runtime_active_status: NOT_PROVEN
+public_or_routed_signal_status: NOT_PROVEN
+wazuh_status: NOT_PROVEN
+splunk_status: NOT_PROVEN
+cribl_status: NOT_PROVEN
 fixtures_in_detections_repo: false
 canonical_readme: detections/successor/ho-det-011/README.md
 canonical_sigma_source: detections/successor/ho-det-011/rule.yml
 canonical_splunk_source: detections/successor/ho-det-011/splunk.spl
 canonical_wazuh_source: detections/successor/ho-det-011/wazuh.xml
 canonical_event_mapping: detections/successor/ho-det-011/event-mapping.yml
-planned_validation_repo_scope: hawkinsoperations-validation
-planned_validation_fixture_set: REQUIRED_SEPARATE_SCOPE
-planned_platform_case_packet_guardrail: REQUIRED_SEPARATE_SCOPE
-planned_proof_record: REQUIRED_SEPARATE_SCOPE
+canonical_validation_cases: hawkinsoperations-validation/validation/successor/ho-det-011/validation-cases.json
+canonical_validation_result: hawkinsoperations-validation/reports/ho-det-011/validation-result.json
+canonical_validation_report: hawkinsoperations-validation/reports/ho-det-011/validation-result.md
+canonical_validation_script: hawkinsoperations-validation/scripts/validate-ho-det-011.py
+canonical_result_parity_verifier: hawkinsoperations-validation/scripts/verify-ho-det-011-result-parity.py
+canonical_claim_boundary_scanner: hawkinsoperations-validation/scripts/scan-ho-det-011-claim-boundaries.py
+canonical_validation_workflow: hawkinsoperations-validation/.github/workflows/ho-det-011-fixture-loop.yml
+canonical_proof_record: hawkinsoperations-proof/proof/records/HO-DET-011.md
+platform_case_packet_guardrail_status: SATISFIED_NON_PROMOTIONAL_BOUNDARY
+canonical_platform_case_packet_schema: hawkinsoperations-platform/contracts/schemas/ho-det-011-case-packet.schema.json
+canonical_platform_case_packet_sample: hawkinsoperations-platform/contracts/examples/ho-det-011-case-packet.sample.json
+canonical_platform_case_packet_verifier: hawkinsoperations-platform/scripts/verify-ho-det-011-case-packet.py
+source_refs:
+  detections_pr: HawkinsOperations/hawkinsoperations-detections#11
+  detections_merge_commit: 3bf93b820eee300630f5784979deec049f1845fa
+  initial_validation_pr: HawkinsOperations/hawkinsoperations-validation#25
+  initial_validation_merge_commit: 4c4bf5a64b90692ea363bc68ab9f606ed1e84698
+  validation_expansion_pr: HawkinsOperations/hawkinsoperations-validation#26
+  validation_expansion_merge_commit: 4df879ea7b3c4dc8d564596accc2f66a87ede6a6
+  platform_guardrail_pr: HawkinsOperations/hawkinsoperations-platform#9
+  platform_guardrail_merge_commit: e3374181148f044b75782689db252e3f12d5c6fc
 telemetry_sources:
   - Windows System Event ID 7045 from Service Control Manager service-install telemetry.
   - Windows Security Event ID 4697 where service-install auditing is enabled.
@@ -47,7 +79,10 @@ tuning_focus:
     - known managed application directories
 allowed_claims:
   - HO-DET-011 source artifacts exist.
-  - HO-DET-011 is prepared for future controlled-test validation.
+  - HO-DET-011 passed controlled-test validation against 17 controlled Windows service creation fixtures.
+  - HO-DET-011 has a platform case-packet guardrail that preserves controlled-test-scope claim boundaries.
+  - HO-DET-011 has sanitized private local Windows runtime evidence captured for one controlled service-creation test.
+  - HO-DET-011 is capped at PRIVATE_RUNTIME_EVIDENCE_CAPTURED for private evidence and NOT_PUBLIC_SAFE for public use.
   - Detection source includes Sigma/SPL/Wazuh/event-mapping/status surfaces.
   - HO-DET-011 includes source-level tuning notes for suspicious service paths and benign review patterns.
 blocked_claims:
@@ -69,9 +104,8 @@ blocked_claims:
   - analyst-approved disposition
   - attack coverage
   - service-creation coverage completeness
-  - validation passed
 next_gate:
-  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
-  controlled_test_validation_harness: REQUIRED_SEPARATE_SCOPE
-  runtime_evidence: BLOCKED
-  public_proof: BLOCKED
+  validation_repo_fixture_set: SATISFIED_FOR_CURRENT_CONTROLLED_TEST_SCOPE
+  controlled_test_validation_harness: SATISFIED_FOR_CURRENT_CONTROLLED_TEST_SCOPE
+  runtime_evidence: EVENT_SPECIFIC_WAZUH_SPLUNK_OR_CRIBL_CORRELATION_REVIEW_REQUIRED
+  public_proof: BLOCKED_PENDING_PUBLIC_EVIDENCE_LINKAGE_REDACTION_REVIEW_STALE_REVIEW_WORDING_REVIEW_AND_RAYLEE_APPROVAL
