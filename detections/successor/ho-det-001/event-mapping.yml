@@ -1,0 +1,176 @@
+detection_id: HO-DET-001
+truth_surface: detection_source
+mapping_status: SOURCE_EXISTS
+validation_status: BACKEND_ADAPTER_PLANNED
+description: >
+  Source-side event mapping for Suspicious PowerShell EncodedCommand Execution.
+  This mapping documents how controlled Sysmon process-creation telemetry can be
+  normalized for backend adapter validation. It does not prove live runtime
+  activity, signal observation, routing, public approval, or production coverage.
+mitre_attack:
+  tactic_ids:
+    - TA0002
+  tactic_names:
+    - Execution
+  technique_ids:
+    - T1059.001
+  technique_names:
+    - PowerShell
+sources:
+  sysmon_event_1:
+    channel: Microsoft-Windows-Sysmon/Operational
+    provider: Sysmon
+    event_id: 1
+    role: process_creation_for_powershell_encoded_command_review
+    expected_fields:
+      event_id:
+        common_names:
+          - EventCode
+          - EventID
+          - event_id
+      process_image:
+        common_names:
+          - Image
+          - process_path
+          - winlog_event_data_Image
+      original_file_name:
+        common_names:
+          - OriginalFileName
+          - winlog_event_data_OriginalFileName
+      command_line:
+        common_names:
+          - CommandLine
+          - ProcessCommandLine
+          - command_line
+          - winlog_event_data_CommandLine
+      parent_image:
+        common_names:
+          - ParentImage
+          - parent_process_path
+          - winlog_event_data_ParentImage
+      parent_command_line:
+        common_names:
+          - ParentCommandLine
+          - parent_command_line
+          - winlog_event_data_ParentCommandLine
+      process_guid:
+        common_names:
+          - ProcessGuid
+          - process_guid
+          - winlog_event_data_ProcessGuid
+      parent_process_guid:
+        common_names:
+          - ParentProcessGuid
+          - parent_process_guid
+          - winlog_event_data_ParentProcessGuid
+      user:
+        common_names:
+          - User
+          - user
+          - winlog_event_data_User
+splunk_fields:
+  canonical_index:
+    default_source_query: windows
+    private_lab_observed: ho_v2_sysmon
+    note: >
+      Backend adapter validation may use private lab index normalization, but
+      source truth remains the detection source and controlled-test fixtures
+      until a separate runtime promotion is approved.
+  sourcetype:
+    candidates:
+      - WinEventLog:Microsoft-Windows-Sysmon/Operational
+      - XmlWinEventLog:Microsoft-Windows-Sysmon/Operational
+  source:
+    candidates:
+      - WinEventLog:Microsoft-Windows-Sysmon/Operational
+      - WinEventLog://Microsoft-Windows-Sysmon/Operational
+  event_id:
+    candidates:
+      - EventCode
+      - EventID
+      - event_id
+      - xml.EventID
+  host:
+    candidates:
+      - host
+      - Computer
+  process_image:
+    candidates:
+      - Image
+      - process_path
+      - winlog_event_data_Image
+      - xml.Data.Image
+  original_file_name:
+    candidates:
+      - OriginalFileName
+      - winlog_event_data_OriginalFileName
+      - xml.Data.OriginalFileName
+  command_line:
+    candidates:
+      - CommandLine
+      - ProcessCommandLine
+      - command_line
+      - winlog_event_data_CommandLine
+      - xml.Data.CommandLine
+  parent_image:
+    candidates:
+      - ParentImage
+      - parent_process_path
+      - winlog_event_data_ParentImage
+      - xml.Data.ParentImage
+  parent_command_line:
+    candidates:
+      - ParentCommandLine
+      - parent_command_line
+      - winlog_event_data_ParentCommandLine
+      - xml.Data.ParentCommandLine
+  process_guid:
+    candidates:
+      - ProcessGuid
+      - process_guid
+      - winlog_event_data_ProcessGuid
+      - xml.Data.ProcessGuid
+  parent_process_guid:
+    candidates:
+      - ParentProcessGuid
+      - parent_process_guid
+      - winlog_event_data_ParentProcessGuid
+      - xml.Data.ParentProcessGuid
+  user:
+    candidates:
+      - User
+      - user
+      - winlog_event_data_User
+      - xml.Data.User
+adapter_fields:
+  required_for_behavior_match:
+    - event_id
+    - process_image_or_original_file_name
+    - command_line
+  required_for_strict_child_isolation:
+    - event_id
+    - process_image
+    - command_line
+    - marker
+  useful_for_noise_review:
+    - parent_image
+    - parent_command_line
+    - process_guid
+    - parent_process_guid
+    - user
+adapter_result_labels:
+  - ADAPTER_CONTRACT_PASS
+  - FIELD_EXTRACTION_REQUIRED
+  - PARENT_LAUNCHER_NOISE_SEPARATED
+  - PUBLIC_SAFE_NOT_APPROVED
+claim_boundary:
+  supports:
+    - backend field-normalization planning and deterministic fixture validation
+    - child versus parent launcher noise separation in controlled sanitized cases
+  does_not_support:
+    - runtime-active status
+    - signal-observed public proof
+    - evidence-linked public proof
+    - public-safe proof
+    - production readiness
+    - autonomous disposition
