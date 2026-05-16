@@ -152,7 +152,10 @@ adapter_fields:
     - event_id
     - process_image
     - command_line
-    - marker
+  strict_child_isolation_note: >
+    Controlled marker matching is performed inside the normalized command_line
+    value. The marker is not modeled as a standalone Sysmon or Splunk field in
+    this detection-source mapping contract.
   useful_for_noise_review:
     - parent_image
     - parent_command_line
