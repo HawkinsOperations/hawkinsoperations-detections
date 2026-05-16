@@ -71,11 +71,12 @@ sources:
 splunk_fields:
   canonical_index:
     default_source_query: windows
-    private_lab_observed: ho_v2_sysmon
+    sanitized_lab_index_alias: ho_v2_sysmon
     note: >
-      Backend adapter validation may use private lab index normalization, but
-      source truth remains the detection source and controlled-test fixtures
-      until a separate runtime promotion is approved.
+      Backend adapter validation may use a sanitized lab index alias for
+      deterministic field-normalization tests, but source truth remains the
+      detection source and controlled-test fixtures until a separate runtime
+      promotion is approved.
   sourcetype:
     candidates:
       - WinEventLog:Microsoft-Windows-Sysmon/Operational
