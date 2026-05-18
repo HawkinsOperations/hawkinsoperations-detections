@@ -1,0 +1,24 @@
+title: HO-PIPE-001 Pipeline Route Integrity Drift Source Record
+detection_id: HO-PIPE-001
+status: experimental/source-only
+proof_level: SOURCE_EXISTS
+trust_class: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+approval_status: NOT_APPROVED
+runtime_active: "NO"
+signal_observed: "NO"
+evidence_linked_public_proof: false
+description: >
+  Source-only successor record for telemetry pipeline route integrity drift
+  conditions. This is a metadata and contract surface only and does not claim
+  runtime observation, public proof, production readiness, or autonomous action.
+allowed_claim:
+  - HO-PIPE-001 source artifacts exist for controlled future validation design.
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - production-ready
+  - fleet-wide
+  - autonomous SOC
