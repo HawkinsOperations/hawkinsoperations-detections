@@ -36,7 +36,7 @@ This repository does not claim: runtime-active, signal-observed, evidence-linked
 
 ## Out of Scope
 
-- Runtime platform deployment state
+- Runtime platform deployment state, which belongs to the internal platform route and is not source proof
 - Host-specific operational logs
 - Internal-only credentials, endpoints, or infrastructure secrets
 
@@ -60,6 +60,6 @@ This repository does not claim: runtime-active, signal-observed, evidence-linked
 ## Related Repositories
 
 - Validation: `hawkinsoperations-validation`
-- Platform: `hawkinsoperations-platform`
+- Platform/runtime contracts: internal platform route, not source proof
 - Proof: `hawkinsoperations-proof`
 - Website: `hawkinsoperations-website`
