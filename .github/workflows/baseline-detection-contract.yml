@@ -1,4 +1,4 @@
-﻿name: baseline-detection-contract
+name: baseline-detection-contract
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  baseline-hero-artifact-contract:
+  baseline-detection-contract:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -17,8 +17,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Validate Baseline Hero Detection Contract
-        # Scope is intentionally narrow right now:
-        # - validates detections/hero/* baseline artifacts and schema shape
-        # - does not yet validate non-hero detections or cross-repo linkage
+      - name: Install verifier dependencies
+        run: python3 -m pip install --disable-pip-version-check pyyaml
+      - name: Validate Detection Contract
         run: python3 ./scripts/verify_detection_contract.py
