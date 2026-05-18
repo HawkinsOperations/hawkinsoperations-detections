@@ -1,0 +1,17 @@
+detection_id: HO-PIPE-001
+truth_surface: detection_source
+mapping_status: SOURCE_EXISTS
+validation_status: VALIDATION_PLANNED
+description: >
+  Source-only event mapping placeholder for pipeline route integrity drift
+  patterns. Future controlled-test validation is required before stronger claims.
+telemetry_sources:
+  - pipeline metadata and routing state from configured transform surfaces
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - production-ready
+  - fleet-wide
+  - autonomous SOC

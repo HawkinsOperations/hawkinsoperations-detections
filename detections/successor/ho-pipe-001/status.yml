@@ -1,0 +1,24 @@
+detection_id: HO-PIPE-001
+truth_surface: detection_source
+source_status: SOURCE_EXISTS
+validation_status: VALIDATION_PLANNED
+proof_level: SOURCE_EXISTS
+trust_class: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+runtime_active: false
+signal_observed: false
+evidence_linked_public_proof: false
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - production-ready
+  - fleet-wide
+  - autonomous SOC
+allowed_claims:
+  - HO-PIPE-001 source artifacts exist and are scoped for future controlled-test validation.
+next_gate:
+  controlled_test_validation: REQUIRED_SEPARATE_SCOPE
+  runtime_signal_correlation: REQUIRED_SEPARATE_SCOPE
+  public_proof: BLOCKED_PENDING_SEPARATE_APPROVAL
