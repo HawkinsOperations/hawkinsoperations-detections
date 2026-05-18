@@ -11,10 +11,9 @@ Repository: `hawkinsoperations-detections`
 ## Out of Scope
 
 - Validation execution harnesses and reports (handled in `hawkinsoperations-validation`)
-- Platform deployment/runtime orchestration (handled in `hawkinsoperations-platform`)
+- Platform deployment/runtime orchestration (internal platform route; not source proof)
 - Public site narrative content (handled in `hawkinsoperations-website`)
 
 ## Promotion Boundary
 
 Detection changes are not considered promotable unless linked to validation and proof records.
-
