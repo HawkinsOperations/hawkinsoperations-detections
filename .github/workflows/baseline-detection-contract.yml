@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  baseline-detection-contract:
+  baseline-hero-artifact-contract:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
