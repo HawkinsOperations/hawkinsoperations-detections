@@ -69,11 +69,10 @@ def truthy(v) -> bool:
 
 
 def sha256_of(path: Path) -> str:
-    h = hashlib.sha256()
-    with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
-    return h.hexdigest()
+    raw = path.read_bytes()
+    # Normalize Windows checkout newlines so manifest hashes are stable in CI/local.
+    normalized = raw.replace(b"\r\n", b"\n")
+    return hashlib.sha256(normalized).hexdigest()
 
 
 def parse_yaml(path: Path) -> dict:
