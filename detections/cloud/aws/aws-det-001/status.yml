@@ -1,0 +1,32 @@
+detection_id: AWS-DET-001
+truth_surface: detection_source
+source_status: SOURCE_EXISTS
+validation_status: CONTROLLED_TEST_VALIDATED
+validation_scope: controlled-test CloudTrail-style fixtures only
+proof_level: CONTROLLED_TEST_VALIDATED
+trust_class: CONTROLLED_TEST_VALIDATED
+public_safe_status: NOT_PUBLIC_SAFE
+runtime_active: false
+signal_observed: false
+evidence_linked_public_proof: false
+aws_live_proof: BLOCKED
+cloudtrail_live_proof: BLOCKED
+blocked_claims:
+  - AWS-live proof
+  - AWS CloudTrail live proof
+  - cloud runtime-active proof
+  - production proof
+  - public-safe runtime proof
+  - signal-observed public proof
+  - production-ready
+  - fleet-wide
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
+allowed_claims:
+  - AWS-DET-001 source artifacts exist.
+  - AWS-DET-001 passed controlled-test validation against fixture CloudTrail-style IAM denial cases.
+next_gate:
+  live_cloudtrail_collection: REQUIRED_SEPARATE_SCOPE
+  runtime_signal_observation: REQUIRED_SEPARATE_SCOPE
+  public_proof: BLOCKED_PENDING_SEPARATE_APPROVAL

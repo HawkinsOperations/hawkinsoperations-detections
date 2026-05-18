@@ -225,8 +225,19 @@ def iter_detection_dirs() -> list[tuple[str, Path]]:
         family_dir = ROOT / "detections" / family
         if not family_dir.exists():
             continue
-        for d in sorted(p for p in family_dir.iterdir() if p.is_dir()):
-            out.append((family, d))
+        if family != "cloud":
+            for d in sorted(p for p in family_dir.iterdir() if p.is_dir()):
+                out.append((family, d))
+            continue
+
+        # Cloud supports provider grouping directories (for example cloud/aws/)
+        # and leaf detection package directories (for example cloud/aws/aws-det-001/).
+        # Validate only leaf package directories that carry package contract anchors.
+        for d in sorted(p for p in family_dir.rglob("*") if p.is_dir()):
+            has_child_dirs = any(c.is_dir() for c in d.iterdir())
+            has_contract_anchor = (d / "rule.yml").exists() or (d / "manifest.sha256").exists()
+            if has_contract_anchor and not has_child_dirs:
+                out.append((family, d))
     return out
 
 
