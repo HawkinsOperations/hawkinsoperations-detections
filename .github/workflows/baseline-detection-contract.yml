@@ -1,9 +1,12 @@
-name: baseline-detection-contract
+﻿name: baseline-detection-contract
 
 on:
   pull_request:
   push:
     branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
   baseline-hero-artifact-contract:
