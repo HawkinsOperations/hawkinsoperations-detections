@@ -1,0 +1,193 @@
+title: ID-DET-004 Impossible Travel or Anomalous Session Context
+detection_id: ID-DET-004
+name: Impossible Travel or Anomalous Session Context
+status: experimental/source-validation-planned
+proof_level: SOURCE_EXISTS
+trust_class: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+approval_status: NOT_APPROVED
+runtime_active: false
+validation_status: VALIDATION_PLANNED
+signal_observed: false
+evidence_linked_public_proof: false
+claim_ceiling: SOURCE_EXISTS
+objective: >
+  Detect controlled identity/session records where successful authentication
+  includes impossible travel, high location velocity, or session context shifts.
+core_argument: A successful session is not proof that the user context is normal.
+author: HawkinsOperations
+date: 2026-05-20
+references:
+  - https://attack.mitre.org/techniques/T1078/
+  - https://attack.mitre.org/techniques/T1539/
+  - https://attack.mitre.org/techniques/T1550/
+tags:
+  - attack.defense_evasion
+  - attack.persistence
+  - attack.t1078
+  - attack.t1539
+  - attack.t1550
+mitre_attack:
+  mapping_status: SOURCE_MAPPING_PLANNED_VALIDATION
+  technique_ids:
+    - T1078
+    - T1539
+    - T1550
+  technique_names:
+    - Valid Accounts
+    - Steal Web Session Cookie
+    - Use Alternate Authentication Material
+logsource:
+  product: identity
+  category: session
+  definition: >
+    Controlled identity-event records with authentication result, country or
+    region context, location velocity, device state, ASN category, user-agent
+    family, session identifier, and approved travel or proxy context.
+data_source:
+  primary:
+    product: identity
+    event_family: identity_travel_session_context
+backend_target: generic_yaml_source_record
+mapped_fields:
+  - event_type
+  - identity
+  - auth_result
+  - source_country
+  - previous_country
+  - source_region
+  - previous_region
+  - impossible_travel
+  - location_velocity_kmh
+  - known_device
+  - source_asn_category
+  - previous_asn_category
+  - asn_category_changed
+  - user_agent_family
+  - previous_user_agent_family
+  - user_agent_changed
+  - session_id
+  - session_reuse
+  - approved_travel
+  - expected_vpn
+  - known_corporate_proxy
+  - maintenance_window
+  - risk_level
+  - detection_expected
+source_assumptions:
+  - A country or region change alone is not sufficient for a match.
+  - Impossible travel and anomalous session context require provider-specific tuning.
+  - Approved travel, known VPN, and corporate proxy contexts require local allowlisting.
+  - Live IdP, SIEM, SOAR, or runtime routing is not part of this source artifact.
+current_scope:
+  phase: SOURCE_EXISTS
+  summary: Source package only; validation fixtures and harness are planned separately.
+not_claimed_here:
+  - controlled-test validation
+  - live IdP proof
+  - live SIEM/NDR observation
+  - production identity coverage
+  - complete identity-attack coverage
+  - impossible-travel completeness
+  - session hijacking completeness
+  - autonomous SOC operation
+  - disposition authority
+  - proof promotion
+  - public-safe status
+logic_summary: >
+  Match successful identity/session activity when impossible travel, high
+  location velocity, new-country plus new-device context, or session reuse after
+  ASN and user-agent shift is present and approved travel, VPN, proxy, or
+  maintenance context is absent.
+detection:
+  selection_successful_identity_activity:
+    event_type:
+      - login
+      - session_activity
+    auth_result: success
+  selection_impossible_travel:
+    impossible_travel: true
+  selection_high_location_velocity:
+    location_velocity_kmh_gte: 800
+  selection_new_country_new_device:
+    known_device: false
+    country_changed: true
+  selection_session_context_shift:
+    session_reuse: true
+    asn_category_changed: true
+    user_agent_changed: true
+  filter_approved_travel:
+    approved_travel: true
+  filter_expected_vpn:
+    expected_vpn: true
+  filter_known_corporate_proxy:
+    known_corporate_proxy: true
+  filter_maintenance_window:
+    maintenance_window: true
+  condition: >
+    selection_successful_identity_activity and
+    (
+      selection_impossible_travel or
+      selection_high_location_velocity or
+      selection_new_country_new_device or
+      selection_session_context_shift
+    ) and not
+    (
+      filter_approved_travel or
+      filter_expected_vpn or
+      filter_known_corporate_proxy or
+      filter_maintenance_window
+    )
+falsepositives:
+  - Known-device VPN or expected egress country change.
+  - Approved business travel.
+  - Corporate proxy or identity-provider egress changes.
+  - Maintenance or test sessions.
+tuning_guidance:
+  suspicious_context_review:
+    - Require successful authentication plus impossible-travel or anomalous context.
+    - Prioritize high velocity, new-country with unknown device, and session reuse after ASN and user-agent shift.
+    - Tune velocity and country-change thresholds per identity-provider semantics.
+  benign_review_patterns:
+    - Approved travel windows.
+    - Expected VPN or corporate proxy egress.
+    - Known-device context with stable user-agent family.
+    - Approved maintenance or test sessions.
+level: medium
+supported_claim: ID-DET-004 source artifacts exist and validation is planned for controlled impossible-travel and anomalous-session fixtures.
+blocked_claims:
+  - controlled-test validated
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - live Okta proof
+  - live Entra proof
+  - live IdP proof
+  - live Splunk proof
+  - Wazuh-routed proof
+  - Cribl-routed proof
+  - Security Onion observed proof
+  - production identity coverage
+  - full identity attack coverage
+  - impossible-travel completeness
+  - session hijacking completeness
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
+  - proof promotion
+  - website/public-surface promotion
+promotion_boundaries:
+  source_supports:
+    - ID-DET-004 source artifacts exist in this repository path.
+    - ID-DET-004 documents planned impossible-travel and anomalous-session logic.
+  source_does_not_support:
+    - controlled-test validation
+    - runtime-active status
+    - signal-observed status
+    - public-safe status
+    - live IdP integration
+    - production identity coverage
+next_validation_gate:
+  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
+  controlled_test_validation_harness: REQUIRED_SEPARATE_SCOPE

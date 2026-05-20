@@ -1,0 +1,175 @@
+title: ID-DET-003 Privileged Role Assignment or Admin Group Change
+detection_id: ID-DET-003
+name: Privileged Role Assignment or Admin Group Change
+status: experimental/source-validation-planned
+proof_level: SOURCE_EXISTS
+trust_class: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+approval_status: NOT_APPROVED
+runtime_active: false
+validation_status: VALIDATION_PLANNED
+signal_observed: false
+evidence_linked_public_proof: false
+claim_ceiling: SOURCE_EXISTS
+objective: >
+  Detect controlled identity administration records where privileged role,
+  admin group, or sensitive entitlement changes occur without approved change
+  context.
+core_argument: A privilege change is not automatically approved governance.
+author: HawkinsOperations
+date: 2026-05-20
+references:
+  - https://attack.mitre.org/techniques/T1098/
+  - https://attack.mitre.org/techniques/T1078/
+tags:
+  - attack.persistence
+  - attack.privilege_escalation
+  - attack.t1098
+  - attack.t1078
+mitre_attack:
+  mapping_status: SOURCE_MAPPING_PLANNED_VALIDATION
+  technique_ids:
+    - T1098
+    - T1078
+  technique_names:
+    - Account Manipulation
+    - Valid Accounts
+logsource:
+  product: identity
+  category: administration
+  definition: >
+    Controlled identity administration records with actor, target identity,
+    role, group, entitlement, action result, approval context, and maintenance
+    context.
+data_source:
+  primary:
+    product: identity
+    event_family: identity_privilege_change
+backend_target: generic_yaml_source_record
+mapped_fields:
+  - event_type
+  - actor_identity
+  - target_identity
+  - action
+  - action_result
+  - role_name
+  - group_name
+  - entitlement_name
+  - privileged_role
+  - admin_group
+  - sensitive_entitlement
+  - actor_privileged
+  - just_in_time_request
+  - approved_change_ticket
+  - breakglass_exercise
+  - maintenance_window
+  - expected_admin_actor
+  - risk_level
+  - detection_expected
+source_assumptions:
+  - Privilege change events must include enough role, group, or entitlement context for review.
+  - Approved just-in-time, change-ticket, break-glass, and maintenance contexts require local tuning.
+  - Live IdP, SIEM, SOAR, or runtime routing is not part of this source artifact.
+current_scope:
+  phase: SOURCE_EXISTS
+  summary: Source package only; validation fixtures and harness are planned separately.
+not_claimed_here:
+  - controlled-test validation
+  - live IdP proof
+  - live SIEM/NDR observation
+  - production identity coverage
+  - complete identity-attack coverage
+  - autonomous SOC operation
+  - disposition authority
+  - proof promotion
+  - public-safe status
+logic_summary: >
+  Match controlled identity administration events when a privileged role, admin
+  group, or sensitive entitlement is assigned or added and approved-change
+  context is absent.
+detection:
+  selection_privilege_change_event:
+    event_type:
+      - role_assignment
+      - admin_group_change
+      - entitlement_grant
+    action_result: success
+  selection_privileged_role:
+    privileged_role: true
+  selection_admin_group:
+    admin_group: true
+  selection_sensitive_entitlement:
+    sensitive_entitlement: true
+  filter_approved_jit:
+    just_in_time_request: true
+  filter_approved_change:
+    approved_change_ticket: true
+  filter_breakglass_exercise:
+    breakglass_exercise: true
+  filter_expected_maintenance:
+    maintenance_window: true
+    expected_admin_actor: true
+  condition: >
+    selection_privilege_change_event and
+    (
+      selection_privileged_role or
+      selection_admin_group or
+      selection_sensitive_entitlement
+    ) and not
+    (
+      filter_approved_jit or
+      filter_approved_change or
+      filter_breakglass_exercise or
+      filter_expected_maintenance
+    )
+falsepositives:
+  - Approved just-in-time privilege assignment.
+  - Documented change-ticket driven role or group update.
+  - Break-glass access exercise.
+  - Expected maintenance by an approved administrative actor.
+tuning_guidance:
+  suspicious_context_review:
+    - Require successful privilege-changing action plus privileged role, group, or entitlement context.
+    - Prioritize changes to persistent admin roles and high-risk target identities.
+    - Tune role and group lists per identity platform and organization.
+  benign_review_patterns:
+    - Approved just-in-time grants.
+    - Ticketed role changes.
+    - Break-glass drills with explicit approval.
+    - Expected maintenance windows by known administrative actors.
+level: high
+supported_claim: ID-DET-003 source artifacts exist and validation is planned for controlled privileged role or admin group change fixtures.
+blocked_claims:
+  - controlled-test validated
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - live Okta proof
+  - live Entra proof
+  - live IdP proof
+  - live Splunk proof
+  - Wazuh-routed proof
+  - Cribl-routed proof
+  - Security Onion observed proof
+  - production identity coverage
+  - full identity attack coverage
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
+  - proof promotion
+  - website/public-surface promotion
+promotion_boundaries:
+  source_supports:
+    - ID-DET-003 source artifacts exist in this repository path.
+    - ID-DET-003 documents planned privileged role and admin group change logic.
+  source_does_not_support:
+    - controlled-test validation
+    - runtime-active status
+    - signal-observed status
+    - public-safe status
+    - live IdP integration
+    - production identity coverage
+next_validation_gate:
+  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
+  controlled_test_validation_harness: REQUIRED_SEPARATE_SCOPE

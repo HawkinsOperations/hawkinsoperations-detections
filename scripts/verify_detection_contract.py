@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Detection contract verification across hero/successor/cloud packages."""
+"""Detection contract verification across hero/successor/identity/cloud packages."""
 import hashlib
 import json
 import re
@@ -11,7 +11,7 @@ import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_PATH = ROOT / ".github" / "contracts" / "detection-artifact.schema.json"
-FAMILIES = ("hero", "successor", "cloud")
+FAMILIES = ("hero", "successor", "identity", "cloud")
 HERO_NAME_RE = re.compile(r"^(\d+)-")
 HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
 
@@ -24,6 +24,13 @@ HERO_REQUIRED = {
 }
 SUCCESSOR_REQUIRED = {
     "rule.yml",
+    "event-mapping.yml",
+    "status.yml",
+}
+IDENTITY_REQUIRED = {
+    "README.md",
+    "rule.yml",
+    "splunk.spl",
     "event-mapping.yml",
     "status.yml",
 }
@@ -142,7 +149,15 @@ def verify_manifest(package_dir: Path, drift_warnings: list[str]) -> None:
 
 
 def verify_package_inventory(package_dir: Path, family: str) -> None:
-    required = HERO_REQUIRED if family == "hero" else SUCCESSOR_REQUIRED if family == "successor" else CLOUD_REQUIRED
+    required = (
+        HERO_REQUIRED
+        if family == "hero"
+        else SUCCESSOR_REQUIRED
+        if family == "successor"
+        else IDENTITY_REQUIRED
+        if family == "identity"
+        else CLOUD_REQUIRED
+    )
     missing = [p for p in sorted(required) if not (package_dir / p).exists()]
     if missing:
         fail(f"missing required files for {package_dir.relative_to(ROOT).as_posix()}: {', '.join(missing)}")
@@ -198,7 +213,7 @@ def verify_package(package_dir: Path, family: str, schema_required: list[str], d
             if key not in contract:
                 fail(f"hero contract missing required key: {key}")
 
-    if family in {"successor", "cloud"}:
+    if family in {"successor", "identity", "cloud"}:
         mapping = parse_yaml(package_dir / "event-mapping.yml") if (package_dir / "event-mapping.yml").exists() else None
         if mapping is not None:
             mapping_id = ensure_detection_id(package_dir / "event-mapping.yml", mapping)

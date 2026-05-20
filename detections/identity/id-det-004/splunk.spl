@@ -1,0 +1,18 @@
+index=identity sourcetype=identity:session auth_result=success (event_type=login OR event_type=session_activity)
+| eval country_changed=if(source_country!=previous_country, true(), false())
+| eval asn_category_changed=if(source_asn_category!=previous_asn_category, true(), asn_category_changed)
+| eval user_agent_changed=if(user_agent_family!=previous_user_agent_family, true(), user_agent_changed)
+| eval location_velocity_kmh=coalesce(location_velocity_kmh, 0)
+| eval id_det_004_match=case(
+    impossible_travel=true(), "impossible_travel_successful_login",
+    location_velocity_kmh>=800, "high_location_velocity",
+    known_device=false() AND country_changed=true(), "new_country_new_device",
+    session_reuse=true() AND asn_category_changed=true() AND user_agent_changed=true(), "session_reuse_context_shift",
+    true(), null()
+  )
+| where isnotnull(id_det_004_match)
+| where approved_travel!=true()
+| where expected_vpn!=true()
+| where known_corporate_proxy!=true()
+| where maintenance_window!=true()
+| table _time identity auth_result source_country previous_country source_region previous_region impossible_travel location_velocity_kmh known_device source_asn_category previous_asn_category user_agent_family previous_user_agent_family session_id session_reuse approved_travel expected_vpn known_corporate_proxy maintenance_window risk_level id_det_004_match

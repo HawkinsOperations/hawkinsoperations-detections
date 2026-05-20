@@ -1,0 +1,89 @@
+detection_id: ID-DET-002
+truth_surface: detection_source
+source_status: SOURCE_EXISTS
+rule_source_status: SOURCE_EXISTS
+splunk_source_status: SOURCE_EXISTS
+event_mapping_status: SOURCE_EXISTS
+validation_status: VALIDATION_PLANNED
+validation_scope: controlled-test MFA fatigue and repeated failure fixtures planned only
+claim_ceiling: SOURCE_EXISTS
+proof_level: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+runtime_active: false
+signal_observed: false
+evidence_linked_public_proof: false
+proof_status: BLOCKED
+current_scope: source package only
+fixtures_in_detections_repo: false
+canonical_readme: detections/identity/id-det-002/README.md
+canonical_rule_source: detections/identity/id-det-002/rule.yml
+canonical_splunk_source: detections/identity/id-det-002/splunk.spl
+canonical_event_mapping: detections/identity/id-det-002/event-mapping.yml
+canonical_validation_cases: hawkinsoperations-validation/validation/identity/id-det-002/validation-cases.json
+canonical_validation_result: hawkinsoperations-validation/reports/id-det-002/validation-result.json
+planned_proof_record: REQUIRED_SEPARATE_SCOPE
+planned_website_surface: REQUIRED_SEPARATE_SCOPE
+not_claimed_here:
+  - controlled-test validation
+  - live IdP proof
+  - live SIEM/NDR observation
+  - production identity coverage
+  - complete identity-attack coverage
+  - autonomous SOC operation
+  - disposition authority
+  - proof promotion
+  - public-safe status
+mitre_attack:
+  technique_ids:
+    - T1621
+    - T1110
+    - T1078
+  technique_names:
+    - Multi-Factor Authentication Request Generation
+    - Brute Force
+    - Valid Accounts
+telemetry_sources:
+  - Controlled identity-event fixtures with MFA challenge, denial, failure, and success-after-failure context.
+tuning_focus:
+  suspicious_fields:
+    - mfa_push_count
+    - mfa_denied_count
+    - mfa_failure_count
+    - successful_after_mfa_failures
+    - privileged_identity
+    - mfa_window_minutes
+  benign_review_patterns:
+    - approved MFA reset
+    - enrollment workflow
+    - break-glass exercise
+    - expected health-check retry behavior
+supported_claims:
+  - ID-DET-002 source artifacts exist.
+  - ID-DET-002 validation is planned for controlled MFA-event fixtures.
+  - ID-DET-002 documents MFA fatigue and repeated failure assumptions.
+blocked_claims:
+  - controlled-test validated
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - live Okta proof
+  - live Entra proof
+  - live IdP proof
+  - live Splunk proof
+  - Wazuh-routed proof
+  - Cribl-routed proof
+  - Security Onion observed proof
+  - production identity coverage
+  - full identity attack coverage
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
+  - proof promotion
+  - website/public-surface promotion
+next_gate:
+  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
+  controlled_test_validation_harness: REQUIRED_SEPARATE_SCOPE
+  runtime_evidence: BLOCKED
+  public_proof: BLOCKED
+  website_public_surface: BLOCKED

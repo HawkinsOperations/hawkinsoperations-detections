@@ -1,0 +1,78 @@
+detection_id: ID-DET-003
+mapping_scope: controlled identity administration fields for privileged role assignment or admin group change
+source_family: identity_privilege_change
+mapping_status: SOURCE_EXISTS
+validation_status: VALIDATION_PLANNED
+fields:
+  event_type:
+    description: Identity administration event family, such as role_assignment or admin_group_change.
+    required_for_logic: true
+  actor_identity:
+    description: Identity that performed the change.
+    required_for_logic: true
+  target_identity:
+    description: Identity receiving the role, group, or entitlement change.
+    required_for_logic: true
+  action:
+    description: Administrative action, such as add, assign, grant, or update.
+    required_for_logic: true
+  action_result:
+    description: Administrative action outcome.
+    required_for_logic: true
+  role_name:
+    description: Role name where the source event is role-based.
+    required_for_logic: false
+  group_name:
+    description: Group name where the source event is group-based.
+    required_for_logic: false
+  entitlement_name:
+    description: Entitlement name where the source event is entitlement-based.
+    required_for_logic: false
+  privileged_role:
+    description: Boolean marker for privileged role context.
+    required_for_logic: false
+  admin_group:
+    description: Boolean marker for admin group context.
+    required_for_logic: false
+  sensitive_entitlement:
+    description: Boolean marker for sensitive entitlement context.
+    required_for_logic: false
+  actor_privileged:
+    description: Boolean marker for privileged actor context.
+    required_for_logic: false
+  just_in_time_request:
+    description: Boolean marker for approved just-in-time access.
+    required_for_logic: false
+  approved_change_ticket:
+    description: Boolean marker for documented change approval.
+    required_for_logic: false
+  breakglass_exercise:
+    description: Boolean marker for approved break-glass exercise.
+    required_for_logic: false
+  maintenance_window:
+    description: Boolean marker for approved maintenance window context.
+    required_for_logic: false
+  expected_admin_actor:
+    description: Boolean marker for expected administrative actor context.
+    required_for_logic: false
+  risk_level:
+    description: Controlled risk label for review.
+    required_for_logic: false
+  detection_expected:
+    description: Fixture expectation used by validation only.
+    required_for_logic: false
+backend_notes:
+  splunk:
+    candidate_index: identity
+    candidate_sourcetype: identity:admin
+    boundary: Source candidate only; no live Splunk proof.
+  generic:
+    boundary: Field mapping is controlled-test scope only and must be adapted before deployment.
+blocked_claims:
+  - controlled-test validated
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - live IdP proof
+  - live Splunk proof
+  - production identity coverage
