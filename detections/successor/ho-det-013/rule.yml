@@ -218,11 +218,12 @@ detection:
       - 'SecurityHealthService'
       - 'EventLog'
       - 'Sense'
-  selection_service_event_state:
+  selection_service_stop_or_state_change:
     ServiceState|contains:
       - 'stopped'
       - 'disabled'
       - 'stop'
+  selection_service_start_type_disable:
     StartType|contains:
       - 'disabled'
   selection_event_log_cleared:
@@ -238,7 +239,10 @@ detection:
         (selection_service_control_process and selection_security_or_telemetry_target and selection_registry_policy_target)
       )
     ) or selection_event_log_cleared or
-    (selection_service_event and selection_service_event_target and selection_service_event_state)
+    (
+      selection_service_event and selection_service_event_target and
+      (selection_service_stop_or_state_change or selection_service_start_type_disable)
+    )
 falsepositives:
   - Approved security-agent upgrade, repair, or maintenance windows.
   - Endpoint management activity that temporarily restarts telemetry agents.

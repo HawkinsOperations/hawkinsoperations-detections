@@ -28,6 +28,7 @@
 | eval ho_command_line=lower(coalesce(CommandLine, ProcessCommandLine, command_line, winlog_event_data_CommandLine, winlog_event_data_ProcessCommandLine, ""))
 | eval ho_service_name=lower(coalesce(ServiceName, service_name, winlog_event_data_ServiceName, param1, ""))
 | eval ho_service_state=lower(coalesce(ServiceState, service_state, winlog_event_data_ServiceState, param2, ""))
+| eval ho_service_start_type=lower(coalesce(StartType, start_type, winlog_event_data_StartType, ""))
 | eval ho_service_or_process_target=case(
     match(ho_command_line." ".ho_service_name." ".ho_process, "(?i)(sysmon64|sysmon)"), "Sysmon",
     match(ho_command_line." ".ho_service_name." ".ho_process, "(?i)(splunkforwarder|splunkd\\.exe)"), "SplunkForwarder",
@@ -55,6 +56,16 @@
         OR like(ho_command_line, "%/f /im%")
       )
       AND isnotnull(ho_service_or_process_target)
+    ),
+    1, 0)
+| eval ho_service_event_tamper=if(
+    (ho_event_id="7036" OR ho_event_id="7040")
+    AND isnotnull(ho_service_or_process_target)
+    AND (
+      like(ho_service_state, "%stopped%")
+      OR like(ho_service_state, "%stop%")
+      OR like(ho_service_state, "%disabled%")
+      OR like(ho_service_start_type, "%disabled%")
     ),
     1, 0)
 | eval ho_event_log_clear=if(
@@ -103,7 +114,7 @@
     ho_defender_tamper=1, "defender_preference_tamper",
     ho_registry_policy_tamper=1, "registry_policy_tamper",
     ho_service_stop_disable=1, "service_stop_or_disable",
-    ho_event_id="7036" OR ho_event_id="7040", "service_state_or_start_type_context",
+    ho_service_event_tamper=1, "service_state_or_start_type_context",
     true(), null()
   )
 | eval ho_attack_technique=case(
@@ -122,8 +133,9 @@
     ho_tamper_category="service_state_or_start_type_context", "service event context only; confirm target service and approved change window",
     true(), "review context before escalation")
 | where ho_service_stop_disable=1
+    OR ho_service_event_tamper=1
     OR ho_event_log_clear=1
     OR ho_defender_tamper=1
     OR ho_registry_policy_tamper=1
-| table _time, ho_host, ho_user, ho_event_id, ho_process, ho_parent_process, ho_command_line, ho_service_name, ho_service_state, ho_service_or_process_target, ho_tamper_category, ho_attack_technique, ho_risk_note, ho_source_boundary
+| table _time, ho_host, ho_user, ho_event_id, ho_process, ho_parent_process, ho_command_line, ho_service_name, ho_service_state, ho_service_start_type, ho_service_or_process_target, ho_tamper_category, ho_attack_technique, ho_risk_note, ho_source_boundary
 | sort -_time
