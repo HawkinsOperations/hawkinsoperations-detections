@@ -1,0 +1,101 @@
+detection_id: ID-DET-001
+truth_surface: detection_source
+source_status: SOURCE_EXISTS
+rule_source_status: SOURCE_EXISTS
+splunk_source_status: SOURCE_EXISTS
+event_mapping_status: SOURCE_EXISTS
+validation_status: CONTROLLED_TEST_VALIDATED
+validation_scope: controlled-test suspicious identity session context fixtures only
+validation_result: pass
+validation_total_cases: 10
+validation_positive_cases: 5
+validation_negative_cases: 5
+validation_matched_positive_count: 5
+validation_missed_positives: 0
+validation_false_positive_negatives: 0
+claim_ceiling: CONTROLLED_TEST_VALIDATED
+proof_level: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+runtime_active: false
+signal_observed: false
+evidence_linked_public_proof: false
+proof_status: BLOCKED
+fixtures_in_detections_repo: false
+canonical_readme: detections/identity/id-det-001/README.md
+canonical_rule_source: detections/identity/id-det-001/rule.yml
+canonical_splunk_source: detections/identity/id-det-001/splunk.spl
+canonical_event_mapping: detections/identity/id-det-001/event-mapping.yml
+canonical_validation_cases: hawkinsoperations-validation/validation/identity/id-det-001/validation-cases.json
+canonical_validation_result: hawkinsoperations-validation/reports/id-det-001/validation-result.json
+canonical_validation_report: hawkinsoperations-validation/reports/id-det-001/validation-result.md
+canonical_validation_script: hawkinsoperations-validation/scripts/validate-id-det-001.py
+canonical_result_parity_verifier: hawkinsoperations-validation/scripts/verify-id-det-001-result-parity.py
+canonical_claim_boundary_scanner: hawkinsoperations-validation/scripts/scan-id-det-001-claim-boundaries.py
+canonical_validation_workflow: hawkinsoperations-validation/.github/workflows/id-det-001-fixture-loop.yml
+planned_proof_record: REQUIRED_SEPARATE_SCOPE
+planned_website_surface: REQUIRED_SEPARATE_SCOPE
+mitre_attack:
+  technique_ids:
+    - T1078
+    - T1539
+    - T1550
+  technique_names:
+    - Valid Accounts
+    - Steal Web Session Cookie
+    - Use Alternate Authentication Material
+telemetry_sources:
+  - Controlled identity-event fixtures with successful login/session context.
+  - Controlled session reuse, device, ASN category, country, user-agent, identity-type, tool-scope, and privileged-action context.
+tuning_focus:
+  suspicious_fields:
+    - impossible_travel
+    - known_device
+    - source_asn_category
+    - previous_asn_category
+    - identity_type
+    - expected_automation
+    - approved_tool_scope
+    - session_reuse
+    - user_agent_family
+    - previous_user_agent_family
+    - privileged_action
+    - maintenance_window
+  benign_review_patterns:
+    - known-device VPN usage with expected ASN category
+    - expected service-account automation
+    - approved AI or agent tool scope
+    - privileged action during approved maintenance window
+supported_claims:
+  - ID-DET-001 source artifacts exist.
+  - ID-DET-001 passed controlled-test validation against 10 controlled identity-event fixtures.
+  - ID-DET-001 documents identity/session context assumptions and false-positive review guidance.
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - live Okta proof
+  - live Entra proof
+  - live IdP proof
+  - live Splunk proof
+  - Wazuh-routed proof
+  - Cribl-routed proof
+  - Security Onion observed proof
+  - production identity coverage
+  - machine identity production governance
+  - AI agent production governance
+  - full identity attack coverage
+  - impossible-travel completeness
+  - session hijacking completeness
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
+  - proof promotion
+  - website/public-surface promotion
+next_gate:
+  validation_repo_fixture_set: SATISFIED_FOR_CURRENT_CONTROLLED_TEST_SCOPE
+  controlled_test_validation_harness: SATISFIED_FOR_CURRENT_CONTROLLED_TEST_SCOPE
+  platform_status_visibility: REQUIRED_SEPARATE_SCOPE
+  runtime_evidence: BLOCKED
+  public_proof: BLOCKED
+  website_public_surface: BLOCKED

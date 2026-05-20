@@ -1,0 +1,187 @@
+title: ID-DET-001 Suspicious Identity Session Context
+detection_id: ID-DET-001
+name: Suspicious Identity Session Context
+status: experimental/source-with-controlled-test-validation
+proof_level: SOURCE_EXISTS
+trust_class: CONTROLLED_TEST_VALIDATED
+public_safe_status: NOT_PUBLIC_SAFE
+approval_status: NOT_APPROVED
+runtime_active: false
+validation_status: CONTROLLED_TEST_VALIDATED
+signal_observed: false
+evidence_linked: false
+claim_ceiling: CONTROLLED_TEST_VALIDATED
+objective: >
+  Detect successful identity/session activity where the authentication result is
+  allowed but the surrounding session context indicates possible identity abuse.
+core_argument: A successful login is not proof of a legitimate user.
+author: HawkinsOperations
+date: 2026-05-20
+references:
+  - https://attack.mitre.org/techniques/T1078/
+  - https://attack.mitre.org/techniques/T1539/
+  - https://attack.mitre.org/techniques/T1550/
+tags:
+  - attack.defense_evasion
+  - attack.persistence
+  - attack.t1078
+  - attack.t1539
+  - attack.t1550
+mitre_attack:
+  mapping_status: CONTROLLED_FIXTURE_SUPPORTED
+  technique_ids:
+    - T1078
+    - T1539
+    - T1550
+  technique_names:
+    - Valid Accounts
+    - Steal Web Session Cookie
+    - Use Alternate Authentication Material
+logsource:
+  product: identity
+  category: session
+  definition: >
+    Controlled identity-event records with authentication result, identity type,
+    device, ASN, country, session, tool-scope, and privileged-action context.
+data_source:
+  primary:
+    product: identity
+    event_family: identity_session_context
+backend_target: generic_yaml_source_record
+mapped_fields:
+  - event_type
+  - identity
+  - identity_type
+  - auth_result
+  - mfa_result
+  - source_country
+  - previous_country
+  - impossible_travel
+  - source_asn_category
+  - previous_asn_category
+  - device_id
+  - known_device
+  - user_agent_family
+  - previous_user_agent_family
+  - session_id
+  - session_reuse
+  - action_after_login
+  - privileged_action
+  - maintenance_window
+  - expected_automation
+  - approved_tool_scope
+  - risk_level
+  - detection_expected
+source_assumptions:
+  - Successful authentication alone is not sufficient for a match.
+  - Context combinations are required to distinguish suspicious identity activity from expected access.
+  - Device, ASN, user-agent, session, and automation context may vary by identity platform and collector.
+  - Live IdP, SIEM, SOAR, or runtime routing is not part of this source artifact.
+logic_summary: >
+  Match successful identity/session events only when suspicious context
+  combinations are present, such as impossible travel, new device with ASN
+  category shift, service-account interactive use, out-of-scope AI or agent
+  privileged action, or session reuse after user-agent and ASN category shift.
+detection:
+  selection_successful_identity_activity:
+    event_type:
+      - login
+      - session_activity
+    auth_result: success
+  selection_impossible_travel:
+    impossible_travel: true
+  selection_new_device_new_asn:
+    known_device: false
+    source_asn_changed: true
+  selection_service_account_interactive:
+    identity_type: service_account
+    action_after_login: interactive_console
+    expected_automation: false
+  selection_ai_agent_out_of_scope_privileged_action:
+    identity_type: ai_agent
+    privileged_action: true
+    approved_tool_scope: false
+  selection_session_reuse_context_shift:
+    session_reuse: true
+    user_agent_changed: true
+    asn_category_changed: true
+  filter_expected_vpn_known_device:
+    known_device: true
+    source_asn_category: expected_vpn
+  filter_expected_automation:
+    expected_automation: true
+  filter_approved_tool_scope:
+    approved_tool_scope: true
+  filter_maintenance_window:
+    maintenance_window: true
+  condition: >
+    selection_successful_identity_activity and
+    (
+      selection_impossible_travel or
+      selection_new_device_new_asn or
+      selection_service_account_interactive or
+      selection_ai_agent_out_of_scope_privileged_action or
+      selection_session_reuse_context_shift
+    ) and not
+    (
+      filter_expected_vpn_known_device or
+      filter_expected_automation or
+      filter_approved_tool_scope or
+      filter_maintenance_window
+    )
+falsepositives:
+  - Expected VPN country changes on known devices.
+  - Approved automation by service accounts.
+  - Approved agent tool usage inside documented scope.
+  - Privileged administrative activity during approved maintenance windows.
+  - Identity-provider risk scoring or device state drift that requires local tuning.
+tuning_guidance:
+  suspicious_context_review:
+    - Require successful authentication plus suspicious session context.
+    - Prioritize impossible travel, new device plus ASN shift, service-account interactive use, out-of-scope agent privileged actions, and session reuse after context shift.
+  benign_review_patterns:
+    - Known-device VPN usage with expected ASN category.
+    - Expected automation for service accounts.
+    - Approved tool scope for AI or agent identities.
+    - Privileged actions during approved maintenance windows.
+level: medium
+supported_claim: ID-DET-001 passed controlled-test validation against 10 controlled identity-event fixtures for suspicious identity session context.
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - live Okta proof
+  - live Entra proof
+  - live IdP proof
+  - live Splunk proof
+  - Wazuh-routed proof
+  - Cribl-routed proof
+  - Security Onion observed proof
+  - production identity coverage
+  - machine identity production governance
+  - AI agent production governance
+  - full identity attack coverage
+  - impossible-travel completeness
+  - session hijacking completeness
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
+  - proof promotion
+  - website/public-surface promotion
+promotion_boundaries:
+  controlled_test_supports:
+    - ID-DET-001 source artifacts exist in this repository path.
+    - ID-DET-001 passed controlled-test validation against 10 controlled identity-event fixtures.
+  controlled_test_does_not_support:
+    - runtime-active status
+    - signal-observed status
+    - evidence-linked public proof
+    - public-safe status
+    - live IdP integration
+    - live Splunk firing
+    - Wazuh-routed telemetry
+    - production identity coverage
+validation_fixture_boundary:
+  detections_repo_fixtures_found: false
+  validation_repo_fixture_set: SATISFIED_FOR_CURRENT_CONTROLLED_TEST_SCOPE
