@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Detection contract verification across hero/successor/identity/cloud packages."""
 import hashlib
+import importlib.util
 import json
 import re
 import sys
@@ -45,6 +46,21 @@ PROMOTION_BLOCK_FIELDS = (
     "signal_observed",
     "evidence_linked_public_proof",
 )
+
+
+def verify_detection_promotion_matrix() -> None:
+    matrix_verifier_path = ROOT / "scripts" / "verify_detection_promotion_matrix.py"
+    if not matrix_verifier_path.exists():
+        fail(f"missing detection promotion matrix verifier: {matrix_verifier_path.relative_to(ROOT).as_posix()}")
+    spec = importlib.util.spec_from_file_location("verify_detection_promotion_matrix", matrix_verifier_path)
+    if spec is None or spec.loader is None:
+        fail("unable to load detection promotion matrix verifier")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    try:
+        module.verify_repo(ROOT, print_summary=False)
+    except Exception as exc:
+        fail(f"detection promotion matrix verification failed: {exc}")
 
 
 def fail(msg: str) -> None:
@@ -265,6 +281,8 @@ def main() -> int:
     for family, package_dir in targets:
         verify_package(package_dir, family, schema_required, drift_warnings)
         print(f"OK: {family} :: {package_dir.relative_to(ROOT).as_posix()}")
+
+    verify_detection_promotion_matrix()
 
     if drift_warnings:
         print("REPORT-ONLY METADATA DRIFT:")
