@@ -1,0 +1,557 @@
+schema_version: phase2c-detection-promotion-matrix-v1
+owner_repo: hawkinsoperations-detections
+truth_surface: detection_source
+enforcement_status: SOURCE_CONTRACT_ENFORCED
+human_review_required: true
+claim_boundary:
+  repo_truth_is_not_runtime_truth: true
+  source_exists_is_not_validation: true
+  validation_is_not_signal_observation: true
+  website_rendering_is_not_proof: true
+  proof_records_authorize_claim_ceilings: true
+  public_safe_status: NOT_PUBLIC_SAFE
+allowed_status_values:
+  source_status:
+    - SOURCE_EXISTS
+    - VALIDATION_PLANNED
+    - BOUNDARY_CONTRACT_ONLY
+    - EXTERNAL_BOUNDARY_CONTRACT
+  public_safe_status:
+    - NOT_PUBLIC_SAFE
+  runtime_active:
+    - false
+  signal_observed:
+    - false
+entries:
+  - detection_id: HOD-001
+    package_path: detections/hero/001-powershell-encoded-command
+    detection_family: hero
+    required_files:
+      - rule.yml
+      - attack-mapping.json
+      - manifest.sha256
+      - tests/positive-event-sysmon-1.json
+      - tests/negative-event-sysmon-1.json
+    source_status: SOURCE_EXISTS
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: CONTROLLED_TEST_VALIDATED_IN_VALIDATION_REPO
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: SOURCE_EXISTS
+    blocked_claims:
+      - runtime-active public proof
+      - signal-observed public proof
+      - public-safe proof
+      - production-ready
+      - fleet-wide
+    next_gate: preserve hero baseline while successor HO-DET-001 remains the current reviewed source package
+    notes: Legacy hero contract remains source-controlled for baseline continuity; validation truth is external to this repo.
+
+  - detection_id: HO-DET-001
+    package_path: detections/successor/ho-det-001
+    detection_family: successor
+    required_files:
+      - rule.yml
+      - event-mapping.yml
+      - status.yml
+      - splunk.spl
+    source_status: SOURCE_EXISTS
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: CONTROLLED_TEST_VALIDATED_IN_VALIDATION_REPO
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: SOURCE_EXISTS
+    blocked_claims:
+      - runtime-active public proof
+      - signal-observed public proof
+      - public-safe proof
+      - live Splunk proof
+      - live Wazuh proof
+      - live Cribl proof
+      - production-ready
+      - fleet-wide
+    next_gate: proof status index and separately approved runtime or signal evidence review
+    notes: Matrix records source package enforcement only; controlled-test validation belongs to validation and proof ceilings belong to proof.
+
+  - detection_id: HO-DET-002
+    package_path: planned://detections/successor/ho-det-002
+    detection_family: successor
+    required_files: []
+    source_status: VALIDATION_PLANNED
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_PLANNED
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: VALIDATION_PLANNED
+    blocked_claims: &standard_blocked_claims
+      - runtime-active public proof
+      - signal-observed public proof
+      - public-safe proof
+      - production-ready
+      - fleet-wide
+      - autonomous SOC
+      - AI-approved disposition
+      - analyst-approved disposition
+    next_gate: create source package under separate source-authoring approval
+    notes: Planned index row only; no package path is claimed to exist.
+
+  - detection_id: HO-DET-003
+    package_path: planned://detections/successor/ho-det-003
+    detection_family: successor
+    required_files: []
+    source_status: VALIDATION_PLANNED
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_PLANNED
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: VALIDATION_PLANNED
+    blocked_claims: *standard_blocked_claims
+    next_gate: create source package under separate source-authoring approval
+    notes: Planned index row only; no package path is claimed to exist.
+
+  - detection_id: HO-DET-004
+    package_path: planned://detections/successor/ho-det-004
+    detection_family: successor
+    required_files: []
+    source_status: VALIDATION_PLANNED
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_PLANNED
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: VALIDATION_PLANNED
+    blocked_claims: *standard_blocked_claims
+    next_gate: create source package under separate source-authoring approval
+    notes: Planned index row only; no package path is claimed to exist.
+
+  - detection_id: HO-DET-005
+    package_path: planned://detections/successor/ho-det-005
+    detection_family: successor
+    required_files: []
+    source_status: VALIDATION_PLANNED
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_PLANNED
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: VALIDATION_PLANNED
+    blocked_claims: *standard_blocked_claims
+    next_gate: create source package under separate source-authoring approval
+    notes: Planned index row only; no package path is claimed to exist.
+
+  - detection_id: HO-DET-006
+    package_path: planned://detections/successor/ho-det-006
+    detection_family: successor
+    required_files: []
+    source_status: VALIDATION_PLANNED
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_PLANNED
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: VALIDATION_PLANNED
+    blocked_claims: *standard_blocked_claims
+    next_gate: create source package under separate source-authoring approval
+    notes: Planned index row only; no package path is claimed to exist.
+
+  - detection_id: HO-DET-007
+    package_path: planned://detections/successor/ho-det-007
+    detection_family: successor
+    required_files: []
+    source_status: VALIDATION_PLANNED
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_PLANNED
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: VALIDATION_PLANNED
+    blocked_claims: *standard_blocked_claims
+    next_gate: create source package under separate source-authoring approval
+    notes: Planned index row only; no package path is claimed to exist.
+
+  - detection_id: HO-DET-008
+    package_path: planned://detections/successor/ho-det-008
+    detection_family: successor
+    required_files: []
+    source_status: VALIDATION_PLANNED
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_PLANNED
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: VALIDATION_PLANNED
+    blocked_claims: *standard_blocked_claims
+    next_gate: create source package under separate source-authoring approval
+    notes: Planned index row only; no package path is claimed to exist.
+
+  - detection_id: HO-DET-009
+    package_path: planned://detections/successor/ho-det-009
+    detection_family: successor
+    required_files: []
+    source_status: VALIDATION_PLANNED
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_PLANNED
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: VALIDATION_PLANNED
+    blocked_claims: *standard_blocked_claims
+    next_gate: create source package under separate source-authoring approval
+    notes: Planned index row only; no package path is claimed to exist.
+
+  - detection_id: HO-DET-010
+    package_path: planned://detections/successor/ho-det-010
+    detection_family: successor
+    required_files: []
+    source_status: VALIDATION_PLANNED
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_PLANNED
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: VALIDATION_PLANNED
+    blocked_claims: *standard_blocked_claims
+    next_gate: create source package under separate source-authoring approval
+    notes: Planned index row only; no package path is claimed to exist.
+
+  - detection_id: HO-DET-011
+    package_path: detections/successor/ho-det-011
+    detection_family: successor
+    required_files:
+      - README.md
+      - rule.yml
+      - event-mapping.yml
+      - status.yml
+      - splunk.spl
+      - wazuh.xml
+    source_status: SOURCE_EXISTS
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: CONTROLLED_TEST_VALIDATED_IN_VALIDATION_REPO
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: SOURCE_EXISTS
+    blocked_claims:
+      - runtime-active public proof
+      - signal-observed public proof
+      - public-safe proof
+      - live Splunk proof
+      - live Wazuh proof
+      - live Cribl proof
+      - live Security Onion proof
+      - production-ready
+      - fleet-wide
+      - autonomous SOC
+      - AI-approved disposition
+      - analyst-approved disposition
+    next_gate: proof status index and event-specific route review under separate approval
+    notes: Source package remains NOT_PUBLIC_SAFE; private runtime material is not promoted by this source matrix.
+
+  - detection_id: HO-DET-012
+    package_path: detections/successor/ho-det-012
+    detection_family: successor
+    required_files:
+      - README.md
+      - rule.yml
+      - event-mapping.yml
+      - status.yml
+      - splunk.spl
+      - wazuh.xml
+    source_status: SOURCE_EXISTS
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: CONTROLLED_TEST_VALIDATED_IN_VALIDATION_REPO
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: SOURCE_EXISTS
+    blocked_claims:
+      - runtime-active public proof
+      - signal-observed public proof
+      - public-safe proof
+      - live Splunk proof
+      - live Wazuh proof
+      - live Cribl proof
+      - live Security Onion proof
+      - production-ready
+      - fleet-wide
+    next_gate: proof status index before website or public-route parity
+    notes: Controlled-test validation is external validation truth, not source proof.
+
+  - detection_id: HO-DET-013
+    package_path: detections/successor/ho-det-013
+    detection_family: successor
+    required_files:
+      - README.md
+      - rule.yml
+      - event-mapping.yml
+      - status.yml
+      - splunk.spl
+    source_status: SOURCE_EXISTS
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_PLANNED
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: SOURCE_EXISTS
+    blocked_claims:
+      - runtime-active public proof
+      - signal-observed public proof
+      - public-safe proof
+      - live SIEM proof
+      - live Splunk proof
+      - live Wazuh proof
+      - live Security Onion proof
+      - production-ready
+      - fleet-wide
+      - autonomous SOC
+      - AI-approved disposition
+      - analyst-approved disposition
+    next_gate: create controlled-test telemetry tamper validation package under separate validation scope
+    notes: HO-DET-013 landed as source truth only; this matrix does not expand it.
+
+  - detection_id: HO-DET-014
+    package_path: planned://detections/successor/ho-det-014
+    detection_family: successor
+    required_files: []
+    source_status: VALIDATION_PLANNED
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_PLANNED
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: VALIDATION_PLANNED
+    blocked_claims: *standard_blocked_claims
+    next_gate: create source package under separate source-authoring approval
+    notes: Planned index row only; no package path is claimed to exist.
+
+  - detection_id: HO-DET-015
+    package_path: planned://detections/successor/ho-det-015
+    detection_family: successor
+    required_files: []
+    source_status: VALIDATION_PLANNED
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_PLANNED
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: VALIDATION_PLANNED
+    blocked_claims: *standard_blocked_claims
+    next_gate: create source package under separate source-authoring approval
+    notes: Planned index row only; no package path is claimed to exist.
+
+  - detection_id: HO-DET-016
+    package_path: planned://detections/successor/ho-det-016
+    detection_family: successor
+    required_files: []
+    source_status: VALIDATION_PLANNED
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_PLANNED
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: VALIDATION_PLANNED
+    blocked_claims: *standard_blocked_claims
+    next_gate: create source package under separate source-authoring approval
+    notes: Planned index row only; no package path is claimed to exist.
+
+  - detection_id: ID-DET-001
+    package_path: detections/identity/id-det-001
+    detection_family: identity
+    required_files: &identity_required_files
+      - README.md
+      - rule.yml
+      - event-mapping.yml
+      - status.yml
+      - splunk.spl
+    source_status: SOURCE_EXISTS
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: CONTROLLED_TEST_VALIDATED_IN_VALIDATION_REPO
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: SOURCE_EXISTS
+    blocked_claims:
+      - runtime-active public proof
+      - signal-observed public proof
+      - public-safe proof
+      - live IdP proof
+      - live SIEM proof
+      - live Splunk proof
+      - production-ready
+      - fleet-wide
+      - autonomous SOC
+      - AI-approved disposition
+      - analyst-approved disposition
+    next_gate: proof status index and separately approved identity runtime receipt phase
+    notes: Source package records source truth; validation and identity-provider evidence remain external gates.
+
+  - detection_id: ID-DET-002
+    package_path: detections/identity/id-det-002
+    detection_family: identity
+    required_files: *identity_required_files
+    source_status: SOURCE_EXISTS
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: CONTROLLED_TEST_VALIDATED_IN_VALIDATION_REPO
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: SOURCE_EXISTS
+    blocked_claims:
+      - runtime-active public proof
+      - signal-observed public proof
+      - public-safe proof
+      - live IdP proof
+      - live SIEM proof
+      - live Splunk proof
+      - production-ready
+      - fleet-wide
+      - autonomous SOC
+      - AI-approved disposition
+      - analyst-approved disposition
+    next_gate: proof status index before public-route parity
+    notes: Validation registry may know controlled-test status; this source package remains source truth only.
+
+  - detection_id: ID-DET-003
+    package_path: detections/identity/id-det-003
+    detection_family: identity
+    required_files: *identity_required_files
+    source_status: SOURCE_EXISTS
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: CONTROLLED_TEST_VALIDATED_IN_VALIDATION_REPO
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: SOURCE_EXISTS
+    blocked_claims:
+      - runtime-active public proof
+      - signal-observed public proof
+      - public-safe proof
+      - live IdP proof
+      - live SIEM proof
+      - live Splunk proof
+      - production-ready
+      - fleet-wide
+      - autonomous SOC
+      - AI-approved disposition
+      - analyst-approved disposition
+    next_gate: proof status index before public-route parity
+    notes: Validation registry may know controlled-test status; this source package remains source truth only.
+
+  - detection_id: ID-DET-004
+    package_path: detections/identity/id-det-004
+    detection_family: identity
+    required_files: *identity_required_files
+    source_status: SOURCE_EXISTS
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: CONTROLLED_TEST_VALIDATED_IN_VALIDATION_REPO
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: SOURCE_EXISTS
+    blocked_claims:
+      - runtime-active public proof
+      - signal-observed public proof
+      - public-safe proof
+      - live IdP proof
+      - live SIEM proof
+      - live Splunk proof
+      - production-ready
+      - fleet-wide
+      - autonomous SOC
+      - AI-approved disposition
+      - analyst-approved disposition
+    next_gate: proof status index before public-route parity
+    notes: Validation registry may know controlled-test status; this source package remains source truth only.
+
+  - detection_id: AWS-DET-001
+    package_path: detections/cloud/aws/aws-det-001
+    detection_family: cloud
+    required_files:
+      - README.md
+      - rule.yml
+      - status.yml
+      - cloudtrail.jsonpath
+    source_status: SOURCE_EXISTS
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: CONTROLLED_TEST_VALIDATED_IN_VALIDATION_REPO
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: SOURCE_EXISTS
+    blocked_claims:
+      - runtime-active public proof
+      - signal-observed public proof
+      - public-safe proof
+      - live SIEM proof
+      - production-ready
+      - fleet-wide
+    next_gate: live AWS or CloudTrail evidence review only under separate approval
+    notes: Fixture validation is external validation truth; this matrix records source package enforcement only.
+
+  - detection_id: HO-NDR-001
+    package_path: external://hawkinsoperations-validation/validation/security-onion/ho-ndr-001
+    detection_family: ndr
+    required_files: []
+    source_status: EXTERNAL_BOUNDARY_CONTRACT
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_CONTRACT_ENFORCED_IN_VALIDATION_REPO
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: BOUNDARY_CONTRACT_ONLY
+    blocked_claims:
+      - runtime-active public proof
+      - signal-observed public proof
+      - public-safe proof
+      - live Security Onion proof
+      - live Splunk proof
+      - live Cribl proof
+      - production-ready
+      - fleet-wide
+    next_gate: separate approved runtime packet before any NDR observation claim
+    notes: External boundary contract only; no detections repo package is claimed to exist.
+
+  - detection_id: HO-NDR-002
+    package_path: planned://detections/ndr/ho-ndr-002
+    detection_family: ndr
+    required_files: []
+    source_status: VALIDATION_PLANNED
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_PLANNED
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: VALIDATION_PLANNED
+    blocked_claims: *standard_blocked_claims
+    next_gate: create source package under separate source-authoring approval
+    notes: Planned index row only; no package path is claimed to exist.
+
+  - detection_id: HO-PIPE-001
+    package_path: detections/successor/ho-pipe-001
+    detection_family: pipeline
+    required_files:
+      - rule.yml
+      - event-mapping.yml
+      - status.yml
+      - cribl-pipeline.yml
+    source_status: SOURCE_EXISTS
+    validation_expected_owner: hawkinsoperations-validation
+    validation_status_if_known: VALIDATION_PLANNED
+    runtime_active: false
+    signal_observed: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    proof_ceiling: SOURCE_EXISTS
+    blocked_claims:
+      - runtime-active public proof
+      - signal-observed public proof
+      - public-safe proof
+      - live Splunk proof
+      - live Cribl proof
+      - production-ready
+      - fleet-wide
+    next_gate: add contract-shape verifier before any traffic or delivery wording
+    notes: Source-controlled pipeline contract only; no runtime route or keep-event claim is made here.
