@@ -1,4 +1,4 @@
-index=identity sourcetype=identity:session auth_result=success
+index=identity sourcetype=identity:session auth_result=success (event_type=login OR event_type=session_activity)
 | eval source_asn_changed=if(source_asn_category!=previous_asn_category, true(), source_asn_changed)
 | eval asn_category_changed=if(source_asn_category!=previous_asn_category, true(), asn_category_changed)
 | eval user_agent_changed=if(user_agent_family!=previous_user_agent_family, true(), user_agent_changed)
