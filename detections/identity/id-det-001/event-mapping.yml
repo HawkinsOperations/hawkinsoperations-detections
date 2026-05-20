@@ -1,0 +1,89 @@
+detection_id: ID-DET-001
+mapping_scope: controlled identity-event fields for suspicious identity session context
+source_family: identity_session_context
+fields:
+  event_type:
+    description: Identity event family, such as login or session_activity.
+    required_for_logic: true
+  identity:
+    description: Controlled identity label.
+    required_for_logic: true
+  identity_type:
+    description: Identity class, such as human, service_account, ai_agent, or machine_identity.
+    required_for_logic: true
+  auth_result:
+    description: Authentication outcome.
+    required_for_logic: true
+  mfa_result:
+    description: MFA result context where present.
+    required_for_logic: false
+  source_country:
+    description: Current source country label.
+    required_for_logic: false
+  previous_country:
+    description: Previous source country label.
+    required_for_logic: false
+  impossible_travel:
+    description: Boolean marker for impossible travel context.
+    required_for_logic: false
+  source_asn_category:
+    description: Current source network category, such as residential, hosting, expected_vpn, or corporate.
+    required_for_logic: false
+  previous_asn_category:
+    description: Previous source network category.
+    required_for_logic: false
+  source_asn_changed:
+    description: Boolean marker that current and previous ASN categories changed.
+    required_for_logic: false
+  asn_category_changed:
+    description: Boolean marker for session-reuse ASN category shift.
+    required_for_logic: false
+  device_id:
+    description: Controlled device identifier.
+    required_for_logic: false
+  known_device:
+    description: Boolean marker for known-device state.
+    required_for_logic: false
+  user_agent_family:
+    description: Current user-agent family label.
+    required_for_logic: false
+  previous_user_agent_family:
+    description: Previous user-agent family label.
+    required_for_logic: false
+  user_agent_changed:
+    description: Boolean marker for user-agent family shift.
+    required_for_logic: false
+  session_id:
+    description: Controlled session identifier.
+    required_for_logic: false
+  session_reuse:
+    description: Boolean marker for session reuse.
+    required_for_logic: false
+  action_after_login:
+    description: Action that occurred after authentication.
+    required_for_logic: false
+  privileged_action:
+    description: Boolean marker for privileged action.
+    required_for_logic: false
+  maintenance_window:
+    description: Boolean marker for approved maintenance window context.
+    required_for_logic: false
+  expected_automation:
+    description: Boolean marker for approved automation context.
+    required_for_logic: false
+  approved_tool_scope:
+    description: Boolean marker for approved AI, agent, or tool scope.
+    required_for_logic: false
+  risk_level:
+    description: Controlled risk label for review.
+    required_for_logic: false
+  detection_expected:
+    description: Fixture expectation used by validation only.
+    required_for_logic: false
+backend_notes:
+  splunk:
+    candidate_index: identity
+    candidate_sourcetype: identity:session
+    boundary: Source candidate only; no live Splunk proof.
+  generic:
+    boundary: Field mapping is controlled-test scope only and must be adapted before deployment.

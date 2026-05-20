@@ -1,0 +1,18 @@
+index=identity sourcetype=identity:session auth_result=success (event_type=login OR event_type=session_activity)
+| eval source_asn_changed=if(source_asn_category!=previous_asn_category, true(), source_asn_changed)
+| eval asn_category_changed=if(source_asn_category!=previous_asn_category, true(), asn_category_changed)
+| eval user_agent_changed=if(user_agent_family!=previous_user_agent_family, true(), user_agent_changed)
+| eval id_det_001_match=case(
+    impossible_travel=true(), "impossible_travel_successful_login",
+    known_device=false() AND source_asn_changed=true(), "new_device_new_asn_category",
+    identity_type="service_account" AND action_after_login="interactive_console" AND expected_automation=false(), "service_account_interactive_use",
+    identity_type="ai_agent" AND privileged_action=true() AND approved_tool_scope=false(), "ai_agent_privileged_action_outside_scope",
+    session_reuse=true() AND user_agent_changed=true() AND asn_category_changed=true(), "session_reuse_after_context_shift",
+    true(), null()
+  )
+| where isnotnull(id_det_001_match)
+| where NOT (known_device=true() AND source_asn_category="expected_vpn")
+| where expected_automation!=true()
+| where approved_tool_scope!=true()
+| where maintenance_window!=true()
+| table _time identity identity_type auth_result mfa_result source_country previous_country source_asn_category previous_asn_category device_id known_device user_agent_family previous_user_agent_family session_id session_reuse action_after_login privileged_action maintenance_window expected_automation approved_tool_scope id_det_001_match
