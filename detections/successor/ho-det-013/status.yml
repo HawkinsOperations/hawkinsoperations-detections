@@ -1,0 +1,126 @@
+detection_id: HO-DET-013
+truth_surface: detection_source
+source_status: SOURCE_EXISTS
+rule_source_status: SOURCE_EXISTS
+splunk_source_status: SOURCE_EXISTS
+event_mapping_status: SOURCE_EXISTS
+validation_status: VALIDATION_PLANNED
+validation_scope: controlled-test telemetry and security-control tamper fixtures planned only
+claim_ceiling: SOURCE_EXISTS
+proof_level: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+runtime_active: false
+signal_observed: false
+evidence_linked_public_proof: false
+proof_record_pending: true
+public_route_pending: true
+human_review_required: true
+proof_status: BLOCKED
+current_scope: source package only
+fixtures_in_detections_repo: false
+canonical_readme: detections/successor/ho-det-013/README.md
+canonical_rule_source: detections/successor/ho-det-013/rule.yml
+canonical_splunk_source: detections/successor/ho-det-013/splunk.spl
+canonical_event_mapping: detections/successor/ho-det-013/event-mapping.yml
+canonical_validation_cases: hawkinsoperations-validation/validation/successor/ho-det-013/validation-cases.json
+canonical_validation_result: hawkinsoperations-validation/reports/ho-det-013/validation-result.json
+planned_proof_record: REQUIRED_SEPARATE_SCOPE
+planned_website_surface: REQUIRED_SEPARATE_SCOPE
+not_claimed_here:
+  - controlled-test validation
+  - runtime observation
+  - signal observation
+  - live SIEM ingestion
+  - live Splunk proof
+  - live Wazuh proof
+  - live Defender proof
+  - live Security Onion proof
+  - production telemetry coverage
+  - complete telemetry coverage
+  - autonomous SOC operation
+  - disposition authority
+  - proof promotion
+  - public-safe status
+mitre_attack:
+  primary_technique: T1562.001
+  primary_technique_name: Disable or Modify Tools
+  technique_ids:
+    - T1562.001
+    - T1070.001
+    - T1112
+    - T1059.001
+    - T1489
+  technique_names:
+    - Disable or Modify Tools
+    - Clear Windows Event Logs
+    - Modify Registry
+    - PowerShell
+    - Service Stop
+telemetry_sources:
+  - Windows process creation, including Sysmon Event ID 1 where available.
+  - Windows Security Event ID 4688 where process command-line collection supports it.
+  - Windows System service-control events where service state or configuration changes are collected.
+  - Windows Security Event ID 1102 and command-line evidence for event-log clearing where available.
+  - Defender operational context where available.
+  - Wazuh, Splunk, and Sysmon pipeline context as intended telemetry only, not runtime proof.
+tuning_focus:
+  suspicious_fields:
+    - Image
+    - CommandLine
+    - ParentImage
+    - ServiceName
+    - ServiceDisplayName
+    - StartType
+    - EventID
+    - User
+    - host
+  suspicious_indicators:
+    - service stop or disable targeting security and telemetry services
+    - taskkill against security and telemetry processes
+    - Windows event-log clearing
+    - audit policy disable patterns
+    - Defender preference tamper patterns
+    - registry or policy paths that disable security controls
+  benign_review_patterns:
+    - approved security-agent upgrade or repair
+    - endpoint management service restart
+    - approved Defender policy baseline
+    - documented log retention, rotation, or lab reset
+supported_claims:
+  - HO-DET-013 source artifacts exist.
+  - HO-DET-013 validation is planned for controlled telemetry/security-control tamper fixtures.
+  - HO-DET-013 documents source-only tamper detection assumptions and false-positive review guidance.
+blocked_claims:
+  - controlled-test validated
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - public-safe runtime proof
+  - live SIEM ingestion
+  - live Splunk proof
+  - live Wazuh proof
+  - live Security Onion proof
+  - live Defender proof
+  - Splunk-fired
+  - Wazuh-routed
+  - Cribl-routed
+  - Security Onion observed
+  - production-ready
+  - production triage
+  - fleet-wide
+  - complete telemetry coverage
+  - autonomous SOC
+  - AI-approved disposition
+  - AI-decided disposition
+  - analyst-approved disposition
+  - SOCaaS availability
+  - customer-ready product
+  - proof promotion
+  - website/public-surface promotion
+next_gate:
+  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
+  controlled_test_validation_harness: REQUIRED_SEPARATE_SCOPE
+  runtime_evidence: BLOCKED
+  public_proof: BLOCKED
+  website_public_surface: BLOCKED
