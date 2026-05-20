@@ -95,7 +95,6 @@ detection:
     event_type:
       - mfa_challenge
       - login
-    identity_present: true
   selection_push_fatigue_volume:
     mfa_push_count_gte: 5
     mfa_window_minutes_lte: 10
