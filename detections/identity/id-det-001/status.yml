@@ -20,6 +20,7 @@ runtime_active: false
 signal_observed: false
 evidence_linked_public_proof: false
 proof_status: BLOCKED
+current_scope: controlled-test validation only
 fixtures_in_detections_repo: false
 canonical_readme: detections/identity/id-det-001/README.md
 canonical_rule_source: detections/identity/id-det-001/rule.yml
@@ -34,6 +35,33 @@ canonical_claim_boundary_scanner: hawkinsoperations-validation/scripts/scan-id-d
 canonical_validation_workflow: hawkinsoperations-validation/.github/workflows/id-det-001-fixture-loop.yml
 planned_proof_record: REQUIRED_SEPARATE_SCOPE
 planned_website_surface: REQUIRED_SEPARATE_SCOPE
+future_gated_phases:
+  - id: ID-RUNTIME-001
+    name: Proxmox and Windows private runtime identity receipt
+    claim_ceiling: PRIVATE_RUNTIME_METADATA_CAPTURED
+    status: FUTURE_GATE_NOT_CLAIMED_HERE
+  - id: ID-CLOUD-001
+    name: IdP export/log review lane
+    claim_ceiling: CONTROLLED_TEST_VALIDATED_TO_PRIVATE_RUNTIME_METADATA_CAPTURED_IF_SEPARATELY_APPROVED
+    status: FUTURE_GATE_NOT_CLAIMED_HERE
+  - id: ID-AGENT-001
+    name: AI or machine identity tool-scope validation lane
+    claim_ceiling: CONTROLLED_TEST_VALIDATED
+    status: FUTURE_GATE_NOT_CLAIMED_HERE
+  - id: ID-ROUTE-001
+    name: SIEM/NDR route receipt lane
+    claim_ceiling: PRIVATE_RUNTIME_METADATA_CAPTURED_IF_RECEIPT_EXISTS
+    status: FUTURE_GATE_NOT_CLAIMED_HERE
+not_claimed_here:
+  - live IdP proof
+  - live SIEM/NDR observation
+  - production identity coverage
+  - complete identity-attack coverage
+  - autonomous SOC operation
+  - disposition authority
+  - proof promotion
+  - public-safe status
+  - website/public-surface publication
 mitre_attack:
   technique_ids:
     - T1078

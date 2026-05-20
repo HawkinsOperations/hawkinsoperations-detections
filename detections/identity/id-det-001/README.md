@@ -61,6 +61,23 @@ Negative exclusions:
 
 Validation belongs to `hawkinsoperations-validation` and uses controlled identity-event fixtures only. This source package is not live IdP evidence, not routed telemetry, not proof promotion, and not website material.
 
+## Current Scope
+
+This package establishes source and status support for controlled-test validation only. The current validation scope is 10 deterministic validation cases built from controlled identity-event fixtures.
+
+## Future Gated Phases
+
+Future live identity, SIEM/NDR, runtime, and AI or machine identity work requires separate gates:
+
+- `ID-RUNTIME-001`: Proxmox and Windows private runtime identity receipt using approved Windows identity/auth metadata, Wazuh count-only receipt, Splunk count-only receipt, and platform private ledger review. Claim ceiling: `PRIVATE_RUNTIME_METADATA_CAPTURED`. Boundary: not public proof, not production coverage, not public-safe.
+- `ID-CLOUD-001`: IdP export/log review lane for approved Entra-style or Okta-style identity log exports. Claim ceiling starts at `CONTROLLED_TEST_VALIDATED` and can move to `PRIVATE_RUNTIME_METADATA_CAPTURED` only after approved sanitized export review. Boundary: no live IdP proof in this PR and no production tenant claim.
+- `ID-AGENT-001`: AI or machine identity tool-scope validation lane for out-of-scope identity behavior. Claim ceiling: `CONTROLLED_TEST_VALIDATED` initially. Boundary: no autonomous SOC claim and no AI disposition authority.
+- `ID-ROUTE-001`: SIEM/NDR route receipt lane for count-only Wazuh, Splunk, Cribl, and Security Onion route checks. Claim ceiling: `PRIVATE_RUNTIME_METADATA_CAPTURED` only if a receipt exists. Boundary: no live SIEM/NDR public proof in this PR and no full route proof unless separately captured and reviewed.
+
+## Not Claimed Here
+
+This package does not claim live IdP proof, live SIEM/NDR observation, production identity coverage, complete identity-attack coverage, autonomous SOC operation, disposition authority, proof promotion, public-safe status, or website/public-surface publication.
+
 ## Supported Claims
 
 - ID-DET-001 source artifacts exist.
