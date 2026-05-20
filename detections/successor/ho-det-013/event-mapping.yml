@@ -1,0 +1,217 @@
+detection_id: HO-DET-013
+truth_surface: detection_source
+mapping_status: SOURCE_EXISTS
+validation_status: VALIDATION_PLANNED
+description: >
+  Source-only event mapping for defense tool and telemetry tamper attempts.
+  This mapping prepares future controlled-test validation and does not prove
+  runtime activity, signal observation, live SIEM ingestion, routing, public-safe
+  status, or evidence-linked public proof claims.
+telemetry_boundary:
+  sysmon_event_1: Sysmon Event ID 1 can provide process creation and command-line context where available.
+  windows_security_4688: Windows Security Event ID 4688 can provide process creation context when process command-line auditing is enabled and collected.
+  windows_security_1102: Windows Security Event ID 1102 can record Security log clearing where available.
+  windows_system_service_events: Windows System service-control events can provide service state or configuration context where available.
+  defender_operational: Defender operational events may provide policy or tamper context where available.
+  pipeline_context: Wazuh, Splunk, and Sysmon are intended telemetry surfaces only; this mapping does not prove live ingestion or routing.
+sources:
+  sysmon_event_1:
+    channel: Microsoft-Windows-Sysmon/Operational
+    provider: Sysmon
+    event_id: 1
+    role: process_creation_context_for_tamper_tooling
+    expected_fields:
+      process_image:
+        common_names:
+          - Image
+      command_line:
+        common_names:
+          - CommandLine
+      parent_image:
+        common_names:
+          - ParentImage
+      user:
+        common_names:
+          - User
+      process_guid:
+        common_names:
+          - ProcessGuid
+  windows_security_4688:
+    channel: Security
+    event_id: 4688
+    role: process_creation_context_where_auditing_supports_it
+    expected_fields:
+      process_image:
+        common_names:
+          - NewProcessName
+          - ProcessName
+      command_line:
+        common_names:
+          - CommandLine
+          - ProcessCommandLine
+      subject_user:
+        common_names:
+          - SubjectUserName
+          - AccountName
+  windows_security_1102:
+    channel: Security
+    event_id: 1102
+    role: security_event_log_cleared_context
+    expected_fields:
+      subject_user:
+        common_names:
+          - SubjectUserName
+          - AccountName
+      host:
+        common_names:
+          - Computer
+  windows_system_service_control:
+    channel: System
+    event_ids:
+      - 7036
+      - 7040
+    role: service_state_or_start_type_context_where_collected
+    expected_fields:
+      service_name:
+        common_names:
+          - ServiceName
+          - param1
+      service_state:
+        common_names:
+          - ServiceState
+          - param2
+      start_type:
+        common_names:
+          - StartType
+  defender_operational:
+    channel: Microsoft-Windows-Windows Defender/Operational
+    role: defender_policy_or_tamper_context_where_collected
+    expected_fields:
+      action:
+        common_names:
+          - Action
+          - EventData
+      user:
+        common_names:
+          - User
+splunk_fields:
+  event_id:
+    candidates:
+      - EventCode
+      - EventID
+      - event_id
+  host:
+    candidates:
+      - host
+      - Computer
+  user:
+    candidates:
+      - User
+      - user
+      - SubjectUserName
+      - AccountName
+      - winlog_event_data_SubjectUserName
+  process_image:
+    candidates:
+      - Image
+      - NewProcessName
+      - ProcessName
+      - process_path
+      - winlog_event_data_Image
+      - winlog_event_data_NewProcessName
+  command_line:
+    candidates:
+      - CommandLine
+      - ProcessCommandLine
+      - command_line
+      - winlog_event_data_CommandLine
+      - winlog_event_data_ProcessCommandLine
+  parent_process:
+    candidates:
+      - ParentImage
+      - parent_process_path
+      - winlog_event_data_ParentImage
+  service_name:
+    candidates:
+      - ServiceName
+      - service_name
+      - winlog_event_data_ServiceName
+      - param1
+  service_state:
+    candidates:
+      - ServiceState
+      - service_state
+      - winlog_event_data_ServiceState
+      - param2
+normalized_fields:
+  required:
+    - event_id
+    - host
+  optional:
+    - user
+    - process_image
+    - command_line
+    - parent_process
+    - service_name
+    - service_state
+    - start_type
+    - target_service
+    - target_process
+    - tamper_category
+    - attack_technique
+tamper_categories:
+  service_stop_or_disable:
+    description: Service stop, disable, or startup-type tamper targeting security or telemetry services.
+    likely_techniques:
+      - T1562.001
+      - T1489
+  event_log_clear_or_audit_disable:
+    description: Windows event-log clearing or audit policy disable pattern.
+    likely_techniques:
+      - T1070.001
+      - T1562.001
+  defender_preference_tamper:
+    description: Defender preference, exclusion, or policy disable pattern.
+    likely_techniques:
+      - T1562.001
+      - T1112
+      - T1059.001
+  registry_policy_tamper:
+    description: Registry or policy path edit that may impair security controls.
+    likely_techniques:
+      - T1112
+      - T1562.001
+service_and_process_targets:
+  - Sysmon64
+  - Sysmon
+  - SplunkForwarder
+  - WazuhSvc
+  - WinDefend
+  - SecurityHealthService
+  - EventLog
+  - Sense
+  - MsMpEng.exe
+  - splunkd.exe
+  - wazuh-agent.exe
+backend_notes:
+  splunk:
+    candidate_index: windows
+    boundary: Source candidate only; no live Splunk proof, no exact runtime index truth, and no signal-observed claim.
+  wazuh:
+    boundary: Intended telemetry context only; no Wazuh-routed proof or live manager observation claim.
+  generic:
+    boundary: Field mapping is source scope only and must be adapted before deployment or validation.
+validation_fixture_boundary:
+  detections_repo_fixtures_found: false
+  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
+blocked_claims:
+  - controlled-test validated
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - live SIEM ingestion
+  - live Splunk proof
+  - live Wazuh proof
+  - live Defender proof
+  - production coverage

@@ -1,0 +1,141 @@
+(
+  index=windows
+  (
+    (sourcetype="XmlWinEventLog:Microsoft-Windows-Sysmon/Operational" OR sourcetype="WinEventLog:Microsoft-Windows-Sysmon/Operational")
+    (EventCode=1 OR EventID=1)
+  )
+  OR
+  (
+    sourcetype="WinEventLog:Security"
+    (EventCode=4688 OR EventID=4688 OR EventCode=1102 OR EventID=1102)
+  )
+  OR
+  (
+    sourcetype="WinEventLog:System"
+    (EventCode=7036 OR EventID=7036 OR EventCode=7040 OR EventID=7040)
+  )
+  OR
+  (
+    sourcetype="WinEventLog:Microsoft-Windows-Windows Defender/Operational"
+  )
+)
+| eval ho_source_boundary="HO-DET-013 source-only candidate; validation planned; no exact runtime index truth, live firing, runtime, signal, public-safe, routed telemetry, or evidence-linked public proof claim"
+| eval ho_event_id=tostring(coalesce(EventCode, EventID, event_id))
+| eval ho_host=coalesce(host, Computer)
+| eval ho_user=coalesce(User, user, SubjectUserName, AccountName, winlog_event_data_SubjectUserName)
+| eval ho_process=lower(coalesce(Image, NewProcessName, ProcessName, process_path, winlog_event_data_Image, winlog_event_data_NewProcessName, ""))
+| eval ho_parent_process=lower(coalesce(ParentImage, parent_process_path, winlog_event_data_ParentImage, ""))
+| eval ho_command_line=lower(coalesce(CommandLine, ProcessCommandLine, command_line, winlog_event_data_CommandLine, winlog_event_data_ProcessCommandLine, ""))
+| eval ho_service_name=lower(coalesce(ServiceName, service_name, winlog_event_data_ServiceName, param1, ""))
+| eval ho_service_state=lower(coalesce(ServiceState, service_state, winlog_event_data_ServiceState, param2, ""))
+| eval ho_service_start_type=lower(coalesce(StartType, start_type, winlog_event_data_StartType, ""))
+| eval ho_service_or_process_target=case(
+    match(ho_command_line." ".ho_service_name." ".ho_process, "(?i)(sysmon64|sysmon)"), "Sysmon",
+    match(ho_command_line." ".ho_service_name." ".ho_process, "(?i)(splunkforwarder|splunkd\\.exe)"), "SplunkForwarder",
+    match(ho_command_line." ".ho_service_name." ".ho_process, "(?i)(wazuhsvc|wazuh-agent\\.exe)"), "WazuhSvc",
+    match(ho_command_line." ".ho_service_name." ".ho_process, "(?i)(windefend|msmpeng\\.exe)"), "WinDefend",
+    match(ho_command_line." ".ho_service_name." ".ho_process, "(?i)(securityhealthservice)"), "SecurityHealthService",
+    match(ho_command_line." ".ho_service_name." ".ho_process, "(?i)(eventlog)"), "EventLog",
+    match(ho_command_line." ".ho_service_name." ".ho_process, "(?i)(\\bsense\\b)"), "Sense",
+    true(), null()
+  )
+| eval ho_service_stop_disable=if(
+    (
+      match(ho_process, "\\\\(sc|net|powershell|pwsh|taskkill|cmd)\\.exe$")
+      AND (
+        like(ho_command_line, "%sc stop%")
+        OR like(ho_command_line, "%sc.exe stop%")
+        OR like(ho_command_line, "%sc config%")
+        OR like(ho_command_line, "%start= disabled%")
+        OR like(ho_command_line, "%start=disabled%")
+        OR like(ho_command_line, "%net stop%")
+        OR like(ho_command_line, "%stop-service%")
+        OR like(ho_command_line, "%set-service%")
+        OR like(ho_command_line, "%startuptype disabled%")
+        OR like(ho_command_line, "%taskkill%")
+        OR like(ho_command_line, "%/f /im%")
+      )
+      AND isnotnull(ho_service_or_process_target)
+    ),
+    1, 0)
+| eval ho_service_event_tamper=if(
+    (ho_event_id="7036" OR ho_event_id="7040")
+    AND isnotnull(ho_service_or_process_target)
+    AND (
+      like(ho_service_state, "%stopped%")
+      OR like(ho_service_state, "%stop%")
+      OR like(ho_service_state, "%disabled%")
+      OR like(ho_service_start_type, "%disabled%")
+    ),
+    1, 0)
+| eval ho_event_log_clear=if(
+    ho_event_id="1102"
+    OR (
+      match(ho_process, "\\\\(wevtutil|powershell|pwsh)\\.exe$")
+      AND (
+        like(ho_command_line, "%wevtutil cl%")
+        OR like(ho_command_line, "%wevtutil.exe cl%")
+        OR like(ho_command_line, "%clear-eventlog%")
+        OR like(ho_command_line, "%remove-eventlog%")
+        OR like(ho_command_line, "%clear-winevent%")
+        OR like(ho_command_line, "%auditpol%/success:disable%")
+        OR like(ho_command_line, "%auditpol%/failure:disable%")
+      )
+    ),
+    1, 0)
+| eval ho_defender_tamper=if(
+    like(ho_command_line, "%set-mppreference%")
+    AND (
+      like(ho_command_line, "%disablerealtimemonitoring%")
+      OR like(ho_command_line, "%disablebehaviormonitoring%")
+      OR like(ho_command_line, "%disableioavprotection%")
+      OR like(ho_command_line, "%disablescriptscanning%")
+      OR like(ho_command_line, "%disableblockatfirstseen%")
+      OR like(ho_command_line, "%exclusionpath%")
+      OR like(ho_command_line, "%exclusionprocess%")
+    ),
+    1, 0)
+| eval ho_registry_policy_tamper=if(
+    match(ho_process, "\\\\(reg|powershell|pwsh)\\.exe$")
+    AND (
+      like(ho_command_line, "%hklm\\software\\policies\\microsoft\\windows defender%")
+      OR like(ho_command_line, "%hklm\\software\\microsoft\\windows defender%")
+      OR like(ho_command_line, "%disableantispyware%")
+      OR like(ho_command_line, "%disablerealtimemonitoring%")
+      OR like(ho_command_line, "%services\\sysmon64%")
+      OR like(ho_command_line, "%services\\splunkforwarder%")
+      OR like(ho_command_line, "%services\\wazuhsvc%")
+      OR like(ho_command_line, "%services\\windefend%")
+      OR like(ho_command_line, "%services\\eventlog%")
+    ),
+    1, 0)
+| eval ho_tamper_category=case(
+    ho_event_log_clear=1, "event_log_clear_or_audit_disable",
+    ho_defender_tamper=1, "defender_preference_tamper",
+    ho_registry_policy_tamper=1, "registry_policy_tamper",
+    ho_service_stop_disable=1, "service_stop_or_disable",
+    ho_service_event_tamper=1, "service_state_or_start_type_context",
+    true(), null()
+  )
+| eval ho_attack_technique=case(
+    ho_tamper_category="event_log_clear_or_audit_disable", "T1070.001; T1562.001",
+    ho_tamper_category="defender_preference_tamper", "T1562.001; T1059.001",
+    ho_tamper_category="registry_policy_tamper", "T1112; T1562.001",
+    ho_tamper_category="service_stop_or_disable", "T1562.001; T1489",
+    ho_tamper_category="service_state_or_start_type_context", "T1562.001; T1489",
+    true(), null()
+  )
+| eval ho_risk_note=case(
+    ho_tamper_category="event_log_clear_or_audit_disable", "review event-log clearing context, actor, parent process, and approved maintenance records",
+    ho_tamper_category="defender_preference_tamper", "review Defender preference or exclusion change against approved policy tooling",
+    ho_tamper_category="registry_policy_tamper", "review registry or policy path edit for security-control impairment intent",
+    ho_tamper_category="service_stop_or_disable", "review service stop, disable, or process termination against approved maintenance",
+    ho_tamper_category="service_state_or_start_type_context", "service event context only; confirm target service and approved change window",
+    true(), "review context before escalation")
+| where ho_service_stop_disable=1
+    OR ho_service_event_tamper=1
+    OR ho_event_log_clear=1
+    OR ho_defender_tamper=1
+    OR ho_registry_policy_tamper=1
+| table _time, ho_host, ho_user, ho_event_id, ho_process, ho_parent_process, ho_command_line, ho_service_name, ho_service_state, ho_service_start_type, ho_service_or_process_target, ho_tamper_category, ho_attack_technique, ho_risk_note, ho_source_boundary
+| sort -_time

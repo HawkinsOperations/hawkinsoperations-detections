@@ -1,0 +1,308 @@
+title: HO-DET-013 Defense Tool and Telemetry Tamper Attempt
+detection_id: HO-DET-013
+name: Defense Tool and Telemetry Tamper Attempt
+status: experimental/source-validation-planned
+proof_level: SOURCE_EXISTS
+trust_class: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+approval_status: NOT_APPROVED
+runtime_active: false
+validation_status: VALIDATION_PLANNED
+signal_observed: false
+evidence_linked_public_proof: false
+claim_ceiling: SOURCE_EXISTS
+description: >
+  Source-only detection record for suspicious attempts to stop, disable,
+  impair, clear, reconfigure, or blind endpoint telemetry and security controls
+  in the HawkinsOperations Windows lab. This source uses process creation,
+  service-control, event-log clearing, registry or policy edit, and Defender
+  preference tamper patterns where telemetry is available. It does not establish
+  runtime, signal, validation, routing, evidence, production coverage, or
+  public-safe proof claims.
+author: HawkinsOperations
+date: 2026-05-20
+references:
+  - https://attack.mitre.org/techniques/T1562/001/
+  - https://attack.mitre.org/techniques/T1070/001/
+  - https://attack.mitre.org/techniques/T1112/
+  - https://attack.mitre.org/techniques/T1059/001/
+  - https://attack.mitre.org/techniques/T1489/
+tags:
+  - attack.defense_evasion
+  - attack.impact
+  - attack.execution
+  - attack.t1562.001
+  - attack.t1070.001
+  - attack.t1112
+  - attack.t1059.001
+  - attack.t1489
+mitre_attack:
+  mapping_status: SOURCE_MAPPING_PLANNED_VALIDATION
+  tactic_ids:
+    - TA0005
+    - TA0040
+    - TA0002
+  tactic_names:
+    - Defense Evasion
+    - Impact
+    - Execution
+  technique_ids:
+    - T1562.001
+    - T1070.001
+    - T1112
+    - T1059.001
+    - T1489
+  technique_names:
+    - Disable or Modify Tools
+    - Clear Windows Event Logs
+    - Modify Registry
+    - PowerShell
+    - Service Stop
+logsource:
+  product: windows
+  definition: >
+    Intended source telemetry includes Windows process creation, Sysmon Event
+    ID 1 where available, Windows Security and System service-control events
+    where available, Windows event-log clearing telemetry, Defender operational
+    context where available, and Wazuh/Splunk/Sysmon pipeline context as planned
+    telemetry only.
+data_source:
+  primary:
+    product: windows
+    event_family: process_creation
+    event_ids:
+      - 1
+      - 4688
+  related:
+    - product: windows
+      channel: System
+      event_ids:
+        - 7036
+        - 7040
+    - product: windows
+      channel: Security
+      event_ids:
+        - 1102
+        - 4688
+    - product: windows
+      channel: Microsoft-Windows-Windows Defender/Operational
+      event_family: defender_operational_context
+backend_target: generic_yaml_source_record
+source_assumptions:
+  - Matching is intended to be case-insensitive where the backend supports it.
+  - Process creation command line is the primary source for command-pattern logic.
+  - Service-control event fields may identify service name, display name, start type, or state change where collected.
+  - Event-log clear events can appear in Security, System, or PowerShell-related sources depending on collection.
+  - Defender operational context varies by endpoint policy and collection configuration.
+  - Wazuh, Splunk, and Sysmon references describe intended telemetry surfaces only and do not prove live ingestion.
+  - Registry and policy indicators are source strings for detection logic, not instructions to change controls.
+  - Backend-specific routing, deployment, tuning, and validation are not part of this source artifact.
+current_scope:
+  phase: SOURCE_EXISTS
+  summary: Source package only; validation fixtures and reports are pending under separate validation scope.
+not_claimed_here:
+  - controlled-test validation
+  - runtime observation
+  - signal observation
+  - live SIEM ingestion
+  - live Splunk proof
+  - live Wazuh proof
+  - live Defender proof
+  - live Security Onion proof
+  - evidence-linked public proof
+  - public-safe proof
+  - production coverage
+  - complete telemetry coverage
+  - autonomous SOC operation
+  - disposition authority
+logic_summary: >
+  Flag process, service, registry, policy, or event-log activity that appears to
+  stop, disable, impair, clear, reconfigure, or blind endpoint telemetry and
+  security controls. Prioritize activity that targets Sysmon, Splunk Universal
+  Forwarder, Wazuh agent, Defender, Windows Event Log, SecurityHealthService, or
+  Microsoft Defender for Endpoint sensor service names.
+detection:
+  selection_process_creation:
+    EventID:
+      - 1
+      - 4688
+  selection_service_control_process:
+    Image|endswith:
+      - '\sc.exe'
+      - '\net.exe'
+      - '\powershell.exe'
+      - '\pwsh.exe'
+      - '\taskkill.exe'
+      - '\cmd.exe'
+  selection_event_log_process:
+    Image|endswith:
+      - '\wevtutil.exe'
+      - '\powershell.exe'
+      - '\pwsh.exe'
+  selection_registry_policy_process:
+    Image|endswith:
+      - '\reg.exe'
+      - '\powershell.exe'
+      - '\pwsh.exe'
+  selection_service_stop_or_disable_command:
+    CommandLine|contains:
+      - 'sc stop'
+      - 'sc.exe stop'
+      - 'sc config'
+      - 'start= disabled'
+      - 'start=disabled'
+      - 'net stop'
+      - 'Stop-Service'
+      - 'Set-Service'
+      - 'StartupType Disabled'
+      - 'Set-ItemProperty'
+      - 'taskkill'
+      - '/f /im'
+  selection_log_clear_command:
+    CommandLine|contains:
+      - 'wevtutil cl'
+      - 'wevtutil.exe cl'
+      - 'Clear-EventLog'
+      - 'Remove-EventLog'
+      - 'Clear-WinEvent'
+      - 'auditpol'
+      - '/success:disable'
+      - '/failure:disable'
+  selection_defender_tamper_command:
+    CommandLine|contains:
+      - 'Set-MpPreference'
+      - 'DisableRealtimeMonitoring'
+      - 'DisableBehaviorMonitoring'
+      - 'DisableIOAVProtection'
+      - 'DisableScriptScanning'
+      - 'DisableBlockAtFirstSeen'
+      - 'ExclusionPath'
+      - 'ExclusionProcess'
+      - 'TamperProtection'
+  selection_registry_policy_target:
+    CommandLine|contains:
+      - 'HKLM\SOFTWARE\Policies\Microsoft\Windows Defender'
+      - 'HKLM\SOFTWARE\Microsoft\Windows Defender'
+      - 'DisableAntiSpyware'
+      - 'DisableRealtimeMonitoring'
+      - 'Services\Sysmon64'
+      - 'Services\SplunkForwarder'
+      - 'Services\WazuhSvc'
+      - 'Services\WinDefend'
+      - 'Services\EventLog'
+  selection_security_or_telemetry_target:
+    CommandLine|contains:
+      - 'Sysmon64'
+      - 'sysmon64.exe'
+      - 'Sysmon'
+      - 'SplunkForwarder'
+      - 'splunkd.exe'
+      - 'WazuhSvc'
+      - 'wazuh-agent.exe'
+      - 'WinDefend'
+      - 'SecurityHealthService'
+      - 'EventLog'
+      - 'Sense'
+      - 'MsMpEng.exe'
+  selection_service_event:
+    EventID:
+      - 7036
+      - 7040
+  selection_service_event_target:
+    ServiceName|contains:
+      - 'Sysmon64'
+      - 'Sysmon'
+      - 'SplunkForwarder'
+      - 'WazuhSvc'
+      - 'WinDefend'
+      - 'SecurityHealthService'
+      - 'EventLog'
+      - 'Sense'
+  selection_service_stop_or_state_change:
+    ServiceState|contains:
+      - 'stopped'
+      - 'disabled'
+      - 'stop'
+  selection_service_start_type_disable:
+    StartType|contains:
+      - 'disabled'
+  selection_event_log_cleared:
+    EventID:
+      - 1102
+  condition: >
+    (selection_process_creation and
+      (
+        (selection_service_control_process and selection_service_stop_or_disable_command and selection_security_or_telemetry_target) or
+        (selection_event_log_process and selection_log_clear_command) or
+        (selection_defender_tamper_command) or
+        (selection_registry_policy_process and selection_registry_policy_target) or
+        (selection_service_control_process and selection_security_or_telemetry_target and selection_registry_policy_target)
+      )
+    ) or selection_event_log_cleared or
+    (
+      selection_service_event and selection_service_event_target and
+      (selection_service_stop_or_state_change or selection_service_start_type_disable)
+    )
+falsepositives:
+  - Approved security-agent upgrade, repair, or maintenance windows.
+  - Endpoint management activity that temporarily restarts telemetry agents.
+  - Defender policy changes deployed by approved management tooling.
+  - Log retention or lab reset activity with documented approval.
+  - Troubleshooting by an authorized administrator under a change record.
+tuning_guidance:
+  suspicious_context_review:
+    - Prioritize stop, disable, taskkill, registry policy, Defender preference, and event-log clear commands targeting telemetry or security services.
+    - Review user, parent process, remote execution context, change window, and endpoint management origin before escalation.
+    - Treat Windows Event Log clearing as high-interest review context even when endpoint identity and parent process require enrichment.
+    - Treat Defender exclusions and disable-preference strings as review candidates until validated against approved policy tooling.
+  benign_review_patterns:
+    - Approved agent upgrades or controlled lab maintenance.
+    - Endpoint management platforms restarting agents during deployment.
+    - Approved Defender policy baselines.
+    - Documented log retention, rotation, or lab reset activity.
+level: high
+supported_claim: HO-DET-013 source artifacts exist and validation is planned for telemetry/security-control tamper fixtures.
+blocked_claims:
+  - controlled-test validated
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - public-safe runtime proof
+  - live SIEM ingestion
+  - live Splunk proof
+  - live Wazuh proof
+  - live Security Onion proof
+  - live Defender proof
+  - Splunk-fired
+  - Wazuh-routed
+  - Cribl-routed
+  - Security Onion observed
+  - production-ready
+  - production triage
+  - fleet-wide
+  - complete telemetry coverage
+  - autonomous SOC
+  - AI-approved disposition
+  - AI-decided disposition
+  - analyst-approved disposition
+  - SOCaaS availability
+  - customer-ready product
+  - website/public-surface promotion
+promotion_boundaries:
+  source_supports:
+    - HO-DET-013 source artifacts exist in this repository path.
+    - HO-DET-013 documents planned telemetry and security-control tamper source logic.
+    - HO-DET-013 is prepared for future controlled-test validation.
+  source_does_not_support:
+    - controlled-test validation
+    - runtime-active status
+    - signal-observed status
+    - live SIEM ingestion
+    - live Splunk, Wazuh, Defender, or Security Onion proof
+    - evidence-linked public proof
+    - public-safe status
+    - production coverage
+next_validation_gate:
+  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
+  controlled_test_validation_harness: REQUIRED_SEPARATE_SCOPE
