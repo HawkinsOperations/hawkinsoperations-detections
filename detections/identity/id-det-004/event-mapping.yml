@@ -1,0 +1,93 @@
+detection_id: ID-DET-004
+mapping_scope: controlled identity-event fields for impossible travel or anomalous session context
+source_family: identity_travel_session_context
+mapping_status: SOURCE_EXISTS
+validation_status: VALIDATION_PLANNED
+fields:
+  event_type:
+    description: Identity event family, such as login or session_activity.
+    required_for_logic: true
+  identity:
+    description: Controlled identity label.
+    required_for_logic: true
+  auth_result:
+    description: Authentication outcome.
+    required_for_logic: true
+  source_country:
+    description: Current source country label.
+    required_for_logic: false
+  previous_country:
+    description: Previous source country label.
+    required_for_logic: false
+  source_region:
+    description: Current source region label.
+    required_for_logic: false
+  previous_region:
+    description: Previous source region label.
+    required_for_logic: false
+  impossible_travel:
+    description: Boolean marker for impossible travel context.
+    required_for_logic: false
+  location_velocity_kmh:
+    description: Controlled location velocity in kilometers per hour.
+    required_for_logic: false
+  known_device:
+    description: Boolean marker for known-device state.
+    required_for_logic: false
+  source_asn_category:
+    description: Current source network category, such as residential, hosting, expected_vpn, or corporate.
+    required_for_logic: false
+  previous_asn_category:
+    description: Previous source network category.
+    required_for_logic: false
+  asn_category_changed:
+    description: Boolean marker for ASN category shift.
+    required_for_logic: false
+  user_agent_family:
+    description: Current user-agent family label.
+    required_for_logic: false
+  previous_user_agent_family:
+    description: Previous user-agent family label.
+    required_for_logic: false
+  user_agent_changed:
+    description: Boolean marker for user-agent family shift.
+    required_for_logic: false
+  session_id:
+    description: Controlled session identifier.
+    required_for_logic: false
+  session_reuse:
+    description: Boolean marker for session reuse.
+    required_for_logic: false
+  approved_travel:
+    description: Boolean marker for approved travel context.
+    required_for_logic: false
+  expected_vpn:
+    description: Boolean marker for expected VPN egress context.
+    required_for_logic: false
+  known_corporate_proxy:
+    description: Boolean marker for known corporate proxy context.
+    required_for_logic: false
+  maintenance_window:
+    description: Boolean marker for approved maintenance or test context.
+    required_for_logic: false
+  risk_level:
+    description: Controlled risk label for review.
+    required_for_logic: false
+  detection_expected:
+    description: Fixture expectation used by validation only.
+    required_for_logic: false
+backend_notes:
+  splunk:
+    candidate_index: identity
+    candidate_sourcetype: identity:session
+    boundary: Source candidate only; no live Splunk proof.
+  generic:
+    boundary: Field mapping is controlled-test scope only and must be adapted before deployment.
+blocked_claims:
+  - controlled-test validated
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - live IdP proof
+  - live Splunk proof
+  - production identity coverage

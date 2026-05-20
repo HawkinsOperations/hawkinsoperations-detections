@@ -1,0 +1,13 @@
+index=identity sourcetype=identity:admin (event_type=role_assignment OR event_type=admin_group_change OR event_type=entitlement_grant)
+| eval id_det_003_match=case(
+    action_result="success" AND privileged_role=true(), "privileged_role_assignment",
+    action_result="success" AND admin_group=true(), "admin_group_change",
+    action_result="success" AND sensitive_entitlement=true(), "sensitive_entitlement_grant",
+    true(), null()
+  )
+| where isnotnull(id_det_003_match)
+| where just_in_time_request!=true()
+| where approved_change_ticket!=true()
+| where breakglass_exercise!=true()
+| where NOT (maintenance_window=true() AND expected_admin_actor=true())
+| table _time actor_identity target_identity action action_result role_name group_name entitlement_name privileged_role admin_group sensitive_entitlement actor_privileged just_in_time_request approved_change_ticket breakglass_exercise maintenance_window expected_admin_actor risk_level id_det_003_match

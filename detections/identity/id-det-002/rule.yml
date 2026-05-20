@@ -1,0 +1,183 @@
+title: ID-DET-002 Suspicious MFA Fatigue or Repeated MFA Failure Pattern
+detection_id: ID-DET-002
+name: Suspicious MFA Fatigue or Repeated MFA Failure Pattern
+status: experimental/source-validation-planned
+proof_level: SOURCE_EXISTS
+trust_class: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+approval_status: NOT_APPROVED
+runtime_active: false
+validation_status: VALIDATION_PLANNED
+signal_observed: false
+evidence_linked_public_proof: false
+claim_ceiling: SOURCE_EXISTS
+objective: >
+  Detect controlled identity-event records where MFA repetition, denial volume,
+  or success after repeated MFA failures suggests possible MFA fatigue activity.
+core_argument: MFA approval pressure is not proof of legitimate user intent.
+author: HawkinsOperations
+date: 2026-05-20
+references:
+  - https://attack.mitre.org/techniques/T1621/
+  - https://attack.mitre.org/techniques/T1110/
+  - https://attack.mitre.org/techniques/T1078/
+tags:
+  - attack.credential_access
+  - attack.initial_access
+  - attack.t1621
+  - attack.t1110
+  - attack.t1078
+mitre_attack:
+  mapping_status: SOURCE_MAPPING_PLANNED_VALIDATION
+  technique_ids:
+    - T1621
+    - T1110
+    - T1078
+  technique_names:
+    - Multi-Factor Authentication Request Generation
+    - Brute Force
+    - Valid Accounts
+logsource:
+  product: identity
+  category: mfa
+  definition: >
+    Controlled identity-event records with authentication result, MFA challenge
+    result, challenge counts, short-window grouping, identity sensitivity, and
+    approved-test context.
+data_source:
+  primary:
+    product: identity
+    event_family: identity_mfa_context
+backend_target: generic_yaml_source_record
+mapped_fields:
+  - event_type
+  - identity
+  - identity_type
+  - auth_result
+  - mfa_result
+  - mfa_push_count
+  - mfa_denied_count
+  - mfa_failure_count
+  - mfa_window_minutes
+  - successful_after_mfa_failures
+  - privileged_identity
+  - approved_mfa_reset
+  - enrollment_workflow
+  - breakglass_exercise
+  - expected_health_check
+  - risk_level
+  - detection_expected
+source_assumptions:
+  - MFA repetition must be evaluated inside an explicit time window.
+  - A single MFA failure is not sufficient for a match.
+  - Approved enrollment, reset, break-glass, and health-check contexts require local tuning.
+  - Live IdP, SIEM, SOAR, or runtime routing is not part of this source artifact.
+current_scope:
+  phase: SOURCE_EXISTS
+  summary: Source package only; validation fixtures and harness are planned separately.
+not_claimed_here:
+  - controlled-test validation
+  - live IdP proof
+  - live SIEM/NDR observation
+  - production identity coverage
+  - complete identity-attack coverage
+  - autonomous SOC operation
+  - disposition authority
+  - proof promotion
+  - public-safe status
+logic_summary: >
+  Match controlled MFA-event records when repeated push attempts, repeated MFA
+  denials, success after repeated MFA failures, or repeated MFA pressure against
+  a privileged identity exceed planned source thresholds and are not explained
+  by approved maintenance or test context.
+detection:
+  selection_identity_mfa_activity:
+    event_type:
+      - mfa_challenge
+      - login
+    identity_present: true
+  selection_push_fatigue_volume:
+    mfa_push_count_gte: 5
+    mfa_window_minutes_lte: 10
+  selection_repeated_mfa_denial:
+    mfa_denied_count_gte: 3
+    mfa_window_minutes_lte: 10
+  selection_success_after_failures:
+    auth_result: success
+    successful_after_mfa_failures: true
+    mfa_failure_count_gte: 3
+  selection_privileged_identity_pressure:
+    privileged_identity: true
+    mfa_failure_count_gte: 2
+  filter_approved_mfa_reset:
+    approved_mfa_reset: true
+  filter_enrollment_workflow:
+    enrollment_workflow: true
+  filter_breakglass_exercise:
+    breakglass_exercise: true
+  filter_expected_health_check:
+    expected_health_check: true
+  condition: >
+    selection_identity_mfa_activity and
+    (
+      selection_push_fatigue_volume or
+      selection_repeated_mfa_denial or
+      selection_success_after_failures or
+      selection_privileged_identity_pressure
+    ) and not
+    (
+      filter_approved_mfa_reset or
+      filter_enrollment_workflow or
+      filter_breakglass_exercise or
+      filter_expected_health_check
+    )
+falsepositives:
+  - Approved user enrollment or MFA device replacement.
+  - Help-desk MFA reset testing.
+  - Break-glass access exercise with documented approval.
+  - Identity-provider health checks or retry behavior.
+tuning_guidance:
+  suspicious_context_review:
+    - Require short-window repetition or success after repeated MFA failures.
+    - Prioritize privileged identities and high-risk authentication context.
+    - Tune count thresholds per identity-provider event volume and challenge semantics.
+  benign_review_patterns:
+    - Approved MFA reset or enrollment workflow.
+    - Break-glass drills with explicit approval.
+    - Expected health checks or retry events generated by the identity platform.
+level: medium
+supported_claim: ID-DET-002 source artifacts exist and validation is planned for controlled MFA-event fixtures.
+blocked_claims:
+  - controlled-test validated
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - live Okta proof
+  - live Entra proof
+  - live IdP proof
+  - live Splunk proof
+  - Wazuh-routed proof
+  - Cribl-routed proof
+  - Security Onion observed proof
+  - production identity coverage
+  - full identity attack coverage
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
+  - proof promotion
+  - website/public-surface promotion
+promotion_boundaries:
+  source_supports:
+    - ID-DET-002 source artifacts exist in this repository path.
+    - ID-DET-002 documents planned MFA fatigue and repeated failure logic.
+  source_does_not_support:
+    - controlled-test validation
+    - runtime-active status
+    - signal-observed status
+    - public-safe status
+    - live IdP integration
+    - production identity coverage
+next_validation_gate:
+  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
+  controlled_test_validation_harness: REQUIRED_SEPARATE_SCOPE

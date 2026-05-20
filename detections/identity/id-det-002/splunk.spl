@@ -1,0 +1,18 @@
+index=identity sourcetype=identity:mfa (event_type=mfa_challenge OR event_type=login)
+| eval mfa_push_count=coalesce(mfa_push_count, 0)
+| eval mfa_denied_count=coalesce(mfa_denied_count, 0)
+| eval mfa_failure_count=coalesce(mfa_failure_count, 0)
+| eval mfa_window_minutes=coalesce(mfa_window_minutes, 10)
+| eval id_det_002_match=case(
+    mfa_push_count>=5 AND mfa_window_minutes<=10, "mfa_push_fatigue_volume",
+    mfa_denied_count>=3 AND mfa_window_minutes<=10, "repeated_mfa_denial",
+    auth_result="success" AND successful_after_mfa_failures=true() AND mfa_failure_count>=3, "success_after_repeated_mfa_failures",
+    privileged_identity=true() AND mfa_failure_count>=2, "privileged_identity_mfa_pressure",
+    true(), null()
+  )
+| where isnotnull(id_det_002_match)
+| where approved_mfa_reset!=true()
+| where enrollment_workflow!=true()
+| where breakglass_exercise!=true()
+| where expected_health_check!=true()
+| table _time identity identity_type auth_result mfa_result mfa_push_count mfa_denied_count mfa_failure_count mfa_window_minutes successful_after_mfa_failures privileged_identity approved_mfa_reset enrollment_workflow breakglass_exercise expected_health_check risk_level id_det_002_match

@@ -1,0 +1,72 @@
+detection_id: ID-DET-002
+mapping_scope: controlled identity-event fields for MFA fatigue and repeated MFA failure context
+source_family: identity_mfa_context
+mapping_status: SOURCE_EXISTS
+validation_status: VALIDATION_PLANNED
+fields:
+  event_type:
+    description: Identity event family, such as mfa_challenge or login.
+    required_for_logic: true
+  identity:
+    description: Controlled identity label.
+    required_for_logic: true
+  identity_type:
+    description: Identity class, such as human, service_account, or privileged_admin.
+    required_for_logic: false
+  auth_result:
+    description: Authentication outcome.
+    required_for_logic: false
+  mfa_result:
+    description: MFA result, such as denied, failed, approved, or timeout.
+    required_for_logic: true
+  mfa_push_count:
+    description: Count of MFA push challenges in the controlled window.
+    required_for_logic: false
+  mfa_denied_count:
+    description: Count of denied MFA challenges in the controlled window.
+    required_for_logic: false
+  mfa_failure_count:
+    description: Count of failed or denied MFA challenges in the controlled window.
+    required_for_logic: false
+  mfa_window_minutes:
+    description: Controlled aggregation window in minutes.
+    required_for_logic: true
+  successful_after_mfa_failures:
+    description: Boolean marker for success after repeated MFA failures.
+    required_for_logic: false
+  privileged_identity:
+    description: Boolean marker for privileged or sensitive identity context.
+    required_for_logic: false
+  approved_mfa_reset:
+    description: Boolean marker for approved help-desk MFA reset work.
+    required_for_logic: false
+  enrollment_workflow:
+    description: Boolean marker for approved MFA enrollment or device replacement.
+    required_for_logic: false
+  breakglass_exercise:
+    description: Boolean marker for approved break-glass exercise.
+    required_for_logic: false
+  expected_health_check:
+    description: Boolean marker for expected identity-provider health-check retry behavior.
+    required_for_logic: false
+  risk_level:
+    description: Controlled risk label for review.
+    required_for_logic: false
+  detection_expected:
+    description: Fixture expectation used by validation only.
+    required_for_logic: false
+backend_notes:
+  splunk:
+    candidate_index: identity
+    candidate_sourcetype: identity:mfa
+    boundary: Source candidate only; no live Splunk proof.
+  generic:
+    boundary: Field mapping is controlled-test scope only and must be adapted before deployment.
+blocked_claims:
+  - controlled-test validated
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - live IdP proof
+  - live Splunk proof
+  - production identity coverage
