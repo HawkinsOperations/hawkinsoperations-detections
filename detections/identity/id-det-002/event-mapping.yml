@@ -2,7 +2,7 @@ detection_id: ID-DET-002
 mapping_scope: controlled identity-event fields for MFA fatigue and repeated MFA failure context
 source_family: identity_mfa_context
 mapping_status: SOURCE_EXISTS
-validation_status: VALIDATION_PLANNED
+validation_status: CONTROLLED_TEST_VALIDATED
 fields:
   event_type:
     description: Identity event family, such as mfa_challenge or login.
@@ -63,10 +63,15 @@ backend_notes:
   generic:
     boundary: Field mapping is controlled-test scope only and must be adapted before deployment.
 blocked_claims:
-  - controlled-test validated
   - runtime-active
   - signal-observed
   - public-safe
+  - evidence-linked public proof
   - live IdP proof
   - live Splunk proof
+  - Wazuh-routed proof
+  - Cribl-routed proof
+  - Security Onion observed proof
+  - production-ready
+  - fleet-wide
   - production identity coverage
