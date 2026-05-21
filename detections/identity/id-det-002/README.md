@@ -52,13 +52,16 @@ Negative exclusions:
 
 ## Validation Boundary
 
-Validation belongs to `hawkinsoperations-validation` and is planned for controlled identity-event fixtures only. This source package is not live IdP evidence, not routed telemetry, not proof promotion, and not website material.
+ID-DET-002 has source artifacts in this repo and controlled validation in `hawkinsoperations-validation`. The validation report supports `CONTROLLED_TEST_VALIDATED` for 10 controlled identity-event fixtures: 5 positive, 5 negative, 0 missed positives, and 0 false-positive negatives.
+
+This does not prove live IdP activity, runtime activation, signal observation, production identity coverage, public-safe proof, autonomous SOC operation, AI-approved disposition, or analyst-approved disposition.
 
 ## Supported Claims
 
 - ID-DET-002 source artifacts exist.
 - ID-DET-002 documents controlled MFA fatigue and repeated failure assumptions.
-- ID-DET-002 validation is planned, not completed.
+- ID-DET-002 passed controlled validation against 10 controlled identity-event fixtures for suspicious MFA fatigue or repeated MFA failure patterns.
+- Runtime, signal, public-safe, live IdP, production identity coverage, autonomous SOC, AI-approved disposition, and analyst-approved disposition claims remain blocked.
 
 ## Blocked Claims
 
@@ -72,6 +75,11 @@ This source must not be cited as evidence for:
 - live Entra proof
 - live IdP proof
 - live Splunk proof
+- Wazuh-routed proof
+- Cribl-routed proof
+- Security Onion observed proof
+- production-ready
+- fleet-wide
 - production identity coverage
 - complete identity attack coverage
 - autonomous SOC
@@ -80,4 +88,4 @@ This source must not be cited as evidence for:
 
 ## Next Gate
 
-The next gate is controlled-test validation in `hawkinsoperations-validation` with positive and negative controlled MFA-event fixtures and deterministic report parity.
+The validation repo fixture set and deterministic controlled-test harness are satisfied for the current controlled validation scope. The next gates are separate proof-record creation, runtime evidence review, signal evidence review, public-proof review, and any website/public-surface work under separate approval.
