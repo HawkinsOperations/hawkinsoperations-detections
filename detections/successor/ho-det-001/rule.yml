@@ -62,6 +62,35 @@ detection:
 falsepositives:
   - Legitimate administrative tooling, automation, deployment scripts, or endpoint management workflows can use encoded PowerShell commands.
   - Environment-specific tuning and allowlisting are required before any runtime claim.
+socaas_pilot_decomposition:
+  observable_triggered: PowerShell or pwsh process creation with encoded-command style flags or encoded payload indicators.
+  attack_mapping: T1059.001 PowerShell
+  required_data_source: Windows process-creation telemetry with process image and command line; Sysmon Event ID 1 is the current controlled-test target where available.
+  useful_edr_fields:
+    - host
+    - user
+    - process image
+    - command line
+    - parent process
+    - original file name
+  evasion_notes:
+    - The detection is stronger when image or original-file-name process identity is present with command-line detail.
+    - The detection is weaker if command-line capture is absent, truncated, or unavailable from the endpoint source.
+    - Encoded-command indicators alone do not prove malicious behavior; reviewer context and tuning remain required.
+  expected_false_positive_context:
+    - administrative automation
+    - endpoint management scripts
+    - deployment tooling
+    - controlled lab fixtures
+  allowed_exclusion_context:
+    - documented administrative tooling
+    - known maintenance scripts
+    - approved deployment workflows
+  blind_spots:
+    - no command-line telemetry
+    - missing process identity
+    - non-PowerShell script interpreters outside this detection scope
+    - runtime deployment, signal observation, and publication approval are outside this source artifact
 level: medium
 allowed_claim: HO-DET-001 passed controlled-test validation against controlled positive and negative process-creation fixtures.
 blocked_claims:
