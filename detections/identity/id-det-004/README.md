@@ -45,13 +45,17 @@ Negative exclusions:
 
 ## Validation Boundary
 
-Validation belongs to `hawkinsoperations-validation` and is planned for controlled identity-event fixtures only. This source package is not live IdP evidence, not routed telemetry, not proof promotion, and not website material.
+ID-DET-004 has source artifacts in this repo and controlled validation in `hawkinsoperations-validation`. The validation report supports `CONTROLLED_TEST_VALIDATED` for 10 controlled identity-event fixtures: 5 positive, 5 negative, 0 missed positives, and 0 false-positive negatives.
+
+This does not prove live IdP activity, runtime activation, signal observation, production identity coverage, public-safe proof, impossible-travel completeness, session-hijacking completeness, autonomous SOC operation, AI-approved disposition, or analyst-approved disposition.
 
 ## Supported Claims
 
 - ID-DET-004 source artifacts exist.
 - ID-DET-004 documents controlled impossible-travel and anomalous session assumptions.
-- ID-DET-004 validation is planned, not completed.
+- ID-DET-004 passed controlled validation against 10 controlled identity-event fixtures for impossible travel or anomalous session context.
+- Runtime, signal, public-safe, live IdP, production identity coverage, autonomous SOC, AI-approved disposition, and analyst-approved disposition claims remain blocked.
+- Impossible-travel completeness, session-hijacking completeness, and complete identity coverage remain blocked unless separately proven.
 
 ## Blocked Claims
 
@@ -59,4 +63,4 @@ This source must not be cited as evidence for runtime-active, signal-observed, p
 
 ## Next Gate
 
-The next gate is controlled-test validation in `hawkinsoperations-validation` with positive and negative impossible-travel and anomalous-session fixtures and deterministic report parity.
+The next gates are proof record creation, runtime evidence, signal evidence, and public-proof review under separate approval. Controlled validation is satisfied for the current fixture scope.
