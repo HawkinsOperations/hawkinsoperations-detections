@@ -13,6 +13,34 @@ canonical_splunk_source: detections/successor/ho-det-001/splunk.spl
 canonical_validation_result: hawkinsoperations-validation/reports/ho-det-001/validation-result.json
 canonical_case_packet: hawkinsoperations-validation/validation/successor/ho-det-001/case-packet.json
 canonical_proof_record: hawkinsoperations-proof/proof/records/HO-DET-001.md
+socaas_pilot_receipt_flow:
+  pilot_status: EXISTING_FLOW_CANDIDATE
+  purpose: Map the controlled-test HO-DET-001 loop to a SOCaaS-style reviewer receipt while preserving the existing blocked-claim boundary.
+  edr_alert_shape:
+    present_fields:
+      - host or Computer
+      - User
+      - Image
+      - OriginalFileName
+      - CommandLine
+      - ParentImage
+      - detection_id
+      - mitre_attack technique T1059.001
+    partial_fields:
+      - alert_id
+      - source_vendor
+      - sensor_type
+      - raw_alert_name
+      - rule_version
+      - timestamp
+    missing_or_not_applicable:
+      - network_fields
+  robustness_decomposition_status: PARTIAL
+  deterministic_validation_status: PRESENT
+  receipt_record_status: PARTIAL
+  triage_support_status: PRESENT_CONTROLLED_TEST_SUPPORT_ONLY
+  customer_safe_summary_status: PARTIAL
+  required_next_gate: Add reviewer-facing receipt wording and robustness/decomposition fields without changing the CONTROLLED_TEST_VALIDATED ceiling.
 validation_enforcement_pr: HawkinsOperations/hawkinsoperations-validation#10
 validation_enforcement_merge_commit: 8b48500d2ebbaacd93ac88e77a31dccf1d3b4e25
 
