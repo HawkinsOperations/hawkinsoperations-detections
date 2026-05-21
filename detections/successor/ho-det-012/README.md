@@ -2,9 +2,9 @@
 
 ## Purpose
 
-HO-DET-012 defines source artifacts for suspicious Windows scheduled task creation, registration, or update behavior. This folder prepares the detection source for future controlled-test validation across Sigma-style YAML, Splunk SPL, Wazuh XML, event mapping, and status metadata.
+HO-DET-012 defines source artifacts for suspicious Windows scheduled task creation, registration, or update behavior. This folder preserves the detection source and controlled-test validation boundary across Sigma-style YAML, Splunk SPL, Wazuh XML, event mapping, and status metadata.
 
-This source does not prove runtime activity, signal observation, validation passage, public-safe proof, routed telemetry, or production readiness.
+This source does not prove runtime activity, signal observation, public proof, public-safe proof, routed telemetry, or production readiness.
 
 ## Scope
 
@@ -46,7 +46,7 @@ Suspicious task names are weak review context only. Updater-like names, one-char
 - `splunk.spl` provides a Splunk source query candidate.
 - `wazuh.xml` provides a Wazuh XML source candidate.
 - `event-mapping.yml` maps expected fields across Windows Security 4698/4702, TaskScheduler Operational 106/140, Sysmon Event ID 1, Splunk, and Wazuh.
-- `status.yml` records the source-only truth boundary.
+- `status.yml` records the source, validation, and proof-boundary truth split.
 
 ## Telemetry Requirements
 
@@ -83,29 +83,30 @@ Tuning should not suppress user-writable task actions, interpreter-backed task a
 
 ## Validation Boundary
 
-Validation is planned, not complete. Future validation should use controlled positive and negative fixtures that distinguish benign scheduled-task creation from suspicious action, path, or tooling patterns.
+HO-DET-012 has source artifacts in this repo and controlled validation in `hawkinsoperations-validation`. The validation report supports `CONTROLLED_TEST_VALIDATED` for 8 controlled scheduled-task fixtures: 4 positive, 4 negative, 0 missed positives, and 0 false-positive negatives.
 
 No HO-DET-012 fixtures were created in this detections repository. Fixture expansion belongs in a separately scoped `hawkinsoperations-validation` lane unless fixture paths are later added to this repository.
 
-Suggested future fixture coverage:
+Current controlled fixture coverage:
 
 - Positive Windows Security 4698 task creation using a suspicious action under AppData.
 - Positive TaskScheduler Operational 106 registration using an interpreter-backed action.
 - Positive Sysmon Event ID 1 process context using `schtasks.exe /create` with a suspicious `/tr` target.
 - Positive PowerShell process context using `Register-ScheduledTask` and `New-ScheduledTaskAction`.
 - Negative benign vendor updater task under Program Files.
-- Negative endpoint management, backup, monitoring, security, or remote-support task.
+- Negative endpoint management task under a managed application directory.
 - Negative approved maintenance-window task creation.
 - Negative suspicious-looking task name without suspicious action, path, or tooling evidence.
 
 ## Supported Claims
 
-This package supports only these source-quality claims:
+This package supports only these controlled source and validation claims:
 
 - HO-DET-012 source artifacts exist in this repository.
-- HO-DET-012 is prepared for future controlled-test validation.
+- HO-DET-012 passed controlled-test validation against scheduled-task creation and update fixtures.
 - Detection source includes Sigma/SPL/Wazuh/event-mapping/status surfaces.
 - HO-DET-012 documents scheduled-task telemetry assumptions and false-positive review guidance.
+- HO-DET-012 has no proof record in `hawkinsoperations-proof` in this phase.
 
 ## Blocked Claims
 
@@ -131,8 +132,8 @@ This source must not be cited as evidence for:
 - analyst-approved disposition
 - attack coverage completeness
 - scheduled-task coverage completeness
-- validation passed
+- proof record availability
 
 ## Next Gate
 
-The next gate is a validation-repo fixture set and deterministic controlled-test validation harness for HO-DET-012. That work must be scoped separately and must not be inferred from these source files.
+The next gates are proof record creation, runtime evidence, signal evidence, and public-proof review under separate approval. Controlled validation is satisfied for the current fixture scope.

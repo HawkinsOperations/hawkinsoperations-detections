@@ -1,21 +1,22 @@
 title: HO-DET-012 Suspicious Scheduled Task Creation
 detection_id: HO-DET-012
-status: experimental/source-only
-proof_level: SOURCE_EXISTS
-trust_class: SOURCE_EXISTS
+status: experimental/controlled-test-validated
+proof_level: CONTROLLED_TEST_VALIDATED
+trust_class: CONTROLLED_TEST_VALIDATED
 public_safe_status: NOT_PUBLIC_SAFE
 approval_status: NOT_APPROVED
 runtime_active: "NO"
-validation_status: VALIDATION_PLANNED
+validation_status: CONTROLLED_TEST_VALIDATED
 signal_observed: "NO"
 evidence_linked: "NO"
+proof_status: NO_PROOF_RECORD
 description: >
   Sigma-style source artifact for suspicious Windows scheduled task creation,
   registration, or update behavior. This source uses Windows Security Event IDs
   4698 and 4702 where audit policy records scheduled task changes,
   Microsoft-Windows-TaskScheduler/Operational Event IDs 106 and 140 where the
   operational log is enabled and collected, and Sysmon Event ID 1 process
-  context where available. It does not establish runtime, signal, validation, routing, or public-safe proof claims.
+  context where available. It does not establish runtime, signal, proof record, routing, or public-safe proof claims.
 author: HawkinsOperations
 date: 2026-05-11
 references:
@@ -158,7 +159,7 @@ tuning_guidance:
     - Backup, monitoring, security, endpoint management, and remote-support agents.
     - Known managed application paths and approved maintenance windows.
 level: medium
-allowed_claim: HO-DET-012 source artifacts exist and are prepared for future controlled-test validation.
+allowed_claim: HO-DET-012 source artifacts exist and controlled-test validation passed for scheduled-task creation and update fixtures.
 blocked_claims:
   - runtime-active
   - signal-observed
@@ -180,11 +181,11 @@ blocked_claims:
   - analyst-approved disposition
   - attack coverage completeness
   - scheduled-task coverage completeness
-  - validation passed
+  - proof record availability
 promotion_boundaries:
   source_exists_supports:
     - HO-DET-012 source artifacts exist in this repository path.
-    - HO-DET-012 is prepared for future controlled-test validation.
+    - HO-DET-012 passed controlled-test validation against scheduled-task creation and update fixtures.
   source_exists_does_not_support:
     - runtime-active status
     - signal-observed status
@@ -192,7 +193,7 @@ promotion_boundaries:
     - public-safe status
     - live Splunk firing
     - Wazuh-routed telemetry
-    - validation passage
+    - proof record availability
 validation_fixture_boundary:
   detections_repo_fixtures_found: false
-  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
+  validation_repo_fixture_set: SATISFIED_FOR_CURRENT_CONTROLLED_TEST_SCOPE
