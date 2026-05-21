@@ -2,7 +2,7 @@ detection_id: ID-DET-004
 mapping_scope: controlled identity-event fields for impossible travel or anomalous session context
 source_family: identity_travel_session_context
 mapping_status: SOURCE_EXISTS
-validation_status: VALIDATION_PLANNED
+validation_status: CONTROLLED_TEST_VALIDATED
 fields:
   event_type:
     description: Identity event family, such as login or session_activity.
@@ -84,7 +84,6 @@ backend_notes:
   generic:
     boundary: Field mapping is controlled-test scope only and must be adapted before deployment.
 blocked_claims:
-  - controlled-test validated
   - runtime-active
   - signal-observed
   - public-safe

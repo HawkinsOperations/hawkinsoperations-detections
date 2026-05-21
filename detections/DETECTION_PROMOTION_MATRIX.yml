@@ -464,8 +464,8 @@ entries:
       - autonomous SOC
       - AI-approved disposition
       - analyst-approved disposition
-    next_gate: proof status index before public-route parity
-    notes: Validation registry may know controlled-test status; this source package remains source truth only.
+    next_gate: proof record creation under separate proof scope; runtime, signal, public-safe, and completeness promotion remain blocked
+    notes: Source artifacts exist and validation truth is CONTROLLED_TEST_VALIDATED in hawkinsoperations-validation. Proof repo has no ID-DET-004 proof record in this phase.
 
   - detection_id: AWS-DET-001
     package_path: detections/cloud/aws/aws-det-001
