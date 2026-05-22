@@ -278,8 +278,8 @@ entries:
       - live Security Onion proof
       - production-ready
       - fleet-wide
-    next_gate: proof record creation under separate proof scope; runtime, signal, and public-safe promotion remain blocked
-    notes: Controlled-test validation is external validation truth. Proof index currently records NO_PROOF_RECORD for HO-DET-012; this matrix does not create a proof record.
+    next_gate: runtime, signal, and public-safe promotion remain blocked until separate evidence and review support them
+    notes: Controlled-test validation is external validation truth. The proof repo records a CONTROLLED_TEST_VALIDATED proof record for HO-DET-012; this source matrix does not promote runtime, signal, or public-safe claims.
 
   - detection_id: HO-DET-013
     package_path: detections/successor/ho-det-013

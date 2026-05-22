@@ -106,7 +106,7 @@ This package supports only these controlled source and validation claims:
 - HO-DET-012 passed controlled-test validation against scheduled-task creation and update fixtures.
 - Detection source includes Sigma/SPL/Wazuh/event-mapping/status surfaces.
 - HO-DET-012 documents scheduled-task telemetry assumptions and false-positive review guidance.
-- HO-DET-012 has no proof record in `hawkinsoperations-proof` in this phase.
+- HO-DET-012 has a `CONTROLLED_TEST_VALIDATED` proof record in `hawkinsoperations-proof`.
 
 ## Blocked Claims
 
@@ -132,8 +132,7 @@ This source must not be cited as evidence for:
 - analyst-approved disposition
 - attack coverage completeness
 - scheduled-task coverage completeness
-- proof record availability
 
 ## Next Gate
 
-The next gates are proof record creation, runtime evidence, signal evidence, and public-proof review under separate approval. Controlled validation is satisfied for the current fixture scope.
+The next gates are runtime evidence, signal evidence, and public-proof review under separate approval. Controlled validation and proof-record creation are satisfied for the current controlled-test scope.

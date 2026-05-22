@@ -9,14 +9,14 @@ runtime_active: "NO"
 validation_status: CONTROLLED_TEST_VALIDATED
 signal_observed: "NO"
 evidence_linked: "NO"
-proof_status: NO_PROOF_RECORD
+proof_status: CONTROLLED_TEST_VALIDATED
 description: >
   Sigma-style source artifact for suspicious Windows scheduled task creation,
   registration, or update behavior. This source uses Windows Security Event IDs
   4698 and 4702 where audit policy records scheduled task changes,
   Microsoft-Windows-TaskScheduler/Operational Event IDs 106 and 140 where the
   operational log is enabled and collected, and Sysmon Event ID 1 process
-  context where available. It does not establish runtime, signal, proof record, routing, or public-safe proof claims.
+  context where available. It does not establish runtime, signal, routing, or public-safe proof claims.
 author: HawkinsOperations
 date: 2026-05-11
 references:
@@ -181,11 +181,11 @@ blocked_claims:
   - analyst-approved disposition
   - attack coverage completeness
   - scheduled-task coverage completeness
-  - proof record availability
 promotion_boundaries:
   source_exists_supports:
     - HO-DET-012 source artifacts exist in this repository path.
     - HO-DET-012 passed controlled-test validation against scheduled-task creation and update fixtures.
+    - HO-DET-012 has a CONTROLLED_TEST_VALIDATED proof record in hawkinsoperations-proof.
   source_exists_does_not_support:
     - runtime-active status
     - signal-observed status
@@ -193,7 +193,6 @@ promotion_boundaries:
     - public-safe status
     - live Splunk firing
     - Wazuh-routed telemetry
-    - proof record availability
 validation_fixture_boundary:
   detections_repo_fixtures_found: false
   validation_repo_fixture_set: SATISFIED_FOR_CURRENT_CONTROLLED_TEST_SCOPE

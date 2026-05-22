@@ -4,9 +4,9 @@ mapping_status: SOURCE_EXISTS
 validation_status: CONTROLLED_TEST_VALIDATED
 description: >
   Event mapping for suspicious Windows scheduled task creation or update
-  behavior. This mapping supports controlled-test validation and does not prove
-  runtime activity, signal observation, routing, public-safe status, proof record
-  availability, or evidence-linked public proof claims.
+  behavior. This mapping supports controlled-test validation and proof-record
+  routing context, and does not prove runtime activity, signal observation,
+  routing, public-safe status, or evidence-linked public proof claims.
 telemetry_boundary:
   windows_security_4698: Windows Security Event ID 4698 may record scheduled task creation where audit policy and collection support it.
   windows_security_4702: Windows Security Event ID 4702 may record scheduled task update where audit policy and collection support it.
@@ -191,8 +191,8 @@ validation_fixture_boundary:
   detections_repo_fixtures_found: false
   validation_repo_fixture_set: SATISFIED_FOR_CURRENT_CONTROLLED_TEST_SCOPE
 proof_boundary:
-  proof_status: NO_PROOF_RECORD
-  proof_record_path: null
+  proof_status: CONTROLLED_TEST_VALIDATED
+  proof_record_path: hawkinsoperations-proof/proof/records/HO-DET-012.md
   public_safe_status: NOT_PUBLIC_SAFE
 blocked_claims:
   - runtime-active
@@ -215,4 +215,3 @@ blocked_claims:
   - analyst-approved disposition
   - attack coverage completeness
   - scheduled-task coverage completeness
-  - proof record availability

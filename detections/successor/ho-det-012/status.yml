@@ -21,8 +21,8 @@ public_safe_status: NOT_PUBLIC_SAFE
 runtime_active: false
 signal_observed: false
 evidence_linked_public_proof: false
-proof_status: NO_PROOF_RECORD
-proof_record_path: null
+proof_status: CONTROLLED_TEST_VALIDATED
+proof_record_path: hawkinsoperations-proof/proof/records/HO-DET-012.md
 fixtures_in_detections_repo: false
 canonical_readme: detections/successor/ho-det-012/README.md
 canonical_sigma_source: detections/successor/ho-det-012/rule.yml
@@ -83,6 +83,7 @@ tuning_focus:
 allowed_claims:
   - HO-DET-012 source artifacts exist.
   - HO-DET-012 passed controlled-test validation against scheduled-task creation and update fixtures.
+  - HO-DET-012 has a CONTROLLED_TEST_VALIDATED proof record in hawkinsoperations-proof.
   - Detection source includes Sigma/SPL/Wazuh/event-mapping/status surfaces.
   - HO-DET-012 documents scheduled-task telemetry assumptions and false-positive review guidance.
 blocked_claims:
@@ -112,5 +113,5 @@ next_gate:
   platform_status_visibility: REQUIRED_SEPARATE_SCOPE
   runtime_evidence: BLOCKED
   signal_evidence: BLOCKED
-  proof_record: NO_PROOF_RECORD
+  proof_record: CONTROLLED_TEST_VALIDATED
   public_proof: BLOCKED
