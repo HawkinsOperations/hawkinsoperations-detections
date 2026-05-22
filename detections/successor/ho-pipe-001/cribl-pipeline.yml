@@ -2,6 +2,7 @@ pipeline_id: ho_det_001_sysmon_runtime_signal_003
 artifact_id: HO-PIPE-001
 artifact_class: cribl_pipeline_source
 status: SOURCE_EXISTS
+validation_status: VALIDATION_CONTRACT_ENFORCED
 public_safe: false
 claim_boundary: >-
   Source-controlled Cribl pipeline configuration only. This artifact does not
@@ -9,6 +10,14 @@ claim_boundary: >-
   fleet-wide deployment, live Splunk firing, or Cribl-routed telemetry.
 
 runtime_source_reference: cribl_local_pipeline_config_redacted
+field_preservation_matrix: field-preservation-matrix.yml
+contract_validation_scope: >-
+  Controlled validation may assert source shape, required-field preservation,
+  and claim-boundary guardrails only. It must not assert delivered traffic,
+  runtime-active deployment, signal-observed status, live Splunk results,
+  Cribl-routed proof, Wazuh-routed proof, Security Onion observed proof,
+  production-ready status, public-safe runtime status, autonomous SOC behavior,
+  AI-approved status, or analyst-approved status.
 
 cribl_pipeline:
   output: default
@@ -38,6 +47,7 @@ runtime_observation_boundary:
     send-side record with a scoped downstream observation.
   blocked_wording:
     - public-safe proof
+    - public-safe runtime
     - production-ready reduction
     - fleet-wide deployment
     - production routing
@@ -45,3 +55,8 @@ runtime_observation_boundary:
     - reduction calculation from this source artifact alone
     - generalized keep-event throughput beyond this source artifact
     - Cribl-routed public telemetry
+    - Wazuh-routed proof
+    - Security Onion observed proof
+    - autonomous SOC
+    - AI-approved
+    - analyst-approved

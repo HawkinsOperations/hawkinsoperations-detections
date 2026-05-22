@@ -9,16 +9,25 @@ runtime_active: "NO"
 signal_observed: "NO"
 evidence_linked_public_proof: false
 description: >
-  Source-only successor record for telemetry pipeline route integrity drift
-  conditions. This is a metadata and contract surface only and does not claim
-  runtime observation, public proof, production readiness, or autonomous action.
+  Successor source record for telemetry pipeline route integrity drift
+  conditions and controlled field-preservation contract validation. This is a
+  metadata and contract surface only and does not claim runtime observation,
+  signal observation, public proof, production readiness, or autonomous action.
 allowed_claim:
-  - HO-PIPE-001 source artifacts exist for controlled future validation design.
+  - HO-PIPE-001 source artifacts exist.
+  - HO-PIPE-001 has controlled validation contract enforcement for route-integrity shape and required field preservation in hawkinsoperations-validation.
 blocked_claims:
   - runtime-active
   - signal-observed
+  - live Splunk
+  - Cribl-routed proof
+  - Wazuh-routed proof
+  - Security Onion observed proof
   - public-safe
+  - public-safe runtime
   - evidence-linked public proof
   - production-ready
   - fleet-wide
   - autonomous SOC
+  - AI-approved
+  - analyst-approved

@@ -1,0 +1,62 @@
+detection_id: HO-PIPE-001
+artifact_class: pipeline_field_preservation_contract
+truth_surface: detection_source
+contract_status: SOURCE_EXISTS
+validation_status: VALIDATION_CONTRACT_ENFORCED
+public_safe_status: NOT_PUBLIC_SAFE
+runtime_active: false
+signal_observed: false
+description: >
+  Source-controlled field-preservation matrix for controlled validation of
+  HO-PIPE-001 route-integrity contract shape. This matrix defines the fields
+  that a validator can check in repo-controlled source and sample artifacts.
+  It does not assert delivery, routing, search execution, traffic observation,
+  or runtime deployment.
+required_input_fields:
+  - marker_family
+  - route_contract_id
+  - source_detection_id
+  - expected_output_target
+  - transform_action
+  - required_preserved_fields
+  - blocked_promotion_fields
+required_preserved_fields:
+  - _time
+  - host
+  - source
+  - sourcetype
+  - index
+  - event_marker
+  - detection_id
+  - route_contract_id
+controlled_validation_assertions:
+  - contract shape can be parsed from source-controlled artifacts
+  - required preserved fields are explicitly named
+  - promotion blockers remain false or blocked
+  - no runtime-active claim is present
+  - no signal-observed claim is present
+  - no live Splunk claim is present
+  - no Cribl-routed proof claim is present
+  - no Wazuh-routed proof claim is present
+  - no Security Onion observed proof claim is present
+  - no production-ready claim is present
+  - no public-safe runtime claim is present
+  - no autonomous SOC claim is present
+  - no AI-approved claim is present
+  - no analyst-approved claim is present
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - live Splunk
+  - Cribl-routed proof
+  - Wazuh-routed proof
+  - Security Onion observed proof
+  - production-ready
+  - public-safe runtime
+  - autonomous SOC
+  - AI-approved
+  - analyst-approved
+next_gate:
+  controlled_contract_validation: REQUIRED_IN_VALIDATION_REPO
+  runtime_signal_correlation: REQUIRED_SEPARATE_SCOPE
+  public_proof: BLOCKED_PENDING_SEPARATE_APPROVAL
