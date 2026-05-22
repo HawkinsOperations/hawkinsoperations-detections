@@ -1,24 +1,40 @@
 detection_id: HO-PIPE-001
 truth_surface: detection_source
 source_status: SOURCE_EXISTS
-validation_status: VALIDATION_PLANNED
+validation_status: VALIDATION_CONTRACT_ENFORCED
 proof_level: SOURCE_EXISTS
 trust_class: SOURCE_EXISTS
 public_safe_status: NOT_PUBLIC_SAFE
 runtime_active: false
 signal_observed: false
 evidence_linked_public_proof: false
+validation_contract:
+  owner_repo: hawkinsoperations-validation
+  validator: scripts/validate-ho-pipe-001.py
+  parity_verifier: scripts/verify-ho-pipe-001-result-parity.py
+  claim_boundary_scanner: scripts/scan-ho-pipe-001-claim-boundaries.py
+  report_json: reports/ho-pipe-001/validation-result.json
+  report_markdown: reports/ho-pipe-001/validation-result.md
+  scope: controlled pipeline route integrity contract validation only
 blocked_claims:
   - runtime-active
   - signal-observed
+  - live Splunk
+  - Cribl-routed proof
+  - Wazuh-routed proof
+  - Security Onion observed proof
   - public-safe
+  - public-safe runtime
   - evidence-linked public proof
   - production-ready
   - fleet-wide
   - autonomous SOC
+  - AI-approved
+  - analyst-approved
 allowed_claims:
-  - HO-PIPE-001 source artifacts exist and are scoped for future controlled-test validation.
+  - HO-PIPE-001 source artifacts exist.
+  - HO-PIPE-001 controlled contract validation is enforced in hawkinsoperations-validation for source-controlled route-integrity shape and field-preservation requirements.
 next_gate:
-  controlled_test_validation: REQUIRED_SEPARATE_SCOPE
+  controlled_test_validation: VALIDATION_CONTRACT_ENFORCED_IN_VALIDATION_REPO
   runtime_signal_correlation: REQUIRED_SEPARATE_SCOPE
   public_proof: BLOCKED_PENDING_SEPARATE_APPROVAL

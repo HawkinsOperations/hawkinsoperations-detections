@@ -1,17 +1,34 @@
 detection_id: HO-PIPE-001
 truth_surface: detection_source
 mapping_status: SOURCE_EXISTS
-validation_status: VALIDATION_PLANNED
+validation_status: VALIDATION_CONTRACT_ENFORCED
 description: >
-  Source-only event mapping placeholder for pipeline route integrity drift
-  patterns. Future controlled-test validation is required before stronger claims.
+  Source event mapping for pipeline route integrity drift patterns and
+  controlled field-preservation contract validation. Future runtime, signal, or
+  delivery validation is required before stronger claims.
 telemetry_sources:
   - pipeline metadata and routing state from configured transform surfaces
+required_preserved_fields:
+  - _time
+  - host
+  - source
+  - sourcetype
+  - index
+  - event_marker
+  - detection_id
+  - route_contract_id
 blocked_claims:
   - runtime-active
   - signal-observed
+  - live Splunk
+  - Cribl-routed proof
+  - Wazuh-routed proof
+  - Security Onion observed proof
   - public-safe
+  - public-safe runtime
   - evidence-linked public proof
   - production-ready
   - fleet-wide
   - autonomous SOC
+  - AI-approved
+  - analyst-approved
