@@ -23,6 +23,7 @@ This repository contains detection logic as source content. It is the authoring 
 - Build loud. Verify hard. Claim tight. Ship receipts.
 - Website/public pages route to proof records; they do not replace proof.
 - Next gates: case packet spine, deterministic verifier, claim-boundary scanner, CI proof-loop, proof card, website route.
+- Cyber Kill Chain coverage: this repo contributes detection source truth to the canonical [Cyber Kill Chain coverage map](https://github.com/HawkinsOperations/hawkinsoperations-proof/blob/main/docs/mappings/CYBER_KILL_CHAIN_COVERAGE.md) in `hawkinsoperations-proof`. The map is reviewer navigation, not runtime, signal, production, or public-safe proof authority.
 
 ## Blocked Claims
 
