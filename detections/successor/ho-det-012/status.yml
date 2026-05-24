@@ -39,7 +39,7 @@ canonical_claim_boundary_scanner: hawkinsoperations-validation/scripts/scan-ho-d
 canonical_validation_workflow: hawkinsoperations-validation/.github/workflows/ho-det-012-fixture-loop.yml
 planned_validation_fixture_set: SATISFIED_FOR_CURRENT_CONTROLLED_TEST_SCOPE
 planned_platform_case_packet_guardrail: REQUIRED_SEPARATE_SCOPE
-planned_proof_record: REQUIRED_SEPARATE_SCOPE
+planned_proof_record: SATISFIED_FOR_CURRENT_CONTROLLED_TEST_SCOPE
 mitre_attack:
   primary_technique: T1053.005
   primary_technique_name: Scheduled Task
