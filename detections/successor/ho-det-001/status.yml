@@ -13,6 +13,81 @@ canonical_splunk_source: detections/successor/ho-det-001/splunk.spl
 canonical_validation_result: hawkinsoperations-validation/reports/ho-det-001/validation-result.json
 canonical_case_packet: hawkinsoperations-validation/validation/successor/ho-det-001/case-packet.json
 canonical_proof_record: hawkinsoperations-proof/proof/records/HO-DET-001.md
+socaas_receipt_source_truth:
+  claim_ceiling: CONTROLLED_TEST_VALIDATED
+  detection_purpose: >
+    Identify PowerShell or pwsh process creation where the command line contains
+    encoded-command style switches or encoded payload indicators that warrant
+    analyst review in a controlled SOCaaS Pilot Receipt Pack.
+  observable_triggered: >
+    PowerShell process execution with encoded-command syntax such as -enc,
+    /enc, -encodedcommand, /encodedcommand, or FromBase64String( in the captured
+    process command line.
+  attack_mapping:
+    technique_id: T1059.001
+    technique_name: PowerShell
+    tactic_id: TA0002
+    tactic_name: Execution
+  required_telemetry_fields:
+    - process image or process name
+    - process command line
+    - event timestamp
+    - host or device identifier
+    - user or account context
+  useful_edr_siem_fields:
+    - event_id or event code
+    - original file name
+    - parent process image
+    - parent process command line
+    - process guid or process entity id
+    - parent process guid or parent entity id
+    - process hash when available
+    - signer or reputation metadata when available
+    - sensor vendor and source type
+    - detection rule name, rule id, or alert id when a downstream tool adds one
+  false_positive_context:
+    - legitimate administrative automation can use encoded PowerShell commands
+    - endpoint management and deployment tooling can encode command payloads
+    - maintenance scripts, backup tooling, and inventory jobs can use encoded payloads
+    - controlled lab fixtures are validation inputs, not malicious activity evidence
+  evasion_and_blind_spots:
+    - command-line capture can be absent, truncated, normalized, or disabled
+    - attackers can use non-PowerShell interpreters outside this detection scope
+    - renamed binaries or unusual launch paths require process identity review
+    - heavily obfuscated payloads may require separate content analysis
+    - allowlisted automation can hide weak tuning if exclusions are too broad
+    - absence of this observable does not prove absence of PowerShell abuse
+  encodedcommand_boundary: >
+    EncodedCommand or base64-like PowerShell syntax is suspicious context that
+    can justify review; by itself it is not proof of maliciousness,
+    compromise, production detection quality, analyst disposition, or AI
+    disposition.
+  allowed_claims:
+    - HO-DET-001 source exists in hawkinsoperations-detections.
+    - HO-DET-001 maps to ATT&CK T1059.001 PowerShell.
+    - HO-DET-001 describes the telemetry fields needed to review encoded PowerShell process creation.
+    - HO-DET-001 passed controlled-test validation against controlled positive and negative process-creation fixtures.
+    - HO-DET-001 can be referenced as source truth for a SOCaaS Pilot Receipt Pack while preserving the CONTROLLED_TEST_VALIDATED ceiling.
+  blocked_claims:
+    - runtime-active
+    - signal-observed public proof
+    - production or customer SOCaaS deployment
+    - FortiSIEM integration
+    - live Splunk, Wazuh, Cribl, Security Onion, EDR, or SIEM firing
+    - public-safe runtime proof
+    - evidence-linked public proof
+    - autonomous SOC or response
+    - AI disposition authority
+    - analyst disposition authority
+    - maliciousness proof from EncodedCommand alone
+  validation_and_proof_authority:
+    validation_result: hawkinsoperations-validation/reports/ho-det-001/validation-result.json
+    case_packet: hawkinsoperations-validation/validation/successor/ho-det-001/case-packet.json
+    proof_record: hawkinsoperations-proof/proof/records/HO-DET-001.md
+    source_authority_note: >
+      This detections repository is source truth only. Validation and proof
+      authority remain in the validation and proof repositories, and public-safe
+      runtime proof requires separate review and promotion.
 socaas_pilot_receipt_flow:
   pilot_status: EXISTING_FLOW_CANDIDATE
   purpose: Map the controlled-test HO-DET-001 loop to a SOCaaS-style reviewer receipt while preserving the existing blocked-claim boundary.
@@ -54,17 +129,26 @@ blocked_claims:
   - fleet-wide
   - Cribl-routed
   - Wazuh-routed
+  - FortiSIEM integration
   - AWS-live
   - HO-GPU-01 runtime-active
+  - SOCaaS deployment
+  - customer deployment
   - autonomous SOC
+  - autonomous response
   - AI-approved disposition
+  - AI disposition authority
   - analyst-approved disposition
+  - analyst disposition authority
   - enterprise deployed
   - complete AutoSOC
   - production AutoSOC triage
+  - public-safe runtime proof
+  - maliciousness proof from EncodedCommand alone
 
 allowed_claims:
   - HO-DET-001 source exists.
   - HO-DET-001 Splunk source exists.
   - HO-DET-001 passed controlled-test validation against controlled positive and negative process-creation fixtures.
   - HO-DET-001 validation enforcement exists for the exact controlled-test validation scope.
+  - HO-DET-001 may support a SOCaaS Pilot Receipt Pack as source truth only, with no runtime, signal, deployment, or public-safe proof claim.
