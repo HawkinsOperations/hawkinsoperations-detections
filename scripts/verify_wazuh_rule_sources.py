@@ -129,8 +129,14 @@ def verify_entry(root: Path, entry: dict[str, Any], seen_rule_ids: dict[int, str
         if not full_xml_path.exists():
             fail(f"{label} missing wazuh_rule_path: {xml_path}")
         rules = parse_wazuh_xml(full_xml_path)
-        actual_rule_ids = {rule["id"] for rule in rules}
-        missing_rule_ids = set(expected_rule_ids) - actual_rule_ids
+        actual_rule_ids = [rule["id"] for rule in rules]
+        duplicate_rule_ids = sorted(
+            rule_id for rule_id in set(actual_rule_ids) if actual_rule_ids.count(rule_id) > 1
+        )
+        if duplicate_rule_ids:
+            fail(f"{label} duplicate Wazuh rule id in {xml_path}: {duplicate_rule_ids}")
+        actual_rule_id_set = set(actual_rule_ids)
+        missing_rule_ids = set(expected_rule_ids) - actual_rule_id_set
         if missing_rule_ids:
             fail(f"{label} expected Wazuh rule ids missing: {sorted(missing_rule_ids)}")
         actual_groups = set().union(*(rule["groups"] for rule in rules))
@@ -144,7 +150,7 @@ def verify_entry(root: Path, entry: dict[str, Any], seen_rule_ids: dict[int, str
         normalized_group = detection_id.lower()
         if normalized_group not in actual_groups:
             fail(f"{label} Wazuh groups must include normalized detection id {normalized_group}")
-        for rule_id in actual_rule_ids:
+        for rule_id in actual_rule_id_set:
             owner = seen_rule_ids.get(rule_id)
             if owner and owner != detection_id:
                 fail(f"duplicate Wazuh rule id {rule_id}: {owner} and {detection_id}")

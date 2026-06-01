@@ -41,7 +41,22 @@ class VerifyWazuhRuleSourcesTests(unittest.TestCase):
         self.assertIn("HO-DET-011", ids)
         self.assertIn("HO-DET-012", ids)
 
-    def test_duplicate_wazuh_rule_id_fails(self):
+    def test_same_file_duplicate_wazuh_rule_id_fails(self):
+        data = self.load_registry()
+        source_entry = next(item for item in data["entries"] if item["detection_id"] == "HO-DET-012")
+        xml_path = self.root / source_entry["wazuh_rule_path"]
+        xml_path.write_text(
+            xml_path.read_text(encoding="utf-8").replace(
+                "\n</group>\n",
+                '\n  <rule id="910021" level="5"><description>same file duplicate</description><group>ho-det-012,</group></rule>\n</group>\n',
+                1,
+            ),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(module.WazuhRuleSourceError, "duplicate Wazuh rule id"):
+            module.verify_repo(self.root, print_summary=False)
+
+    def test_cross_detection_duplicate_wazuh_rule_id_fails(self):
         data = self.load_registry()
         duplicate = copy.deepcopy(next(item for item in data["entries"] if item["detection_id"] == "HO-DET-012"))
         duplicate["detection_id"] = "EX-DET-999"
@@ -67,12 +82,20 @@ class VerifyWazuhRuleSourcesTests(unittest.TestCase):
         with self.assertRaisesRegex(module.WazuhRuleSourceError, "missing detection_package"):
             module.verify_repo(self.root, print_summary=False)
 
-    def test_truthy_runtime_or_public_proof_claim_fails(self):
-        data = self.load_registry()
-        data["entries"][0]["runtime_status"] = "RUNTIME_ACTIVE"
-        self.write_registry(data)
-        with self.assertRaisesRegex(module.WazuhRuleSourceError, "runtime_status"):
-            module.verify_repo(self.root, print_summary=False)
+    def test_runtime_signal_or_public_safe_promotion_fails(self):
+        original = self.load_registry()
+        cases = (
+            ("runtime_status", "RUNTIME_ACTIVE", "runtime_status"),
+            ("signal_status", "SIGNAL_OBSERVED_PRIVATE", "signal_status"),
+            ("public_safe_status", "PUBLIC_SAFE", "public_safe_status"),
+        )
+        for field, value, expected_error in cases:
+            with self.subTest(field=field):
+                data = copy.deepcopy(original)
+                data["entries"][0][field] = value
+                self.write_registry(data)
+                with self.assertRaisesRegex(module.WazuhRuleSourceError, expected_error):
+                    module.verify_repo(self.root, print_summary=False)
 
     def test_identity_detection_forced_to_wazuh_fails(self):
         data = self.load_registry()
