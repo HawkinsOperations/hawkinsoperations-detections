@@ -1,0 +1,126 @@
+schema_version: 1
+registry_status: WAZUH_RULE_SOURCE_CONTRACT_ENFORCED
+proof_ceiling: SOURCE_AND_STATIC_CI_ONLY_NOT_RUNTIME_PROOF
+public_safe_status: NOT_PUBLIC_SAFE
+runtime_status: false
+signal_status: false
+entries:
+  - detection_id: HO-DET-001
+    mapping_lane: wazuh_rule_source_planned
+    status: WAZUH_SOURCE_NEEDED
+    detection_package: detections/successor/ho-det-001
+    wazuh_rule_path:
+    expected_rule_ids: []
+    expected_groups: []
+    expected_mitre_ids:
+      - T1059.001
+    preferred_runtime: wazuh_candidate_after_controlled_fixture
+    runtime_status: false
+    signal_status: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    notes: EncodedCommand Wazuh rule source is planned; this registry entry does not claim Wazuh-routed runtime signal.
+  - detection_id: HO-DET-011
+    mapping_lane: wazuh_rule_source
+    status: SOURCE_EXISTS
+    detection_package: detections/successor/ho-det-011
+    wazuh_rule_path: detections/successor/ho-det-011/wazuh.xml
+    expected_rule_ids:
+      - 910011
+      - 910012
+      - 910013
+      - 910014
+    expected_groups:
+      - ho-det-011
+      - source-only
+      - validation-planned
+    expected_mitre_ids:
+      - T1543.003
+    preferred_runtime: wazuh_candidate_after_controlled_fixture
+    runtime_status: false
+    signal_status: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    notes: Service creation Wazuh XML exists as source-only rule source; live Wazuh routing remains unproven.
+  - detection_id: HO-DET-012
+    mapping_lane: wazuh_rule_source
+    status: SOURCE_EXISTS
+    detection_package: detections/successor/ho-det-012
+    wazuh_rule_path: detections/successor/ho-det-012/wazuh.xml
+    expected_rule_ids:
+      - 910021
+      - 910022
+      - 910023
+    expected_groups:
+      - ho-det-012
+      - source-only
+      - validation-planned
+    expected_mitre_ids:
+      - T1053.005
+    preferred_runtime: wazuh_candidate_after_controlled_fixture
+    runtime_status: false
+    signal_status: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    notes: Scheduled task Wazuh XML exists as source-only rule source; live Wazuh routing remains unproven.
+  - detection_id: HO-DET-013
+    mapping_lane: wazuh_rule_source_conditional
+    status: CONDITIONAL_SOURCE_PLANNED
+    detection_package: detections/successor/ho-det-013
+    wazuh_rule_path:
+    expected_rule_ids: []
+    expected_groups: []
+    expected_mitre_ids:
+      - T1562.001
+      - T1070.001
+      - T1112
+      - T1059.001
+      - T1489
+    preferred_runtime: wazuh_candidate_after_telemetry_normalization
+    runtime_status: false
+    signal_status: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    notes: Telemetry tamper Wazuh source is conditional on controlled samples and Windows audit/Sysmon field normalization.
+  - detection_id: HO-PIPE-001
+    mapping_lane: private_runtime_design_only
+    status: DESIGN_ONLY
+    detection_package: detections/successor/ho-pipe-001
+    wazuh_rule_path:
+    expected_rule_ids: []
+    expected_groups: []
+    expected_mitre_ids: []
+    preferred_runtime: cribl_splunk_preferred_wazuh_host_context_only
+    runtime_status: false
+    signal_status: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    notes: Pipeline and Cribl route signal should stay design-only here until private Cribl/Wazuh samples exist.
+dashboard_private_runtime_needs:
+  - need_id: HO-VICTUS-01-ONBOARDING
+    dashboard_tile: HO-VICTUS-01 Onboarding
+    authority_anchor: Wazuh audit tuning backlog
+    status: PRIVATE_DASHBOARD_DESIGN_ONLY
+    runtime_status: false
+    signal_status: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    notes: Endpoint onboarding dashboard need; Wazuh dashboard is private runtime signal, not authority or public proof.
+  - need_id: HO-CRIBL-ROUTE
+    dashboard_tile: Cribl Pipeline Signal
+    authority_anchor: HO-PIPE-001
+    status: PRIVATE_DASHBOARD_DESIGN_ONLY
+    runtime_status: false
+    signal_status: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    notes: Cribl route signal needs private service/route samples before Wazuh rules or dashboard claims.
+  - need_id: HO-RUNNER-01
+    dashboard_tile: Runner/CI Signal
+    authority_anchor: ho-runner-01 private runtime need
+    status: PRIVATE_DASHBOARD_DESIGN_ONLY
+    runtime_status: false
+    signal_status: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    notes: Self-hosted runner Wazuh signal remains a private dashboard concept until runner service/log samples exist.
+  - need_id: WAZUH-RULE-TUNING-BACKLOG
+    dashboard_tile: Rule Tuning Backlog
+    authority_anchor: 2026-06-01 private Wazuh audit
+    status: PRIVATE_DASHBOARD_DESIGN_ONLY
+    runtime_status: false
+    signal_status: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    notes: Tuning backlog tracks noisy rules without claiming tuning is complete.
