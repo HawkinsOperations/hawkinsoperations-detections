@@ -73,6 +73,37 @@ class PromotionMatrixVerifierTests(unittest.TestCase):
                     matrix.verify_repo(self.root, print_summary=False)
                 self.write_matrix(self.load_matrix_from_repo())
 
+    def test_invalid_ledger_eligibility_status_fails(self):
+        data = self.load_matrix()
+        data["reviewer_expansion_map"][0]["ledger_eligibility_status"] = "PUBLIC_PROOF_READY"
+        self.write_matrix(data)
+        with self.assertRaises(matrix.MatrixError):
+            matrix.verify_repo(self.root, print_summary=False)
+
+    def test_missing_reviewer_expansion_map_field_fails(self):
+        data = self.load_matrix()
+        data["reviewer_expansion_map"][0].pop("next_reviewer_action")
+        self.write_matrix(data)
+        with self.assertRaises(matrix.MatrixError):
+            matrix.verify_repo(self.root, print_summary=False)
+
+    def test_extra_ledger_eligibility_bucket_fails(self):
+        data = self.load_matrix()
+        data["detection_side_ledger_eligibility"]["public_proof_ready"] = []
+        self.write_matrix(data)
+        with self.assertRaises(matrix.MatrixError):
+            matrix.verify_repo(self.root, print_summary=False)
+
+    def test_unbounded_factory_index_claim_fails(self):
+        index_path = self.root / "detections" / "DETECTION_FACTORY_INDEX.md"
+        index_path.write_text(
+            index_path.read_text(encoding="utf-8")
+            + "\n\nHO-DET-001 now has public-safe proof.\n",
+            encoding="utf-8",
+        )
+        with self.assertRaises(matrix.MatrixError):
+            matrix.verify_repo(self.root, print_summary=False)
+
     def test_package_tree_missing_from_matrix_fails(self):
         data = self.load_matrix()
         data["entries"] = [item for item in data["entries"] if item["detection_id"] != "HO-DET-013"]

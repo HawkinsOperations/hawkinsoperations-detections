@@ -22,6 +22,178 @@ allowed_status_values:
     - false
   signal_observed:
     - false
+ledger_boundary:
+  detections_repo_scope: SOURCE_SIDE_ELIGIBILITY_AND_READINESS_METADATA_ONLY
+  canonical_lifetime_case_ledger_owner: hawkinsoperations-platform
+  does_not_claim_canonical_ledger_state: true
+  does_not_append_ledger_entries: true
+ledger_eligibility_status_values:
+  - APPENDED
+  - DRY_RUN_READY
+  - VALIDATION_READY
+  - PROOF_RECORDED
+  - BLOCKED
+  - NEEDS_TELEMETRY_CONTRACT
+  - FUTURE_CANDIDATE
+detection_side_ledger_eligibility:
+  appended: []
+  dry_run_ready:
+    - ID-DET-001
+    - ID-DET-002
+    - ID-DET-003
+    - ID-DET-004
+  validation_ready:
+    - HO-DET-013
+  proof_recorded:
+    - HOD-001
+    - HO-DET-001
+    - HO-DET-011
+    - HO-DET-012
+    - AWS-DET-001
+  blocked:
+    - HO-NDR-001
+  needs_telemetry_contract:
+    - HO-DET-014
+    - HO-DET-015
+    - HO-DET-016
+    - HO-NDR-002
+    - HO-PIPE-001
+  future_candidate:
+    - HO-DET-002
+    - HO-DET-003
+    - HO-DET-004
+    - HO-DET-005
+    - HO-DET-006
+    - HO-DET-007
+    - HO-DET-008
+    - HO-DET-009
+    - HO-DET-010
+reviewer_expansion_map:
+  - detection_id: HOD-001
+    ledger_eligibility_status: PROOF_RECORDED
+    reviewer_lane: Legacy hero baseline reference
+    reviewer_summary: Hero baseline proof record exists, but successor HO-DET-001 remains the current reviewed package.
+    next_reviewer_action: Preserve as baseline continuity; do not treat as new ledger append or current runtime proof.
+  - detection_id: HO-DET-001
+    ledger_eligibility_status: PROOF_RECORDED
+    reviewer_lane: Closed loop endpoint receipt
+    reviewer_summary: Successor PowerShell package has controlled-test validation and a proof record.
+    next_reviewer_action: Use proof route for reviewer navigation; do not append new evidence without separate evidence review.
+  - detection_id: HO-DET-002
+    ledger_eligibility_status: FUTURE_CANDIDATE
+    reviewer_lane: Endpoint process expansion
+    reviewer_summary: Planned PowerShell flag and hidden execution candidate with no source package claimed.
+    next_reviewer_action: Author source package only under separate detection-source approval.
+  - detection_id: HO-DET-003
+    ledger_eligibility_status: FUTURE_CANDIDATE
+    reviewer_lane: Endpoint living-off-the-land expansion
+    reviewer_summary: Planned certutil download/decode candidate with no source package claimed.
+    next_reviewer_action: Author source package and fixture plan under separate source and validation scopes.
+  - detection_id: HO-DET-004
+    ledger_eligibility_status: FUTURE_CANDIDATE
+    reviewer_lane: Endpoint living-off-the-land expansion
+    reviewer_summary: Planned bitsadmin transfer candidate with no source package claimed.
+    next_reviewer_action: Keep as roadmap candidate until source package approval exists.
+  - detection_id: HO-DET-005
+    ledger_eligibility_status: FUTURE_CANDIDATE
+    reviewer_lane: Endpoint script proxy expansion
+    reviewer_summary: Planned mshta candidate with no source package claimed.
+    next_reviewer_action: Keep as roadmap candidate until source package approval exists.
+  - detection_id: HO-DET-006
+    ledger_eligibility_status: FUTURE_CANDIDATE
+    reviewer_lane: Endpoint script proxy expansion
+    reviewer_summary: Planned rundll32 suspicious script/proxy candidate with no source package claimed.
+    next_reviewer_action: Keep as roadmap candidate until source package approval exists.
+  - detection_id: HO-DET-007
+    ledger_eligibility_status: FUTURE_CANDIDATE
+    reviewer_lane: Endpoint scriptlet expansion
+    reviewer_summary: Planned regsvr32 scriptlet candidate with no source package claimed.
+    next_reviewer_action: Keep as roadmap candidate until source package approval exists.
+  - detection_id: HO-DET-008
+    ledger_eligibility_status: FUTURE_CANDIDATE
+    reviewer_lane: Endpoint parent-child expansion
+    reviewer_summary: Planned suspicious child-process candidate with no source package claimed.
+    next_reviewer_action: Keep as roadmap candidate until source and mapping approval exists.
+  - detection_id: HO-DET-009
+    ledger_eligibility_status: FUTURE_CANDIDATE
+    reviewer_lane: Windows account lifecycle expansion
+    reviewer_summary: Planned local user creation candidate with no source package claimed.
+    next_reviewer_action: Keep as roadmap candidate until Event ID mapping, Wazuh XML, and SPL source approval exists.
+  - detection_id: HO-DET-010
+    ledger_eligibility_status: FUTURE_CANDIDATE
+    reviewer_lane: Windows privilege expansion
+    reviewer_summary: Planned local administrators group change candidate with no source package claimed.
+    next_reviewer_action: Keep as roadmap candidate until Event ID mapping, Wazuh XML, and SPL source approval exists.
+  - detection_id: HO-DET-011
+    ledger_eligibility_status: PROOF_RECORDED
+    reviewer_lane: Windows service persistence
+    reviewer_summary: Source, controlled validation, private runtime boundary, and proof record are recorded; public-safe status remains blocked.
+    next_reviewer_action: Route reviewers to proof record and require evidence-link/redaction review before stronger public wording.
+  - detection_id: HO-DET-012
+    ledger_eligibility_status: PROOF_RECORDED
+    reviewer_lane: Scheduled task persistence
+    reviewer_summary: Source, controlled validation, and proof record are recorded for controlled-test scope.
+    next_reviewer_action: Route reviewers to proof record; keep runtime, signal, and public-safe claims blocked.
+  - detection_id: HO-DET-013
+    ledger_eligibility_status: VALIDATION_READY
+    reviewer_lane: Endpoint tamper expansion
+    reviewer_summary: Source package exists and validation is planned; no controlled-test result is claimed here.
+    next_reviewer_action: Build controlled-test telemetry/security-control tamper fixture set in validation repo under separate scope.
+  - detection_id: HO-DET-014
+    ledger_eligibility_status: NEEDS_TELEMETRY_CONTRACT
+    reviewer_lane: Linux auth expansion
+    reviewer_summary: Planned sudo/root command candidate needs auth/audit field contract before source and validation claims.
+    next_reviewer_action: Define telemetry contract before source authoring or ledger dry-run.
+  - detection_id: HO-DET-015
+    ledger_eligibility_status: NEEDS_TELEMETRY_CONTRACT
+    reviewer_lane: Wazuh operations expansion
+    reviewer_summary: Planned Wazuh agent lifecycle candidate needs manager-event telemetry contract before source and validation claims.
+    next_reviewer_action: Define manager event contract before source authoring or ledger dry-run.
+  - detection_id: HO-DET-016
+    ledger_eligibility_status: NEEDS_TELEMETRY_CONTRACT
+    reviewer_lane: Honeypot visibility expansion
+    reviewer_summary: Planned Cowrie candidate needs event-field contract before source and validation claims.
+    next_reviewer_action: Define Cowrie event contract before source authoring or ledger dry-run.
+  - detection_id: ID-DET-001
+    ledger_eligibility_status: DRY_RUN_READY
+    reviewer_lane: Identity session expansion
+    reviewer_summary: Source and controlled-test validation exist; proof record and runtime/IdP evidence remain separate gates.
+    next_reviewer_action: Dry-run reviewer proof/ledger route without claiming live IdP, runtime, or public-safe proof.
+  - detection_id: ID-DET-002
+    ledger_eligibility_status: DRY_RUN_READY
+    reviewer_lane: Identity MFA expansion
+    reviewer_summary: Source and controlled-test validation exist; proof record and runtime/IdP evidence remain separate gates.
+    next_reviewer_action: Dry-run reviewer proof/ledger route without claiming live IdP, runtime, or public-safe proof.
+  - detection_id: ID-DET-003
+    ledger_eligibility_status: DRY_RUN_READY
+    reviewer_lane: Identity privilege expansion
+    reviewer_summary: Source and controlled-test validation exist; proof record and runtime/IdP evidence remain separate gates.
+    next_reviewer_action: Dry-run reviewer proof/ledger route without claiming live IdP, runtime, or public-safe proof.
+  - detection_id: ID-DET-004
+    ledger_eligibility_status: DRY_RUN_READY
+    reviewer_lane: Identity anomaly expansion
+    reviewer_summary: Source and controlled-test validation exist; proof record and runtime/IdP evidence remain separate gates.
+    next_reviewer_action: Dry-run reviewer proof/ledger route without claiming live IdP, runtime, completeness, or public-safe proof.
+  - detection_id: AWS-DET-001
+    ledger_eligibility_status: PROOF_RECORDED
+    reviewer_lane: Cloud fixture expansion
+    reviewer_summary: CloudTrail-style fixture source, controlled validation, and proof record exist; AWS-live remains blocked.
+    next_reviewer_action: Use proof route for fixture scope only; require live CloudTrail approval before runtime wording.
+  - detection_id: HO-NDR-001
+    ledger_eligibility_status: BLOCKED
+    reviewer_lane: NDR boundary scaffold
+    reviewer_summary: Boundary contract exists outside this source repo, but no published detections repo source package or runtime observation is claimed.
+    next_reviewer_action: Keep blocked until separate runtime packet, evidence route, and public wording review are approved.
+  - detection_id: HO-NDR-002
+    ledger_eligibility_status: NEEDS_TELEMETRY_CONTRACT
+    reviewer_lane: NDR scan visibility expansion
+    reviewer_summary: Planned Suricata/Zeek candidate needs telemetry and field contract before source and validation claims.
+    next_reviewer_action: Define NDR telemetry contract before source authoring or ledger dry-run.
+  - detection_id: HO-PIPE-001
+    ledger_eligibility_status: NEEDS_TELEMETRY_CONTRACT
+    reviewer_lane: Pipeline route integrity
+    reviewer_summary: Source-controlled route contract exists, but live delivery, marker, and downstream signal claims require separate telemetry contract review.
+    next_reviewer_action: Define runtime route receipt contract before platform-ledger append review, proof expansion, or public wording.
 entries:
   - detection_id: HOD-001
     package_path: detections/hero/001-powershell-encoded-command

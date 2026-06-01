@@ -44,6 +44,34 @@ ALLOWED_PROOF_CEILING = {
     "BOUNDARY_CONTRACT_ONLY",
 }
 
+ALLOWED_LEDGER_ELIGIBILITY_STATUS = {
+    "APPENDED",
+    "DRY_RUN_READY",
+    "VALIDATION_READY",
+    "PROOF_RECORDED",
+    "BLOCKED",
+    "NEEDS_TELEMETRY_CONTRACT",
+    "FUTURE_CANDIDATE",
+}
+
+LEDGER_ELIGIBILITY_BUCKETS = {
+    "appended": "APPENDED",
+    "dry_run_ready": "DRY_RUN_READY",
+    "validation_ready": "VALIDATION_READY",
+    "proof_recorded": "PROOF_RECORDED",
+    "blocked": "BLOCKED",
+    "needs_telemetry_contract": "NEEDS_TELEMETRY_CONTRACT",
+    "future_candidate": "FUTURE_CANDIDATE",
+}
+
+REVIEWER_EXPANSION_REQUIRED_FIELDS = {
+    "detection_id",
+    "ledger_eligibility_status",
+    "reviewer_lane",
+    "reviewer_summary",
+    "next_reviewer_action",
+}
+
 LOCAL_SOURCE_STATUSES = {"SOURCE_EXISTS", "BOUNDARY_CONTRACT_ONLY"}
 PLANNED_OR_EXTERNAL_STATUSES = {"VALIDATION_PLANNED", "EXTERNAL_BOUNDARY_CONTRACT"}
 
@@ -72,6 +100,7 @@ ALLOWED_CLAIM_CONTEXT_RE = re.compile(
     r"out of scope|excluded|without claiming|must not|no live|no .*claim|proof remains|"
     r"not promote|does not promote|source-only|source truth only)"
 )
+POSITIVE_PROMOTION_RE = re.compile(r"(?i)\b(now has|has|is|are|supports|promotes|promoted)\b")
 
 
 class MatrixError(Exception):
@@ -195,18 +224,38 @@ def is_local_path(package_path: str) -> bool:
     return "://" not in package_path
 
 
+def scan_claim_lines(path: Path, root: Path) -> None:
+    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    for index, line in enumerate(lines):
+        lower = line.lower()
+        for term in FORBIDDEN_CLAIM_TERMS:
+            term_index = lower.find(term.lower())
+            if term_index == -1:
+                continue
+            promotion_prefix = line[max(0, term_index - 80) : term_index]
+            if POSITIVE_PROMOTION_RE.search(promotion_prefix) and not ALLOWED_CLAIM_CONTEXT_RE.search(line):
+                fail(f"unbounded blocked claim term in {rel(path, root)}:{index + 1}: {term}")
+            context = " ".join(lines[max(0, index - 25) : index + 1])
+            if not ALLOWED_CLAIM_CONTEXT_RE.search(context):
+                fail(f"unbounded blocked claim term in {rel(path, root)}:{index + 1}: {term}")
+
+
 def scan_source_only_claims(package_dir: Path, root: Path) -> None:
-    text_files = [p for p in package_dir.rglob("*") if p.is_file() and p.suffix.lower() in {".md", ".yml", ".yaml", ".spl", ".xml", ".jsonpath"}]
+    text_files = [
+        p
+        for p in package_dir.rglob("*")
+        if p.is_file() and p.suffix.lower() in {".md", ".yml", ".yaml", ".spl", ".xml", ".jsonpath"}
+    ]
     for path in text_files:
-        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-        for index, line in enumerate(lines):
-            lower = line.lower()
-            for term in FORBIDDEN_CLAIM_TERMS:
-                if term.lower() not in lower:
-                    continue
-                context = " ".join(lines[max(0, index - 25) : index + 1])
-                if not ALLOWED_CLAIM_CONTEXT_RE.search(context):
-                    fail(f"unbounded blocked claim term in {rel(path, root)}:{index + 1}: {term}")
+        scan_claim_lines(path, root)
+
+
+def scan_global_metadata_claims(root: Path) -> None:
+    for relative_path in (MATRIX_PATH.relative_to(ROOT), INDEX_PATH.relative_to(ROOT)):
+        path = root / relative_path
+        if not path.exists():
+            fail(f"missing global metadata file: {relative_path.as_posix()}")
+        scan_claim_lines(path, root)
 
 
 def verify_entry(entry: dict[str, Any], root: Path) -> tuple[str, str]:
@@ -282,6 +331,76 @@ def verify_entry(entry: dict[str, Any], root: Path) -> tuple[str, str]:
     return detection_id, package_path
 
 
+def verify_ledger_eligibility_map(matrix: dict[str, Any], detection_ids: set[str]) -> dict[str, str]:
+    configured_status_values = ensure_list(
+        matrix.get("ledger_eligibility_status_values"),
+        "matrix.ledger_eligibility_status_values",
+    )
+    if set(configured_status_values) != ALLOWED_LEDGER_ELIGIBILITY_STATUS:
+        fail("matrix.ledger_eligibility_status_values must match the allowed ledger eligibility statuses")
+
+    eligibility = ensure_mapping(
+        matrix.get("detection_side_ledger_eligibility"),
+        "matrix.detection_side_ledger_eligibility",
+    )
+    missing_buckets = sorted(set(LEDGER_ELIGIBILITY_BUCKETS) - set(eligibility))
+    if missing_buckets:
+        fail(f"matrix.detection_side_ledger_eligibility missing buckets: {', '.join(missing_buckets)}")
+    extra_buckets = sorted(set(eligibility) - set(LEDGER_ELIGIBILITY_BUCKETS))
+    if extra_buckets:
+        fail(f"matrix.detection_side_ledger_eligibility has unapproved buckets: {', '.join(extra_buckets)}")
+
+    id_to_status: dict[str, str] = {}
+    for bucket, status in LEDGER_ELIGIBILITY_BUCKETS.items():
+        values = ensure_list(eligibility[bucket], f"matrix.detection_side_ledger_eligibility.{bucket}")
+        for detection_id in values:
+            if not isinstance(detection_id, str) or not detection_id.strip():
+                fail(f"matrix.detection_side_ledger_eligibility.{bucket} must contain non-empty detection IDs")
+            detection_id = detection_id.strip()
+            if detection_id not in detection_ids:
+                fail(f"ledger eligibility references unknown detection_id: {detection_id}")
+            if detection_id in id_to_status:
+                fail(f"ledger eligibility classifies {detection_id} more than once")
+            id_to_status[detection_id] = status
+
+    missing_ids = sorted(detection_ids - set(id_to_status))
+    if missing_ids:
+        fail(f"ledger eligibility missing detection IDs: {', '.join(missing_ids)}")
+    return id_to_status
+
+
+def verify_reviewer_expansion_map(matrix: dict[str, Any], id_to_status: dict[str, str]) -> None:
+    reviewer_map = ensure_list(matrix.get("reviewer_expansion_map"), "matrix.reviewer_expansion_map")
+    seen: set[str] = set()
+    for raw_entry in reviewer_map:
+        entry = ensure_mapping(raw_entry, "reviewer expansion map entry")
+        missing = sorted(REVIEWER_EXPANSION_REQUIRED_FIELDS.difference(entry))
+        detection_id = entry.get("detection_id", "<unknown>")
+        if missing:
+            fail(f"reviewer expansion map entry {detection_id} missing required fields: {', '.join(missing)}")
+        if not isinstance(detection_id, str) or not detection_id.strip():
+            fail("reviewer expansion map detection_id must be a non-empty string")
+        detection_id = detection_id.strip()
+        if detection_id not in id_to_status:
+            fail(f"reviewer expansion map references unknown detection_id: {detection_id}")
+        if detection_id in seen:
+            fail(f"reviewer expansion map duplicates detection_id: {detection_id}")
+        seen.add(detection_id)
+        ledger_status = entry["ledger_eligibility_status"]
+        if ledger_status not in ALLOWED_LEDGER_ELIGIBILITY_STATUS:
+            fail(f"{detection_id} ledger_eligibility_status not allowed: {ledger_status}")
+        if ledger_status != id_to_status[detection_id]:
+            fail(f"{detection_id} ledger_eligibility_status does not match bucketed eligibility map")
+        for field in ("reviewer_lane", "reviewer_summary", "next_reviewer_action"):
+            value = entry[field]
+            if not isinstance(value, str) or not value.strip():
+                fail(f"{detection_id}.{field} must be a non-empty string")
+
+    missing_ids = sorted(set(id_to_status) - seen)
+    if missing_ids:
+        fail(f"reviewer expansion map missing detection IDs: {', '.join(missing_ids)}")
+
+
 def verify_repo(root: Path = ROOT, print_summary: bool = True) -> list[dict[str, Any]]:
     matrix_path = root / MATRIX_PATH.relative_to(ROOT)
     if not matrix_path.exists():
@@ -300,6 +419,10 @@ def verify_repo(root: Path = ROOT, print_summary: bool = True) -> list[dict[str,
             fail(f"duplicate detection_id in matrix: {detection_id}")
         seen[detection_id] = package_path
         normalized_entries.append(copy.deepcopy(entry))
+
+    id_to_status = verify_ledger_eligibility_map(matrix, set(seen))
+    verify_reviewer_expansion_map(matrix, id_to_status)
+    scan_global_metadata_claims(root)
 
     packages = package_ids(root)
     missing_from_matrix = sorted(set(packages) - set(seen))
