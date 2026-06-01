@@ -54,6 +54,24 @@ Only the following truth states are used in this index:
 
 A higher state is never inferred from a lower one. State changes require evidence and approval routed through the appropriate repository.
 
+## Detection-Side Ledger Eligibility
+
+This section classifies detection-side ledger and reviewer expansion posture. It is source-truth metadata only. It does not append entries to `evidence/evidence-ledger.json`, does not claim canonical ledger state, does not create validation truth, does not create runtime or signal truth, and does not promote public-safe proof. Platform-owned ledger systems remain the authority for canonical Lifetime Case Ledger truth; this detections repo owns only source-side eligibility and readiness metadata.
+
+`APPENDED` is empty because this repo has no source-side eligibility append records. Canonical Lifetime Case Ledger append truth belongs to platform-owned ledger systems. `PROOF_RECORDED` means a separate proof-record route exists; it does not mean the detection-side metadata was appended to a canonical ledger. `DRY_RUN_READY` means source and controlled-test validation exist and a reviewer route can be dry-run without stronger claims. `VALIDATION_READY` means source exists and validation is the next gate. `BLOCKED` means current evidence or repo-boundary state blocks reviewer expansion. `NEEDS_TELEMETRY_CONTRACT` means telemetry-field or route contract work must precede source/validation expansion. `FUTURE_CANDIDATE` means planned only.
+
+| Ledger eligibility | Detection IDs | Reviewer expansion posture |
+|---|---|---|
+| `APPENDED` | none | No source-side eligibility append records are recorded in this detections metadata. |
+| `DRY_RUN_READY` | `ID-DET-001`, `ID-DET-002`, `ID-DET-003`, `ID-DET-004` | Identity detections have source and controlled-test validation; proof records, live IdP evidence, runtime, signal, and public-safe claims remain separate gates. |
+| `VALIDATION_READY` | `HO-DET-013` | Source package exists; controlled telemetry/security-control tamper fixture validation is the next gate. |
+| `PROOF_RECORDED` | `HOD-001`, `HO-DET-001`, `HO-DET-011`, `HO-DET-012`, `AWS-DET-001` | Proof-record routes exist; they preserve their own claim ceilings and do not imply detection-side ledger append, runtime, signal, or public-safe proof. |
+| `BLOCKED` | `HO-NDR-001` | Boundary contract is external to this source repo; runtime packet, evidence route, and public wording review are required before reviewer expansion. |
+| `NEEDS_TELEMETRY_CONTRACT` | `HO-DET-014`, `HO-DET-015`, `HO-DET-016`, `HO-NDR-002`, `HO-PIPE-001` | Telemetry-field, route, or event contract work must precede source/validation expansion or ledger dry-run. |
+| `FUTURE_CANDIDATE` | `HO-DET-002`, `HO-DET-003`, `HO-DET-004`, `HO-DET-005`, `HO-DET-006`, `HO-DET-007`, `HO-DET-008`, `HO-DET-009`, `HO-DET-010` | Planned candidates only; no source package is claimed to exist. |
+
+The machine-readable classification and per-detection reviewer expansion actions live in `detections/DETECTION_PROMOTION_MATRIX.yml` and are enforced by `scripts/verify_detection_promotion_matrix.py`.
+
 ## Detection Factory Matrix
 
 | ID | Detection | Detection surface | Artifact format | Primary telemetry source | Current truth state | Existing artifact | Next source artifact | Next validation gate | Next runtime/evidence gate | Blocked claims |
