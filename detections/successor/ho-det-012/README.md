@@ -85,6 +85,8 @@ Tuning should not suppress user-writable task actions, interpreter-backed task a
 
 HO-DET-012 has source artifacts in this repo and controlled validation in `hawkinsoperations-validation`. The validation report supports `CONTROLLED_TEST_VALIDATED` for 8 controlled scheduled-task fixtures: 4 positive, 4 negative, 0 missed positives, and 0 false-positive negatives.
 
+Static/logtest Wazuh contract validation is represented by HO-LAB-WAZUH-001 in `hawkinsoperations-validation`. This detections repo remains source truth only. The validation-owned lab verifies source/static/logtest contract consistency for the Wazuh registry and controlled sample wiring; it does not prove live Wazuh deployment, Wazuh-routed runtime proof, signal-observed proof, public-safe runtime proof, production SOC, SOCaaS deployment, customer deployment, autonomous SOC, AI/analyst-approved disposition, or case closure.
+
 No HO-DET-012 fixtures were created in this detections repository. Fixture expansion belongs in a separately scoped `hawkinsoperations-validation` lane unless fixture paths are later added to this repository.
 
 Current controlled fixture coverage:
@@ -105,6 +107,7 @@ This package supports only these controlled source and validation claims:
 - HO-DET-012 source artifacts exist in this repository.
 - HO-DET-012 passed controlled-test validation against scheduled-task creation and update fixtures.
 - Detection source includes Sigma/SPL/Wazuh/event-mapping/status surfaces.
+- HO-LAB-WAZUH-001 in `hawkinsoperations-validation` verifies Wazuh source/static/logtest contract consistency for this source entry.
 - HO-DET-012 documents scheduled-task telemetry assumptions and false-positive review guidance.
 - HO-DET-012 has a `CONTROLLED_TEST_VALIDATED` proof record in `hawkinsoperations-proof`.
 

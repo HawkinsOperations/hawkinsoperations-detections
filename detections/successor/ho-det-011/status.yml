@@ -33,6 +33,8 @@ canonical_readme: detections/successor/ho-det-011/README.md
 canonical_sigma_source: detections/successor/ho-det-011/rule.yml
 canonical_splunk_source: detections/successor/ho-det-011/splunk.spl
 canonical_wazuh_source: detections/successor/ho-det-011/wazuh.xml
+canonical_wazuh_static_contract_lab: hawkinsoperations-validation/validation/wazuh/labs/HO-LAB-WAZUH-001.md
+canonical_wazuh_static_contract_verifier: hawkinsoperations-validation/scripts/verify_ho_lab_wazuh_001.py
 canonical_event_mapping: detections/successor/ho-det-011/event-mapping.yml
 canonical_validation_cases: hawkinsoperations-validation/validation/successor/ho-det-011/validation-cases.json
 canonical_validation_result: hawkinsoperations-validation/reports/ho-det-011/validation-result.json
@@ -80,6 +82,7 @@ tuning_focus:
 allowed_claims:
   - HO-DET-011 source artifacts exist.
   - HO-DET-011 passed controlled-test validation against 17 controlled Windows service creation fixtures.
+  - HO-LAB-WAZUH-001 verifies Wazuh source/static/logtest contract consistency for HO-DET-011 in hawkinsoperations-validation.
   - HO-DET-011 has a platform case-packet guardrail that preserves controlled-test-scope claim boundaries.
   - HO-DET-011 has sanitized private local Windows runtime evidence captured for one controlled service-creation test.
   - HO-DET-011 is capped at PRIVATE_RUNTIME_EVIDENCE_CAPTURED for private evidence and NOT_PUBLIC_SAFE for public use.

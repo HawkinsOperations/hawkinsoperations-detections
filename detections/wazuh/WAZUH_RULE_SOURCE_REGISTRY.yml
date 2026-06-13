@@ -39,7 +39,7 @@ entries:
     runtime_status: false
     signal_status: false
     public_safe_status: NOT_PUBLIC_SAFE
-    notes: Service creation Wazuh XML exists as source-only rule source; live Wazuh routing remains unproven.
+    notes: Service creation Wazuh XML exists as source-only rule source; HO-LAB-WAZUH-001 in hawkinsoperations-validation verifies source/static/logtest contract consistency without claiming live Wazuh routing.
   - detection_id: HO-DET-012
     mapping_lane: wazuh_rule_source
     status: SOURCE_EXISTS
@@ -59,7 +59,7 @@ entries:
     runtime_status: false
     signal_status: false
     public_safe_status: NOT_PUBLIC_SAFE
-    notes: Scheduled task Wazuh XML exists as source-only rule source; live Wazuh routing remains unproven.
+    notes: Scheduled task Wazuh XML exists as source-only rule source; HO-LAB-WAZUH-001 in hawkinsoperations-validation verifies source/static/logtest contract consistency without claiming live Wazuh routing.
   - detection_id: HO-DET-013
     mapping_lane: wazuh_rule_source_conditional
     status: CONDITIONAL_SOURCE_PLANNED
