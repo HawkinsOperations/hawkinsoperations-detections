@@ -28,6 +28,8 @@ canonical_readme: detections/successor/ho-det-012/README.md
 canonical_sigma_source: detections/successor/ho-det-012/rule.yml
 canonical_splunk_source: detections/successor/ho-det-012/splunk.spl
 canonical_wazuh_source: detections/successor/ho-det-012/wazuh.xml
+canonical_wazuh_static_contract_lab: hawkinsoperations-validation/validation/wazuh/labs/HO-LAB-WAZUH-001.md
+canonical_wazuh_static_contract_verifier: hawkinsoperations-validation/scripts/verify_ho_lab_wazuh_001.py
 canonical_event_mapping: detections/successor/ho-det-012/event-mapping.yml
 planned_validation_repo_scope: hawkinsoperations-validation
 canonical_validation_cases: hawkinsoperations-validation/validation/successor/ho-det-012/validation-cases.json
@@ -83,6 +85,7 @@ tuning_focus:
 allowed_claims:
   - HO-DET-012 source artifacts exist.
   - HO-DET-012 passed controlled-test validation against scheduled-task creation and update fixtures.
+  - HO-LAB-WAZUH-001 verifies Wazuh source/static/logtest contract consistency for HO-DET-012 in hawkinsoperations-validation.
   - HO-DET-012 has a CONTROLLED_TEST_VALIDATED proof record in hawkinsoperations-proof.
   - Detection source includes Sigma/SPL/Wazuh/event-mapping/status surfaces.
   - HO-DET-012 documents scheduled-task telemetry assumptions and false-positive review guidance.

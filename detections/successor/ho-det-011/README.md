@@ -2,7 +2,7 @@
 
 ## Purpose
 
-HO-DET-011 defines source artifacts for suspicious Windows service creation or service binary change behavior. This folder prepares the detection source for future controlled-test validation across Sigma-style YAML, Splunk SPL, Wazuh XML, event mapping, and status metadata.
+HO-DET-011 defines source artifacts for suspicious Windows service creation or service binary change behavior across Sigma-style YAML, Splunk SPL, Wazuh XML, event mapping, and status metadata.
 
 This source does not prove runtime activity, signal observation, validation passage, or public-safe proof.
 
@@ -73,7 +73,9 @@ Tuning should not suppress user-writable service paths or interpreter-backed ser
 
 ## Validation Boundary
 
-Validation is planned, not complete. Future validation should use controlled positive and negative fixtures that distinguish benign service installation from suspicious service image path or tooling patterns.
+Controlled fixture validation for HO-DET-011 is represented in `hawkinsoperations-validation`. Static/logtest Wazuh contract validation is represented by HO-LAB-WAZUH-001 in `hawkinsoperations-validation`.
+
+This detections repo remains source truth only. The validation-owned lab verifies source/static/logtest contract consistency for the Wazuh registry and controlled sample wiring; it does not prove live Wazuh deployment, Wazuh-routed runtime proof, signal-observed proof, public-safe runtime proof, production SOC, SOCaaS deployment, customer deployment, autonomous SOC, AI/analyst-approved disposition, or case closure.
 
 No HO-DET-011 fixtures were found in this detections repository during this tuning pass. Fixture expansion belongs in a separately scoped `hawkinsoperations-validation` lane unless fixture paths are later added to this repository.
 
@@ -91,7 +93,7 @@ This package supports only these source-quality claims:
 
 - HO-DET-011 detection source artifacts exist in this repository.
 - HO-DET-011 includes Sigma-style YAML, Splunk SPL, Wazuh XML, event mapping, status metadata, and tuning notes.
-- HO-DET-011 is prepared for separately scoped controlled-test validation.
+- HO-LAB-WAZUH-001 in `hawkinsoperations-validation` verifies Wazuh source/static/logtest contract consistency for this source entry.
 
 ## Blocked Claims
 
@@ -118,4 +120,4 @@ This source must not be cited as evidence for:
 
 ## Next Gate
 
-The next gate is a validation-repo fixture set and deterministic controlled-test validation harness for HO-DET-011. That work must be scoped separately and must not be inferred from these source files.
+Runtime, signal-observed, public-safe, production, SOCaaS, autonomous SOC, disposition, and case-closure claims remain blocked unless separately approved through the appropriate validation, proof, and evidence gates.

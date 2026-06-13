@@ -1,8 +1,11 @@
 <!--
   HO-DET-011 source-only Wazuh XML candidate.
-  Validation is planned. This file does not claim Wazuh-routed live telemetry,
-  runtime activity, signal observation, public-safe status, or evidence-linked
-  public proof.
+  Static/logtest contract validation is represented by HO-LAB-WAZUH-001 in
+  hawkinsoperations-validation. This source file remains source truth only and
+  does not claim Wazuh-routed live telemetry, runtime activity, signal
+  observation, public-safe status, production SOC, SOCaaS deployment,
+  autonomous SOC, disposition approval, case closure, or evidence-linked public
+  proof.
 
   Telemetry correction:
   - Windows System Event ID 7045 is Service Control Manager service-install telemetry.
