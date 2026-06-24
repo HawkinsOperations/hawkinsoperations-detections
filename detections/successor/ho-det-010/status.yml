@@ -1,0 +1,72 @@
+detection_id: HO-DET-010
+truth_surface: detection_source
+source_status: SOURCE_EXISTS
+sigma_source_status: SOURCE_EXISTS
+splunk_source_status: SOURCE_EXISTS
+wazuh_source_status: SOURCE_EXISTS
+event_mapping_status: SOURCE_EXISTS
+validation_status: CONTROLLED_TEST_VALIDATED
+validation_scope: controlled-test Windows local Administrators group membership fixtures only
+proof_level: SOURCE_EXISTS
+trust_class: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+runtime_active: false
+signal_observed: false
+evidence_linked_public_proof: false
+proof_status: SOURCE_EXISTS
+runtime_active_status: NOT_PROVEN
+public_or_routed_signal_status: NOT_PROVEN
+wazuh_status: NOT_PROVEN
+splunk_status: NOT_PROVEN
+canonical_readme: detections/successor/ho-det-010/README.md
+canonical_sigma_source: detections/successor/ho-det-010/rule.yml
+canonical_splunk_source: detections/successor/ho-det-010/splunk.spl
+canonical_wazuh_source: detections/successor/ho-det-010/wazuh.xml
+canonical_event_mapping: detections/successor/ho-det-010/event-mapping.yml
+canonical_validation_cases: hawkinsoperations-validation/validation/successor/ho-det-010/validation-cases.json
+canonical_validation_result: hawkinsoperations-validation/reports/ho-det-010/validation-result.json
+telemetry_sources:
+  - Windows Security Event ID 4732 for member added to local security-enabled group.
+  - Windows Security Event ID 4733 for member removed from local security-enabled group.
+  - Sysmon Event ID 1 process context for local group modification tooling where available.
+tuning_focus:
+  suspicious_fields:
+    - TargetUserName or GroupName
+    - TargetSid
+    - MemberName or MemberSid
+    - SubjectUserName
+    - process command context where available
+  suspicious_indicators:
+    - additions to local Administrators
+    - built-in Administrators SID S-1-5-32-544
+    - unfamiliar local or domain principal added to local admin group
+  benign_review_patterns:
+    - approved helpdesk local administrator provisioning
+    - break-glass rotation under approved change control
+    - endpoint management remediation
+    - documented lab reset or classroom administration workflow
+allowed_claims:
+  - HO-DET-010 source artifacts exist.
+  - HO-DET-010 controlled-test validation is available in the validation repo.
+  - Detection source includes Sigma/SPL/Wazuh/event-mapping/status surfaces.
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - live Splunk fired
+  - Splunk-fired
+  - Wazuh-routed
+  - Cribl-routed
+  - Security Onion observed
+  - production-ready
+  - fleet-wide
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
+  - privilege-management coverage completeness
+next_gate:
+  validation_repo_fixture_set: REQUIRED_BEFORE_RUNTIME
+  controlled_test_validation_harness: REQUIRED_BEFORE_RUNTIME
+  runtime_evidence: SEPARATE_VM108_GATE_REQUIRED
+  public_proof: BLOCKED_PENDING_PUBLIC_EVIDENCE_LINKAGE_REDACTION_REVIEW_AND_RAYLEE_APPROVAL

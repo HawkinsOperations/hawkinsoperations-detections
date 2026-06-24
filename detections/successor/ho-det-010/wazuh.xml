@@ -1,0 +1,44 @@
+<!--
+  HO-DET-010 source-only Wazuh XML candidate.
+  This file is source truth only and does not claim live Wazuh routing,
+  runtime activity, signal observation, public-safe status, production SOC,
+  SOCaaS deployment, autonomous SOC, disposition approval, case closure, or
+  evidence-linked public proof.
+-->
+<group name="windows,privilege_change,local_admins,ho_det_010,source_only,">
+  <rule id="910101" level="8">
+    <if_group>windows</if_group>
+    <field name="win.system.eventID">4732|4733</field>
+    <field name="win.eventdata.targetSid" type="pcre2">(?i)S-1-5-32-544</field>
+    <description>HO-DET-010 candidate: Windows local Administrators group membership changed</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <options>no_full_log</options>
+    <group>ho-det-010,source-only,controlled-test-validated,</group>
+  </rule>
+
+  <rule id="910102" level="10">
+    <if_sid>910101</if_sid>
+    <field name="win.system.eventID">4732</field>
+    <description>HO-DET-010 candidate: member added to local Administrators group</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <options>no_full_log</options>
+    <group>ho-det-010,source-only,admin-add-context,blocked-claims-runtime-signal-public,</group>
+  </rule>
+
+  <rule id="910103" level="8">
+    <if_group>windows,sysmon</if_group>
+    <field name="win.system.eventID">1</field>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(net|net1|powershell|pwsh|cmd)\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)(localgroup\s+administrators|add-localgroupmember|remove-localgroupmember|/add|/delete)</field>
+    <description>HO-DET-010 candidate: process context for local Administrators group modification tooling</description>
+    <mitre>
+      <id>T1098</id>
+    </mitre>
+    <options>no_full_log</options>
+    <group>ho-det-010,source-only,process-context,</group>
+  </rule>
+</group>
