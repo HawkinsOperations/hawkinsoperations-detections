@@ -1,0 +1,110 @@
+detection_id: HO-DET-009
+truth_surface: detection_source
+mapping_status: SOURCE_EXISTS
+validation_status: CONTROLLED_TEST_VALIDATED
+description: >
+  Event mapping for Windows local user creation behavior. This mapping supports
+  controlled-test validation and does not prove runtime activity, signal
+  observation, routing, public-safe status, or evidence-linked public proof.
+telemetry_boundary:
+  windows_security_4720: Windows Security Event ID 4720 may record local user creation where audit policy and collection support it.
+  windows_security_4738: Windows Security Event ID 4738 may provide related account-change context where available.
+  sysmon_1: Sysmon Event ID 1 can provide process context for account creation tooling where available.
+sources:
+  windows_security_4720:
+    channel: Security
+    event_id: 4720
+    role: local_user_created_event_where_available
+    expected_fields:
+      target_user:
+        common_names:
+          - TargetUserName
+          - AccountName
+      subject_user:
+        common_names:
+          - SubjectUserName
+      host:
+        common_names:
+          - Computer
+  windows_security_4738:
+    channel: Security
+    event_id: 4738
+    role: related_account_changed_context
+    expected_fields:
+      target_user:
+        common_names:
+          - TargetUserName
+          - AccountName
+      subject_user:
+        common_names:
+          - SubjectUserName
+  sysmon_event_1:
+    channel: Microsoft-Windows-Sysmon/Operational
+    provider: Sysmon
+    event_id: 1
+    role: process_context_for_local_user_creation_tooling
+    expected_fields:
+      process_image:
+        common_names:
+          - Image
+      command_line:
+        common_names:
+          - CommandLine
+      parent_image:
+        common_names:
+          - ParentImage
+wazuh_fields:
+  event_id:
+    candidates:
+      - win.system.eventID
+  target_user:
+    candidates:
+      - win.eventdata.targetUserName
+      - win.eventdata.TargetUserName
+      - win.eventdata.accountName
+  subject_user:
+    candidates:
+      - win.eventdata.subjectUserName
+      - win.eventdata.SubjectUserName
+  process_image:
+    candidates:
+      - win.eventdata.image
+  command_line:
+    candidates:
+      - win.eventdata.commandLine
+splunk_fields:
+  event_id:
+    candidates:
+      - EventCode
+      - EventID
+      - event_id
+  target_user:
+    candidates:
+      - TargetUserName
+      - AccountName
+      - user
+  subject_user:
+    candidates:
+      - SubjectUserName
+      - src_user
+  process_image:
+    candidates:
+      - Image
+      - process_path
+  command_line:
+    candidates:
+      - CommandLine
+      - ProcessCommandLine
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - public-safe runtime proof
+  - live Splunk proof
+  - live Wazuh proof
+  - production-ready
+  - fleet-wide
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition

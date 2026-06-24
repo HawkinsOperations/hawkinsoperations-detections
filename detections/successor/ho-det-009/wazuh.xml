@@ -1,0 +1,43 @@
+<!--
+  HO-DET-009 source-only Wazuh XML candidate.
+  This file is source truth only and does not claim live Wazuh routing,
+  runtime activity, signal observation, public-safe status, production SOC,
+  SOCaaS deployment, autonomous SOC, disposition approval, case closure, or
+  evidence-linked public proof.
+-->
+<group name="windows,account_creation,ho_det_009,source_only,">
+  <rule id="910091" level="7">
+    <if_group>windows</if_group>
+    <field name="win.system.eventID">4720</field>
+    <description>HO-DET-009 candidate: Windows local user account creation event requiring review</description>
+    <mitre>
+      <id>T1136.001</id>
+    </mitre>
+    <options>no_full_log</options>
+    <group>ho-det-009,source-only,controlled-test-validated,</group>
+  </rule>
+
+  <rule id="910092" level="9">
+    <if_sid>910091</if_sid>
+    <field name="win.eventdata.targetUserName" type="pcre2">(?i)(svc|support|backup|temp|admin|\$)</field>
+    <description>HO-DET-009 candidate: local user creation with service-like or administrator-adjacent account name</description>
+    <mitre>
+      <id>T1136.001</id>
+    </mitre>
+    <options>no_full_log</options>
+    <group>ho-det-009,source-only,account-name-context,blocked-claims-runtime-signal-public,</group>
+  </rule>
+
+  <rule id="910093" level="8">
+    <if_group>windows,sysmon</if_group>
+    <field name="win.system.eventID">1</field>
+    <field name="win.eventdata.image" type="pcre2">(?i)\\(net|net1|powershell|pwsh|cmd)\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)(\snet(\.exe|1\.exe)?\s+user\s|new-localuser|/add)</field>
+    <description>HO-DET-009 candidate: process context for local user creation tooling</description>
+    <mitre>
+      <id>T1136.001</id>
+    </mitre>
+    <options>no_full_log</options>
+    <group>ho-det-009,source-only,process-context,</group>
+  </rule>
+</group>

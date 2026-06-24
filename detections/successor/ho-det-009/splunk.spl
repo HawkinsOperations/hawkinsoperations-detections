@@ -1,0 +1,12 @@
+`comment("HO-DET-009 source candidate only. Does not prove live Splunk firing, runtime, signal observation, public-safe proof, production readiness, SOCaaS, customer deployment, autonomous SOC, AI approval, analyst approval, or case closure.")`
+(index=windows OR index=wineventlog)
+(
+  (sourcetype=WinEventLog:Security (EventCode=4720 OR EventID=4720))
+  OR
+  ((EventCode=1 OR EventID=1) (Image="*\\net.exe" OR Image="*\\net1.exe" OR Image="*\\powershell.exe" OR Image="*\\pwsh.exe" OR Image="*\\cmd.exe")
+    (CommandLine="* net user *" OR CommandLine="* net1 user *" OR CommandLine="*New-LocalUser*" OR CommandLine="*/add*"))
+)
+| eval ho_detection_id="HO-DET-009"
+| eval ho_detection_scope="source_candidate_only"
+| eval ho_public_safe_status="NOT_PUBLIC_SAFE"
+| table _time host user EventCode EventID TargetUserName SubjectUserName Image CommandLine ParentImage ho_detection_id ho_detection_scope ho_public_safe_status

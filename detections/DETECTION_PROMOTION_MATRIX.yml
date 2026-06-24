@@ -44,6 +44,7 @@ detection_side_ledger_eligibility:
     - ID-DET-004
   validation_ready:
     - HO-DET-013
+    - HO-DET-009
   proof_recorded:
     - HOD-001
     - HO-DET-001
@@ -66,7 +67,6 @@ detection_side_ledger_eligibility:
     - HO-DET-006
     - HO-DET-007
     - HO-DET-008
-    - HO-DET-009
     - HO-DET-010
 reviewer_expansion_map:
   - detection_id: HOD-001
@@ -115,10 +115,10 @@ reviewer_expansion_map:
     reviewer_summary: Planned suspicious child-process candidate with no source package claimed.
     next_reviewer_action: Keep as roadmap candidate until source and mapping approval exists.
   - detection_id: HO-DET-009
-    ledger_eligibility_status: FUTURE_CANDIDATE
+    ledger_eligibility_status: VALIDATION_READY
     reviewer_lane: Windows account lifecycle expansion
-    reviewer_summary: Planned local user creation candidate with no source package claimed.
-    next_reviewer_action: Keep as roadmap candidate until Event ID mapping, Wazuh XML, and SPL source approval exists.
+    reviewer_summary: Local user creation source package and controlled-test validation lane exist; runtime and public-safe claims remain blocked.
+    next_reviewer_action: Use controlled validation artifacts for reviewer intake; require separate runtime and proof approval before stronger claims.
   - detection_id: HO-DET-010
     ledger_eligibility_status: FUTURE_CANDIDATE
     reviewer_lane: Windows privilege expansion
@@ -361,20 +361,35 @@ entries:
     notes: Planned index row only; no package path is claimed to exist.
 
   - detection_id: HO-DET-009
-    package_path: planned://detections/successor/ho-det-009
+    package_path: detections/successor/ho-det-009
     detection_family: successor
-    required_files: []
-    source_status: VALIDATION_PLANNED
+    required_files:
+      - README.md
+      - rule.yml
+      - event-mapping.yml
+      - status.yml
+      - splunk.spl
+      - wazuh.xml
+    source_status: SOURCE_EXISTS
     validation_expected_owner: hawkinsoperations-validation
-    validation_status_if_known: VALIDATION_PLANNED
+    validation_status_if_known: CONTROLLED_TEST_VALIDATED_IN_VALIDATION_REPO
     runtime_active: false
     signal_observed: false
     public_safe_status: NOT_PUBLIC_SAFE
-    proof_ceiling: VALIDATION_PLANNED
-    blocked_claims: *standard_blocked_claims
-    next_gate: create source package under separate source-authoring approval
-    notes: Planned index row only; no package path is claimed to exist.
-
+    proof_ceiling: SOURCE_EXISTS
+    blocked_claims:
+      - runtime-active public proof
+      - signal-observed public proof
+      - public-safe proof
+      - live Splunk proof
+      - live Wazuh proof
+      - production-ready
+      - fleet-wide
+      - autonomous SOC
+      - AI-approved disposition
+      - analyst-approved disposition
+    next_gate: platform fixture support and separately approved runtime receipt only after cleanup gates pass
+    notes: Matrix records source package enforcement only; controlled-test validation belongs to validation and no runtime, signal, or public-safe claim is made here.
   - detection_id: HO-DET-010
     package_path: planned://detections/successor/ho-det-010
     detection_family: successor

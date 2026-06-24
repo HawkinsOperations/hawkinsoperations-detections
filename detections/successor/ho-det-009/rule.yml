@@ -1,0 +1,117 @@
+title: HO-DET-009 Windows Local User Creation
+detection_id: HO-DET-009
+name: Windows Local User Creation
+status: experimental/source-validation-ready
+proof_level: SOURCE_EXISTS
+trust_class: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+approval_status: NOT_APPROVED
+runtime_active: false
+validation_status: CONTROLLED_TEST_VALIDATED
+signal_observed: false
+evidence_linked_public_proof: false
+claim_ceiling: SOURCE_EXISTS
+description: >
+  Source detection for Windows local user account creation telemetry. This
+  source uses Windows Security Event ID 4720 and optional process context for
+  account creation tooling. It does not establish runtime, signal, routing,
+  public-safe proof, production coverage, or account lifecycle completeness.
+author: HawkinsOperations
+date: 2026-06-24
+references:
+  - https://attack.mitre.org/techniques/T1136/001/
+tags:
+  - attack.persistence
+  - attack.t1136.001
+mitre_attack:
+  tactic_ids:
+    - TA0003
+  tactic_names:
+    - Persistence
+  technique_ids:
+    - T1136.001
+  technique_names:
+    - Local Account
+logsource:
+  product: windows
+  service: security
+data_source:
+  primary:
+    product: windows
+    channel: Security
+    event_ids:
+      - 4720
+  related:
+    - product: windows
+      channel: Security
+      event_ids:
+        - 4738
+    - product: windows
+      channel: Microsoft-Windows-Sysmon/Operational
+      event_ids:
+        - 1
+logic_summary: >
+  Flag Windows local user creation events and optional process context where
+  local account creation tooling is visible. Prioritize account names or
+  creation context that look temporary, service-like, support-like, hidden, or
+  administrator-adjacent unless approved change context exists.
+detection:
+  selection_security_4720:
+    EventID: 4720
+  selection_process_context:
+    EventID: 1
+    Image|endswith:
+      - '\net.exe'
+      - '\net1.exe'
+      - '\powershell.exe'
+      - '\pwsh.exe'
+      - '\cmd.exe'
+  selection_account_creation_command:
+    CommandLine|contains:
+      - ' user '
+      - 'New-LocalUser'
+      - 'net user'
+      - 'net1 user'
+      - '/add'
+  suspicious_account_name:
+    TargetUserName|contains:
+      - 'svc'
+      - 'support'
+      - 'backup'
+      - 'temp'
+      - 'admin'
+      - '$'
+  condition: selection_security_4720 or (selection_process_context and selection_account_creation_command)
+falsepositives:
+  - Approved helpdesk local account provisioning.
+  - Documented classroom, training, or lab reset account creation.
+  - Break-glass account rotation under approved change control.
+  - Endpoint management provisioning of documented local service accounts.
+tuning_guidance:
+  suspicious_context_review:
+    - Review target account name, creator identity, host role, and change window.
+    - Prioritize local accounts with service-like, support-like, temporary, backup, hidden, or admin-adjacent names.
+    - Correlate Security 4720 with process context where Sysmon or process auditing is available.
+  benign_review_patterns:
+    - Approved onboarding and helpdesk workflows.
+    - Documented local service-account provisioning.
+    - Lab reset or classroom account creation under change control.
+level: medium
+supported_claim: HO-DET-009 source artifacts exist and controlled-test validation is available in the validation repo.
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - public-safe runtime proof
+  - live Splunk proof
+  - live Wazuh proof
+  - Cribl-routed proof
+  - Security Onion observed
+  - production-ready
+  - production triage
+  - fleet-wide
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
+  - account-lifecycle coverage completeness
