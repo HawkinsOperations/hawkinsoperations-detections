@@ -1,0 +1,119 @@
+title: HO-DET-010 Windows Local Administrators Group Membership Change
+detection_id: HO-DET-010
+name: Windows Local Administrators Group Membership Change
+status: experimental/source-validation-ready
+proof_level: SOURCE_EXISTS
+trust_class: SOURCE_EXISTS
+public_safe_status: NOT_PUBLIC_SAFE
+approval_status: NOT_APPROVED
+runtime_active: false
+validation_status: CONTROLLED_TEST_VALIDATED
+signal_observed: false
+evidence_linked_public_proof: false
+claim_ceiling: SOURCE_EXISTS
+description: >
+  Source detection for Windows local Administrators group membership changes.
+  This source uses Windows Security Event IDs 4732 and 4733 with optional
+  process context for local group membership tooling. It does not establish
+  runtime, signal, routing, public-safe proof, production coverage, or
+  privilege-management completeness.
+author: HawkinsOperations
+date: 2026-06-24
+references:
+  - https://attack.mitre.org/techniques/T1098/
+tags:
+  - attack.persistence
+  - attack.privilege-escalation
+  - attack.t1098
+mitre_attack:
+  tactic_ids:
+    - TA0003
+    - TA0004
+  tactic_names:
+    - Persistence
+    - Privilege Escalation
+  technique_ids:
+    - T1098
+  technique_names:
+    - Account Manipulation
+logsource:
+  product: windows
+  service: security
+data_source:
+  primary:
+    product: windows
+    channel: Security
+    event_ids:
+      - 4732
+      - 4733
+  related:
+    - product: windows
+      channel: Microsoft-Windows-Sysmon/Operational
+      event_ids:
+        - 1
+logic_summary: >
+  Flag local Administrators group membership add/remove activity and optional
+  process context where local group modification tooling is visible. Prioritize
+  membership additions and administrator group targets unless approved change
+  context exists.
+detection:
+  selection_security_local_group_membership:
+    EventID:
+      - 4732
+      - 4733
+  selection_administrators_group:
+    TargetSid|contains:
+      - S-1-5-32-544
+    TargetUserName|contains:
+      - Administrators
+      - BUILTIN\Administrators
+  selection_process_context:
+    EventID: 1
+    Image|endswith:
+      - '\net.exe'
+      - '\net1.exe'
+      - '\powershell.exe'
+      - '\pwsh.exe'
+      - '\cmd.exe'
+  selection_group_change_command:
+    CommandLine|contains:
+      - ' localgroup administrators '
+      - 'Add-LocalGroupMember'
+      - 'Remove-LocalGroupMember'
+      - 'Administrators'
+      - '/add'
+      - '/delete'
+  condition: selection_security_local_group_membership and selection_administrators_group or (selection_process_context and selection_group_change_command)
+falsepositives:
+  - Approved helpdesk local administrator provisioning.
+  - Break-glass account rotation under approved change control.
+  - Endpoint management remediation that temporarily adds and removes an admin.
+  - Documented lab reset or classroom administration workflow.
+tuning_guidance:
+  suspicious_context_review:
+    - Review member name, target group name/SID, creator identity, host role, and change window.
+    - Prioritize add events to local Administrators and unfamiliar local or domain principals.
+    - Correlate Security 4732/4733 with process context where Sysmon or process auditing is available.
+  benign_review_patterns:
+    - Approved helpdesk and endpoint management workflows.
+    - Break-glass rotation with ticket/change-control context.
+    - Lab reset activity under controlled maintenance context.
+level: high
+supported_claim: HO-DET-010 source artifacts exist and controlled-test validation is available in the validation repo.
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - public-safe runtime proof
+  - live Splunk proof
+  - live Wazuh proof
+  - Cribl-routed proof
+  - Security Onion observed
+  - production-ready
+  - production triage
+  - fleet-wide
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
+  - privilege-management coverage completeness

@@ -1,0 +1,10 @@
+index=windows (sourcetype=WinEventLog:Security (EventCode=4732 OR EventCode=4733))
+(
+  TargetSid="S-1-5-32-544"
+  OR like(TargetUserName, "%Administrators%")
+  OR like(GroupName, "%Administrators%")
+)
+| eval detection_id="HO-DET-010"
+| eval detection_name="Windows Local Administrators Group Membership Change"
+| eval proof_boundary="source_only_not_runtime_not_public_safe"
+| table _time host EventCode TargetUserName TargetSid MemberName MemberSid SubjectUserName detection_id detection_name proof_boundary

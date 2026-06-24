@@ -60,6 +60,26 @@ entries:
     signal_status: false
     public_safe_status: NOT_PUBLIC_SAFE
     notes: Local user creation Wazuh XML exists as source-only rule source; validation fixtures remain controlled-test only and do not claim live Wazuh routing.
+  - detection_id: HO-DET-010
+    mapping_lane: wazuh_rule_source
+    status: SOURCE_EXISTS
+    detection_package: detections/successor/ho-det-010
+    wazuh_rule_path: detections/successor/ho-det-010/wazuh.xml
+    expected_rule_ids:
+      - 910101
+      - 910102
+      - 910103
+    expected_groups:
+      - ho-det-010
+      - source-only
+      - controlled-test-validated
+    expected_mitre_ids:
+      - T1098
+    preferred_runtime: wazuh_candidate_after_controlled_fixture
+    runtime_status: false
+    signal_status: false
+    public_safe_status: NOT_PUBLIC_SAFE
+    notes: Local Administrators group membership Wazuh XML exists as source-only rule source; validation fixtures remain controlled-test only and do not claim live Wazuh routing.
   - detection_id: HO-DET-012
     mapping_lane: wazuh_rule_source
     status: SOURCE_EXISTS

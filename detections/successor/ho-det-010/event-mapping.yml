@@ -1,0 +1,142 @@
+detection_id: HO-DET-010
+truth_surface: detection_source
+mapping_status: SOURCE_EXISTS
+validation_status: CONTROLLED_TEST_VALIDATED
+description: >
+  Event mapping for Windows local Administrators group membership changes. This
+  mapping supports controlled-test validation and does not prove runtime
+  activity, signal observation, routing, public-safe status, or evidence-linked
+  public proof.
+telemetry_boundary:
+  windows_security_4732: Windows Security Event ID 4732 may record a member added to a local security-enabled group.
+  windows_security_4733: Windows Security Event ID 4733 may record a member removed from a local security-enabled group.
+  sysmon_1: Sysmon Event ID 1 can provide process context for local group modification tooling where available.
+sources:
+  windows_security_4732:
+    channel: Security
+    event_id: 4732
+    role: local_group_member_added_event_where_available
+    expected_fields:
+      target_group:
+        common_names:
+          - TargetUserName
+          - GroupName
+      target_sid:
+        common_names:
+          - TargetSid
+      member_user:
+        common_names:
+          - MemberName
+          - MemberSid
+      subject_user:
+        common_names:
+          - SubjectUserName
+      host:
+        common_names:
+          - Computer
+  windows_security_4733:
+    channel: Security
+    event_id: 4733
+    role: local_group_member_removed_event_where_available
+    expected_fields:
+      target_group:
+        common_names:
+          - TargetUserName
+          - GroupName
+      target_sid:
+        common_names:
+          - TargetSid
+      member_user:
+        common_names:
+          - MemberName
+          - MemberSid
+      subject_user:
+        common_names:
+          - SubjectUserName
+  sysmon_event_1:
+    channel: Microsoft-Windows-Sysmon/Operational
+    provider: Sysmon
+    event_id: 1
+    role: process_context_for_local_group_modification_tooling
+    expected_fields:
+      process_image:
+        common_names:
+          - Image
+      command_line:
+        common_names:
+          - CommandLine
+      parent_image:
+        common_names:
+          - ParentImage
+wazuh_fields:
+  event_id:
+    candidates:
+      - win.system.eventID
+  target_group:
+    candidates:
+      - win.eventdata.targetUserName
+      - win.eventdata.TargetUserName
+      - win.eventdata.groupName
+  target_sid:
+    candidates:
+      - win.eventdata.targetSid
+      - win.eventdata.TargetSid
+  member_user:
+    candidates:
+      - win.eventdata.memberName
+      - win.eventdata.MemberName
+      - win.eventdata.memberSid
+  subject_user:
+    candidates:
+      - win.eventdata.subjectUserName
+      - win.eventdata.SubjectUserName
+  process_image:
+    candidates:
+      - win.eventdata.image
+  command_line:
+    candidates:
+      - win.eventdata.commandLine
+splunk_fields:
+  event_id:
+    candidates:
+      - EventCode
+      - EventID
+      - event_id
+  target_group:
+    candidates:
+      - TargetUserName
+      - GroupName
+      - group
+  target_sid:
+    candidates:
+      - TargetSid
+  member_user:
+    candidates:
+      - MemberName
+      - MemberSid
+      - user
+  subject_user:
+    candidates:
+      - SubjectUserName
+      - src_user
+  process_image:
+    candidates:
+      - Image
+      - process_path
+  command_line:
+    candidates:
+      - CommandLine
+      - ProcessCommandLine
+blocked_claims:
+  - runtime-active
+  - signal-observed
+  - public-safe
+  - evidence-linked public proof
+  - public-safe runtime proof
+  - live Splunk proof
+  - live Wazuh proof
+  - production-ready
+  - fleet-wide
+  - autonomous SOC
+  - AI-approved disposition
+  - analyst-approved disposition
