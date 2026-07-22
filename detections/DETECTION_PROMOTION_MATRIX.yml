@@ -138,8 +138,8 @@ reviewer_expansion_map:
   - detection_id: HO-DET-013
     ledger_eligibility_status: VALIDATION_READY
     reviewer_lane: Endpoint tamper expansion
-    reviewer_summary: Source package exists and validation is planned; no controlled-test result is claimed here.
-    next_reviewer_action: Build controlled-test telemetry/security-control tamper fixture set in validation repo under separate scope.
+    reviewer_summary: Source package and controlled telemetry/security-control tamper fixture validation exist; runtime, signal, and public-safe claims remain blocked.
+    next_reviewer_action: Review the validation-owned fixture report and preserve separate proof, runtime, and public wording gates.
   - detection_id: HO-DET-014
     ledger_eligibility_status: NEEDS_TELEMETRY_CONTRACT
     reviewer_lane: Linux auth expansion
@@ -498,7 +498,7 @@ entries:
       - splunk.spl
     source_status: SOURCE_EXISTS
     validation_expected_owner: hawkinsoperations-validation
-    validation_status_if_known: VALIDATION_PLANNED
+    validation_status_if_known: CONTROLLED_TEST_VALIDATED_IN_VALIDATION_REPO
     runtime_active: false
     signal_observed: false
     public_safe_status: NOT_PUBLIC_SAFE
@@ -516,8 +516,8 @@ entries:
       - autonomous SOC
       - AI-approved disposition
       - analyst-approved disposition
-    next_gate: create controlled-test telemetry tamper validation package under separate validation scope
-    notes: HO-DET-013 landed as source truth only; this matrix does not expand it.
+    next_gate: preserve controlled-test validation linkage while proof, runtime, signal, and public-safe gates remain separate
+    notes: Controlled-test validation is external validation truth; this source matrix does not promote runtime, signal, proof, or public-safe claims.
 
   - detection_id: HO-DET-014
     package_path: planned://detections/successor/ho-det-014
@@ -618,8 +618,8 @@ entries:
       - autonomous SOC
       - AI-approved disposition
       - analyst-approved disposition
-    next_gate: proof record creation under separate proof scope; runtime, signal, and public-safe promotion remain blocked
-    notes: Source artifacts exist and validation truth is CONTROLLED_TEST_VALIDATED in hawkinsoperations-validation. Proof repo has no ID-DET-002 proof record in this phase.
+    next_gate: reviewer verifies the proof-owned record linkage; runtime, signal, and public-safe promotion remain blocked
+    notes: Source artifacts exist and validation truth is CONTROLLED_TEST_VALIDATED in hawkinsoperations-validation. The proof-owned current index links an ID-DET-002 record; that linkage does not raise detection authority.
 
   - detection_id: ID-DET-003
     package_path: detections/identity/id-det-003
@@ -644,8 +644,8 @@ entries:
       - autonomous SOC
       - AI-approved disposition
       - analyst-approved disposition
-    next_gate: proof record creation under separate proof scope; runtime, signal, and public-safe promotion remain blocked
-    notes: Source artifacts exist and validation truth is CONTROLLED_TEST_VALIDATED in hawkinsoperations-validation. Proof repo has no ID-DET-003 proof record in this phase.
+    next_gate: reviewer verifies the proof-owned record linkage; runtime, signal, and public-safe promotion remain blocked
+    notes: Source artifacts exist and validation truth is CONTROLLED_TEST_VALIDATED in hawkinsoperations-validation. The proof-owned current index links an ID-DET-003 record; that linkage does not raise detection authority.
 
   - detection_id: ID-DET-004
     package_path: detections/identity/id-det-004
@@ -670,8 +670,8 @@ entries:
       - autonomous SOC
       - AI-approved disposition
       - analyst-approved disposition
-    next_gate: proof record creation under separate proof scope; runtime, signal, public-safe, and completeness promotion remain blocked
-    notes: Source artifacts exist and validation truth is CONTROLLED_TEST_VALIDATED in hawkinsoperations-validation. Proof repo has no ID-DET-004 proof record in this phase.
+    next_gate: reviewer verifies the proof-owned record linkage; runtime, signal, public-safe, and completeness promotion remain blocked
+    notes: Source artifacts exist and validation truth is CONTROLLED_TEST_VALIDATED in hawkinsoperations-validation. The proof-owned current index links an ID-DET-004 record; that linkage does not raise detection authority.
 
   - detection_id: AWS-DET-001
     package_path: detections/cloud/aws/aws-det-001

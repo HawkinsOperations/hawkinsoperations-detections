@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Verify the detection promotion matrix stays source-truth only."""
+"""Verify and inventory the detection promotion matrix as source truth."""
 from __future__ import annotations
 
+import argparse
 import copy
+import hashlib
+import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -75,6 +79,12 @@ REVIEWER_EXPANSION_REQUIRED_FIELDS = {
 LOCAL_SOURCE_STATUSES = {"SOURCE_EXISTS", "BOUNDARY_CONTRACT_ONLY"}
 PLANNED_OR_EXTERNAL_STATUSES = {"VALIDATION_PLANNED", "EXTERNAL_BOUNDARY_CONTRACT"}
 
+EXPECTED_STATUS_VALIDATION = {
+    "CONTROLLED_TEST_VALIDATED_IN_VALIDATION_REPO": "CONTROLLED_TEST_VALIDATED",
+    "VALIDATION_CONTRACT_ENFORCED_IN_VALIDATION_REPO": "VALIDATION_CONTRACT_ENFORCED",
+    "VALIDATION_PLANNED": "VALIDATION_PLANNED",
+}
+
 PACKAGE_FAMILIES = {"hero", "successor", "identity", "cloud"}
 HERO_ID_RE = re.compile(r"^(\d+)-")
 INDEX_ID_RE = re.compile(r"^(?:HOD|HO-DET|ID-DET|AWS-DET|HO-NDR|HO-PIPE)-\d+$")
@@ -123,6 +133,64 @@ def truthy(value: Any) -> bool:
 
 def rel(path: Path, root: Path) -> str:
     return path.relative_to(root).as_posix()
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def repository_state(root: Path) -> dict[str, str]:
+    """Return source revision metadata without mutating repository state."""
+
+    def git(*args: str) -> str:
+        result = subprocess.run(
+            ["git", "-C", str(root), *args],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return result.stdout.strip() if result.returncode == 0 else "UNRESOLVED"
+
+    status = git("status", "--porcelain")
+    status_lines = [] if status == "UNRESOLVED" else status.splitlines()
+    meaningful_status = [
+        line for line in status_lines
+        if "__pycache__/" not in line.replace("\\", "/") and not line.rstrip().endswith(".pyc")
+    ]
+    worktree_clean = not meaningful_status if status != "UNRESOLVED" else False
+    return {
+        "repository": "hawkinsoperations-detections",
+        "authority_role": "detection_source",
+        "resolved_ref": git("branch", "--show-current"),
+        "source_commit_sha": git("rev-parse", "HEAD"),
+        "worktree_clean": worktree_clean,
+        "source_freshness_state": "CURRENT" if worktree_clean else "WORKTREE_MODIFIED_OR_UNRESOLVED",
+    }
+
+
+def repo_relative_path(root: Path, value: str, label: str) -> Path:
+    """Resolve a repository-owned path and fail closed on escape attempts."""
+    path = Path(value)
+    if path.is_absolute() or ".." in path.parts:
+        fail(f"{label} must remain repository-relative")
+    resolved_root = root.resolve()
+    resolved = (resolved_root / path).resolve()
+    try:
+        resolved.relative_to(resolved_root)
+    except ValueError:
+        fail(f"{label} escapes the detections repository")
+    return resolved
+
+
+def package_ownership_key(root: Path, package_path: str) -> str:
+    """Normalize path aliases using Windows ownership semantics."""
+    if is_local_path(package_path):
+        return str(repo_relative_path(root, package_path, "package_path")).replace("\\", "/").casefold()
+    return package_path.replace("\\", "/").casefold()
 
 
 def load_yaml(path: Path) -> Any:
@@ -275,6 +343,13 @@ def verify_entry(entry: dict[str, Any], root: Path) -> tuple[str, str]:
     required_files = ensure_list(entry["required_files"], f"{detection_id}.required_files")
     if any(not isinstance(item, str) or not item.strip() for item in required_files):
         fail(f"{detection_id}.required_files must contain only non-empty strings")
+    normalized_required = [str(Path(item)).replace("\\", "/").casefold() for item in required_files]
+    if len(normalized_required) != len(set(normalized_required)):
+        fail(f"{detection_id}.required_files must not contain duplicates")
+    for required in required_files:
+        required_path = Path(required)
+        if required_path.is_absolute() or ".." in required_path.parts:
+            fail(f"{detection_id} required file must be package-relative: {required}")
 
     source_status = entry["source_status"]
     if source_status not in ALLOWED_SOURCE_STATUS:
@@ -301,7 +376,7 @@ def verify_entry(entry: dict[str, Any], root: Path) -> tuple[str, str]:
         fail(f"{detection_id}.blocked_claims must contain non-empty blocked claim strings")
 
     if is_local_path(package_path):
-        package_dir = root / package_path
+        package_dir = repo_relative_path(root, package_path, f"{detection_id} package_path")
         if not package_dir.exists():
             if source_status in LOCAL_SOURCE_STATUSES:
                 fail(f"{detection_id} package path missing: {package_path}")
@@ -309,8 +384,27 @@ def verify_entry(entry: dict[str, Any], root: Path) -> tuple[str, str]:
             fail(f"{detection_id} package path is not a directory: {package_path}")
 
         if package_dir.exists():
+            if source_status in LOCAL_SOURCE_STATUSES:
+                required_by_family = {
+                    "hero": {"rule.yml", "attack-mapping.json"},
+                    "successor": {"rule.yml", "event-mapping.yml", "status.yml"},
+                    "identity": {"rule.yml", "event-mapping.yml", "status.yml"},
+                    "cloud": {"rule.yml", "status.yml"},
+                }.get(str(entry["detection_family"]), {"rule.yml", "status.yml"})
+                missing_contract_files = sorted(required_by_family - set(required_files))
+                if missing_contract_files:
+                    fail(
+                        f"{detection_id} required_files omits source-contract files: "
+                        f"{', '.join(missing_contract_files)}"
+                    )
+                if entry["detection_family"] == "cloud" and not {
+                    "cloudtrail.jsonpath",
+                    "event-mapping.yml",
+                }.intersection(required_files):
+                    fail(f"{detection_id} cloud package requires an event mapping or CloudTrail mapping")
             for required in required_files:
-                if not (package_dir / required).exists():
+                required_path = repo_relative_path(package_dir, required, f"{detection_id} required file")
+                if not required_path.exists():
                     fail(f"{detection_id} required file missing: {package_path}/{required}")
             ids_seen: set[str] = set()
             for name in ("rule.yml", "status.yml", "event-mapping.yml", "cribl-pipeline.yml"):
@@ -324,6 +418,29 @@ def verify_entry(entry: dict[str, Any], root: Path) -> tuple[str, str]:
             mismatches = sorted(item for item in ids_seen if item != detection_id)
             if mismatches:
                 fail(f"{detection_id} metadata detection_id mismatch in {package_path}: {', '.join(mismatches)}")
+            status_path = package_dir / "status.yml"
+            if status_path.exists():
+                status = ensure_mapping(load_yaml(status_path), f"{detection_id} status")
+                if status.get("source_status") != source_status:
+                    fail(
+                        f"{detection_id} source status disagreement: matrix={source_status}, "
+                        f"status.yml={status.get('source_status')}"
+                    )
+                if status.get("public_safe_status") != "NOT_PUBLIC_SAFE":
+                    fail(f"{detection_id} status.yml public_safe_status must be NOT_PUBLIC_SAFE")
+                if truthy(status.get("runtime_active")):
+                    fail(f"{detection_id} status.yml promotes runtime status")
+                if truthy(status.get("signal_observed")):
+                    fail(f"{detection_id} status.yml promotes signal status")
+                expected_validation = EXPECTED_STATUS_VALIDATION.get(str(entry["validation_status_if_known"]))
+                if expected_validation and status.get("validation_status") != expected_validation:
+                    fail(
+                        f"{detection_id} validation status disagreement: "
+                        f"matrix={entry['validation_status_if_known']}, "
+                        f"status.yml={status.get('validation_status')}"
+                    )
+                if not isinstance(status.get("blocked_claims"), list) or not status["blocked_claims"]:
+                    fail(f"{detection_id} status.yml must preserve blocked_claims")
             scan_source_only_claims(package_dir, root)
     elif source_status not in PLANNED_OR_EXTERNAL_STATUSES:
         fail(f"{detection_id} non-local package paths must be planned or external")
@@ -411,13 +528,21 @@ def verify_repo(root: Path = ROOT, print_summary: bool = True) -> list[dict[str,
         fail("matrix.entries must not be empty")
 
     seen: dict[str, str] = {}
+    seen_paths: dict[str, str] = {}
     normalized_entries: list[dict[str, Any]] = []
     for raw_entry in entries:
         entry = ensure_mapping(raw_entry, "matrix entry")
         detection_id, package_path = verify_entry(entry, root)
         if detection_id in seen:
             fail(f"duplicate detection_id in matrix: {detection_id}")
+        ownership_key = package_ownership_key(root, package_path)
+        if ownership_key in seen_paths:
+            fail(
+                f"duplicate package_path in matrix: {package_path} is owned by "
+                f"{seen_paths[ownership_key]} and {detection_id}"
+            )
         seen[detection_id] = package_path
+        seen_paths[ownership_key] = detection_id
         normalized_entries.append(copy.deepcopy(entry))
 
     id_to_status = verify_ledger_eligibility_map(matrix, set(seen))
@@ -461,12 +586,50 @@ def verify_repo(root: Path = ROOT, print_summary: bool = True) -> list[dict[str,
     return normalized_entries
 
 
+def build_inventory(entries: list[dict[str, Any]], root: Path = ROOT) -> dict[str, Any]:
+    """Build deterministic, source-linked inventory for cross-repo consumers."""
+    state = repository_state(root)
+    items: list[dict[str, Any]] = []
+    for entry in entries:
+        package_path = str(entry["package_path"])
+        fingerprints: dict[str, str] = {}
+        if is_local_path(package_path):
+            package_dir = repo_relative_path(root, package_path, f"{entry['detection_id']} package_path")
+            for required in entry["required_files"]:
+                path = package_dir / required
+                if path.is_file():
+                    fingerprints[required] = sha256_file(path)
+        items.append(
+            {
+                "detection_id": entry["detection_id"],
+                "package_path": package_path,
+                "source_status": entry["source_status"],
+                "validation_status": entry["validation_status_if_known"],
+                "proof_ceiling": entry["proof_ceiling"],
+                "public_safe_status": entry["public_safe_status"],
+                "required_file_fingerprints": dict(sorted(fingerprints.items())),
+            }
+        )
+    return {
+        **state,
+        "authoritative_path": "detections/DETECTION_PROMOTION_MATRIX.yml",
+        "authoritative_fingerprint": sha256_file(root / "detections" / "DETECTION_PROMOTION_MATRIX.yml"),
+        "entry_count": len(items),
+        "entries": items,
+    }
+
+
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Verify and inventory the detection promotion matrix.")
+    parser.add_argument("--format", choices=("text", "json"), default="text")
+    args = parser.parse_args()
     try:
-        verify_repo(ROOT, print_summary=True)
+        entries = verify_repo(ROOT, print_summary=args.format == "text")
     except MatrixError as exc:
         print(f"Detection promotion matrix check failed: {exc}", file=sys.stderr)
         return 1
+    if args.format == "json":
+        print(json.dumps(build_inventory(entries, ROOT), indent=2, sort_keys=True))
     return 0
 
 
