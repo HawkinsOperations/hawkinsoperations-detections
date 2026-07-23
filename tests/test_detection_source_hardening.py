@@ -2,6 +2,7 @@ import copy
 import importlib.util
 import json
 import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -56,6 +57,30 @@ class DetectionSourceHardeningTests(unittest.TestCase):
 
     def verify(self):
         return matrix.verify_repo(self.root, print_summary=False)
+
+    def commit_repo(self, repo_root, message="fixture"):
+        if not (repo_root / ".git").exists():
+            subprocess.run(["git", "init"], cwd=repo_root, check=True, capture_output=True)
+            subprocess.run(
+                ["git", "config", "user.email", "controlled-fixture@example.invalid"],
+                cwd=repo_root, check=True,
+            )
+            subprocess.run(
+                ["git", "config", "user.name", "Controlled Fixture"],
+                cwd=repo_root, check=True,
+            )
+            subprocess.run(
+                [
+                    "git", "remote", "add", "origin",
+                    f"https://github.com/HawkinsOperations/{repo_root.name}.git",
+                ],
+                cwd=repo_root, check=True,
+            )
+        subprocess.run(["git", "add", "."], cwd=repo_root, check=True)
+        subprocess.run(
+            ["git", "commit", "--allow-empty", "-m", message],
+            cwd=repo_root, check=True, capture_output=True,
+        )
 
     def test_duplicate_yaml_key_fails_closed(self):
         text = self.matrix_path.read_text(encoding="utf-8")
@@ -146,8 +171,53 @@ class DetectionSourceHardeningTests(unittest.TestCase):
             "review": [{"nested": {"ai_disposition_authority": True}}]
         }
         rule_path.write_text(yaml.safe_dump(rule, sort_keys=False), encoding="utf-8")
-        with self.assertRaisesRegex(matrix.MatrixError, "authority promotion"):
+        with self.assertRaisesRegex(
+            matrix.MatrixError, "authority promotion|unsupported top-level fields"
+        ):
             self.verify()
+
+    def test_punctuation_and_whitespace_authority_aliases_fail_closed(self):
+        attacks = (
+            {"ai disposition authority": True},
+            {"runtime.active": True},
+            {"public safe status": "PUBLIC_SAFE"},
+        )
+        source_path = (
+            ROOT / "detections" / "successor" / "ho-det-013" / "rule.yml"
+        )
+        for attack in attacks:
+            with self.subTest(attack=attack):
+                with self.assertRaises((matrix.MatrixError, SystemExit)):
+                    matrix.scan_nested_authority(attack, "hostile")
+                with self.assertRaises(SystemExit):
+                    contract.verify_promotion_block(source_path, attack)
+
+    def test_affirmative_authority_prose_fails_closed(self):
+        attacks = (
+            "customer deployment is active",
+            "analyst approval granted",
+            "SOCaaS deployment is live",
+            "public safe runtime proof established",
+        )
+        source_path = (
+            ROOT / "detections" / "successor" / "ho-det-013" / "rule.yml"
+        )
+        for attack in attacks:
+            with self.subTest(attack=attack):
+                with self.assertRaises((matrix.MatrixError, SystemExit)):
+                    matrix.scan_nested_authority({"notes": attack}, "hostile")
+                with self.assertRaises(SystemExit):
+                    contract.verify_promotion_block(
+                        source_path, {"notes": attack}
+                    )
+
+    def test_negated_authority_prose_remains_bounded(self):
+        value = {"notes": "customer deployment is not active and remains blocked"}
+        matrix.scan_nested_authority(value, "bounded")
+        contract.verify_promotion_block(
+            ROOT / "detections" / "successor" / "ho-det-013" / "rule.yml",
+            value,
+        )
 
     def test_duplicate_package_metadata_key_fails_closed(self):
         rule_path = (
@@ -159,6 +229,32 @@ class DetectionSourceHardeningTests(unittest.TestCase):
             encoding="utf-8",
         )
         with self.assertRaisesRegex(matrix.MatrixError, "duplicate YAML key"):
+            self.verify()
+
+    def test_unknown_package_document_fields_fail_closed(self):
+        for filename in ("rule.yml", "status.yml", "event-mapping.yml"):
+            with self.subTest(filename=filename):
+                target = (
+                    self.root / "detections" / "successor" / "ho-det-013" / filename
+                )
+                data = yaml.safe_load(target.read_text(encoding="utf-8"))
+                data["unsupported_authority_extension"] = {"decision": "granted"}
+                target.write_text(yaml.safe_dump(data, sort_keys=False), encoding="utf-8")
+                with self.assertRaisesRegex(matrix.MatrixError, "unsupported top-level fields"):
+                    self.verify()
+                shutil.copy2(
+                    ROOT / "detections" / "successor" / "ho-det-013" / filename,
+                    target,
+                )
+
+    def test_factory_index_rejects_casefolded_alias_row(self):
+        index = self.root / "detections" / "DETECTION_FACTORY_INDEX.md"
+        index.write_text(
+            index.read_text(encoding="utf-8")
+            + "\n| ho-det-009 | alias | alias | alias | alias | SOURCE_EXISTS |\n",
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(matrix.MatrixError, "noncanonical detection ID"):
             self.verify()
 
     def test_declared_backend_must_have_owned_source_file(self):
@@ -345,6 +441,7 @@ class DetectionSourceHardeningTests(unittest.TestCase):
         registry_path.write_text(
             yaml.safe_dump(registry, sort_keys=False), encoding="utf-8"
         )
+        self.commit_repo(validation_root)
         return registry_path
 
     def make_proof_index(self, matrix_data):
@@ -401,6 +498,7 @@ class DetectionSourceHardeningTests(unittest.TestCase):
         index_path.write_text(
             yaml.safe_dump(index, sort_keys=False), encoding="utf-8"
         )
+        self.commit_repo(proof_root)
         return index_path
 
     def test_explicit_validation_and_proof_handoffs_pass(self):
@@ -433,6 +531,7 @@ class DetectionSourceHardeningTests(unittest.TestCase):
         registry_path.write_text(
             yaml.safe_dump(registry, sort_keys=False), encoding="utf-8"
         )
+        self.commit_repo(registry_path.parents[1], "hostile source reference")
         with self.assertRaisesRegex(matrix.MatrixError, "source_reference mismatch"):
             matrix.verify_repo(
                 self.root,
@@ -455,6 +554,7 @@ class DetectionSourceHardeningTests(unittest.TestCase):
             json.dumps(manifest, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
+        self.commit_repo(registry_path.parents[1], "hostile source manifest")
         with self.assertRaisesRegex(
             matrix.MatrixError, "file identities are stale"
         ):
@@ -475,6 +575,7 @@ class DetectionSourceHardeningTests(unittest.TestCase):
         proof_path.write_text(
             yaml.safe_dump(proof, sort_keys=False), encoding="utf-8"
         )
+        self.commit_repo(proof_path.parents[2], "hostile proof owner")
         with self.assertRaisesRegex(matrix.MatrixError, "spoofed source owner"):
             matrix.verify_repo(
                 self.root,
@@ -482,6 +583,16 @@ class DetectionSourceHardeningTests(unittest.TestCase):
                 validation_registry_path=registry_path,
                 proof_index_path=proof_path,
                 require_sibling_handoffs=True,
+            )
+
+    def test_external_owner_suffix_without_canonical_git_origin_fails(self):
+        fake_root = self.base / "attacker" / "hawkinsoperations-validation"
+        target = fake_root / "validation" / "VALIDATION_REGISTRY.yml"
+        target.parent.mkdir(parents=True)
+        target.write_text("owner_repo: hawkinsoperations-validation\n", encoding="utf-8")
+        with self.assertRaisesRegex(matrix.MatrixError, "verifiable Git repository"):
+            matrix.external_repo_root(
+                target, "hawkinsoperations-validation", "validation registry"
             )
 
     def test_duplicate_json_key_fails_closed(self):

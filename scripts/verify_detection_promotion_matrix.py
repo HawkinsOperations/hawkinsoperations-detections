@@ -9,6 +9,7 @@ import json
 import re
 import subprocess
 import sys
+import unicodedata
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 from urllib.parse import unquote
@@ -138,6 +139,74 @@ SOURCE_CONTRACT_FILENAMES = {
     "field-preservation-matrix.yml",
 }
 
+DOCUMENT_ALLOWED_FIELDS = {
+    "rule.yml": {
+        "allowed_claim", "approval_status", "author", "backend_target",
+        "blocked_claims", "claim_ceiling", "core_argument", "current_scope",
+        "data_source", "date", "description", "detection", "detection_id",
+        "evidence_linked", "evidence_linked_public_proof", "falsepositives",
+        "future_gated_phases", "id", "level", "logic_summary", "logsource",
+        "mapped_fields", "mitre_attack", "modified", "name", "next_proof_gate",
+        "next_validation_gate", "not_claimed_here", "objective",
+        "promotion_boundaries", "proof_level", "proof_status",
+        "public_safe_status", "references", "related_reference",
+        "runtime_active", "signal_observed", "socaas_pilot_decomposition",
+        "source_assumptions", "status", "supported_claim", "tags", "title",
+        "trust_class", "tuning_guidance", "validation_fixture_boundary",
+        "validation_status",
+    },
+    "status.yml": {
+        "allowed_claims", "aws_live_proof", "blocked_claims",
+        "canonical_case_packet", "canonical_claim_boundary_scanner",
+        "canonical_detection_source", "canonical_event_mapping",
+        "canonical_platform_case_packet_sample",
+        "canonical_platform_case_packet_schema",
+        "canonical_platform_case_packet_verifier", "canonical_proof_record",
+        "canonical_readme", "canonical_result_parity_verifier",
+        "canonical_rule_source", "canonical_sigma_source",
+        "canonical_splunk_source", "canonical_validation_cases",
+        "canonical_validation_report", "canonical_validation_result",
+        "canonical_validation_script", "canonical_validation_workflow",
+        "canonical_wazuh_source", "canonical_wazuh_static_contract_lab",
+        "canonical_wazuh_static_contract_verifier", "claim_ceiling",
+        "cloudtrail_live_proof", "cribl_status", "current_scope",
+        "detection_id", "event_mapping_status", "evidence_linked_public_proof",
+        "false_positive_negative_count", "fixtures_in_detections_repo",
+        "future_gated_phases", "human_review_required",
+        "matched_positive_count", "missed_positive_count", "mitre_attack",
+        "negative_count", "next_gate", "not_claimed_here",
+        "planned_platform_case_packet_guardrail", "planned_proof_record",
+        "planned_validation_fixture_set", "planned_validation_repo_scope",
+        "planned_website_surface", "platform_case_packet_guardrail_status",
+        "positive_count", "proof_level", "proof_record_path",
+        "proof_record_pending", "proof_status", "public_or_routed_signal_status",
+        "public_route_pending", "public_safe_status", "rule_source_status",
+        "runtime_active", "runtime_active_status", "runtime_evidence_status",
+        "sigma_source_status", "signal_observed", "socaas_pilot_receipt_flow",
+        "socaas_receipt_source_truth", "source_refs", "source_status",
+        "splunk_source_status", "splunk_status", "supported_claims",
+        "telemetry_sources", "trust_class", "truth_surface", "tuning_focus",
+        "tuning_status", "validation_contract", "validation_count",
+        "validation_enforcement_merge_commit", "validation_enforcement_pr",
+        "validation_enforcement_status", "validation_false_positive_negatives",
+        "validation_matched_positive_count", "validation_missed_positives",
+        "validation_negative_cases", "validation_positive_cases",
+        "validation_result", "validation_scope", "validation_status",
+        "validation_total_cases", "wazuh_source_status", "wazuh_status",
+    },
+    "event-mapping.yml": {
+        "adapter_fields", "adapter_result_labels", "backend_notes",
+        "blocked_claims", "claim_boundary", "description", "detection_id",
+        "fields", "mapping_scope", "mapping_status", "mitre_attack",
+        "normalized_fields", "proof_boundary", "required_preserved_fields",
+        "service_and_process_targets", "source_family", "sources",
+        "splunk_fields", "tamper_categories", "telemetry_boundary",
+        "telemetry_correction", "telemetry_sources", "truth_surface",
+        "tuning_fields", "validation_fixture_boundary", "validation_status",
+        "wazuh_fields",
+    },
+}
+
 NESTED_FALSE_ONLY_FIELDS = {
     "runtime_active",
     "signal_observed",
@@ -151,6 +220,22 @@ NESTED_FALSE_ONLY_FIELDS = {
 }
 
 NESTED_NOT_PUBLIC_SAFE_FIELDS = {"public_safe_status"}
+
+AFFIRMATIVE_AUTHORITY_CLAIM_RE = re.compile(
+    r"\b(?:"
+    r"(?:customer|socaas)\s+deployment\s+(?:is\s+)?(?:active|live|confirmed|approved)"
+    r"|analyst\s+approval\s+(?:is\s+)?(?:granted|approved)"
+    r"|final\s+authorization\s+(?:is\s+)?(?:granted|approved)"
+    r"|case\s+(?:closure\s+(?:is\s+)?approved|is\s+closed|closed)"
+    r"|public[\s_-]*safe\s+runtime\s+proof\s+(?:is\s+)?(?:established|confirmed)"
+    r"|(?:runtime|signal)\s+(?:status\s+)?(?:is\s+)?(?:active|observed)"
+    r")\b",
+    re.IGNORECASE,
+)
+NEGATED_AUTHORITY_CONTEXT_RE = re.compile(
+    r"\b(?:blocked|denied|false|not|never|no|prohibited|reject(?:ed|s)?|unsupported|without)\b",
+    re.IGNORECASE,
+)
 
 VALIDATION_STATUS_VALUES = {
     "CONTROLLED_TEST_VALIDATED_IN_VALIDATION_REPO",
@@ -454,28 +539,35 @@ def ensure_exact_keys(
         fail(f"{label} contains unsupported fields: {', '.join(unknown)}")
 
 
+def normalize_authority_key(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", unicodedata.normalize("NFKC", value).casefold())
+
+
 def scan_nested_authority(value: Any, label: str) -> None:
     """Reject hidden authority promotion at any depth in structured source metadata."""
     if isinstance(value, dict):
         for raw_key, nested in value.items():
             if not isinstance(raw_key, str):
                 fail(f"{label} contains a non-string mapping key")
-            key = raw_key.strip().casefold().replace("-", "_")
+            key = normalize_authority_key(raw_key)
             nested_label = f"{label}.{raw_key}"
-            if key in NESTED_FALSE_ONLY_FIELDS:
+            if key in {normalize_authority_key(item) for item in NESTED_FALSE_ONLY_FIELDS}:
                 allowed_false = nested is False or nested == [False]
                 if not allowed_false:
                     fail(f"{nested_label} attempts unsupported authority promotion")
-            if key in NESTED_NOT_PUBLIC_SAFE_FIELDS:
+            if key in {normalize_authority_key(item) for item in NESTED_NOT_PUBLIC_SAFE_FIELDS}:
                 allowed = (
                     nested == "NOT_PUBLIC_SAFE"
                     or nested == ["NOT_PUBLIC_SAFE"]
                 )
                 if not allowed:
                     fail(f"{nested_label} must remain NOT_PUBLIC_SAFE")
-            if key == "human_review_required" and nested is not True:
+            if key == normalize_authority_key("human_review_required") and nested is not True:
                 fail(f"{nested_label} must remain true")
-            if key in {"approval_status", "authorization_status"}:
+            if key in {
+                normalize_authority_key("approval_status"),
+                normalize_authority_key("authorization_status"),
+            }:
                 allowed = {"NOT_APPROVED", "BLOCKED", "PENDING", "HUMAN_REVIEW_REQUIRED"}
                 if not isinstance(nested, str) or nested.upper() not in allowed:
                     fail(f"{nested_label} contains unsupported approval state")
@@ -485,7 +577,15 @@ def scan_nested_authority(value: Any, label: str) -> None:
         for index, nested in enumerate(value):
             scan_nested_authority(nested, f"{label}[{index}]")
         return
-    if value is None or type(value) in {str, int, float, bool}:
+    if isinstance(value, str):
+        normalized = unicodedata.normalize("NFKC", value)
+        if (
+            AFFIRMATIVE_AUTHORITY_CLAIM_RE.search(normalized)
+            and not NEGATED_AUTHORITY_CONTEXT_RE.search(normalized)
+        ):
+            fail(f"{label} contains an unsupported affirmative authority claim")
+        return
+    if value is None or type(value) in {int, float, bool}:
         return
     fail(f"{label} contains unsupported value type {type(value).__name__}")
 
@@ -500,6 +600,15 @@ def canonical_detection_id(value: Any, label: str) -> str:
 def read_detection_id_from_yaml(path: Path, root: Path) -> str | None:
     data = load_yaml(path)
     if isinstance(data, dict):
+        allowed = DOCUMENT_ALLOWED_FIELDS.get(path.name)
+        if allowed is not None:
+            unknown = sorted(set(data) - allowed)
+            if unknown:
+                fail(
+                    f"{rel(path, root)} contains unsupported top-level fields: "
+                    f"{', '.join(unknown)}"
+                )
+            scan_nested_authority(data, rel(path, root))
         detection_id = data.get("detection_id")
         if isinstance(detection_id, str) and detection_id.strip():
             return canonical_detection_id(detection_id, f"{rel(path, root)}.detection_id")
@@ -619,7 +728,9 @@ def factory_index_ids(root: Path) -> set[str]:
         if not parts:
             continue
         candidate = parts[0]
-        if INDEX_ID_RE.match(candidate):
+        if re.fullmatch(INDEX_ID_RE.pattern, candidate, re.IGNORECASE):
+            if not INDEX_ID_RE.fullmatch(candidate):
+                fail(f"factory index contains noncanonical detection ID: {candidate}")
             key = candidate.casefold()
             if key in normalized and normalized[key] != candidate:
                 fail(f"factory index contains case-folded detection ID alias: {candidate}")
@@ -684,7 +795,11 @@ def verify_factory_current_states(
         if not line.startswith("|") or "---" in line or "| ID |" in line:
             continue
         parts = [part.strip() for part in line.strip("|").split("|")]
-        if len(parts) < 6 or not CANONICAL_ID_RE.fullmatch(parts[0]):
+        if len(parts) < 6:
+            continue
+        if re.fullmatch(CANONICAL_ID_RE.pattern, parts[0], re.IGNORECASE) and not CANONICAL_ID_RE.fullmatch(parts[0]):
+            fail(f"factory matrix contains noncanonical detection ID: {parts[0]}")
+        if not CANONICAL_ID_RE.fullmatch(parts[0]):
             continue
         detection_id = parts[0]
         state = parts[5].strip("`")
@@ -746,6 +861,38 @@ def external_repo_root(path: Path, expected_repo: str, label: str) -> Path:
         if parent.name.casefold() == expected_repo.casefold():
             if parent.name != expected_repo:
                 fail(f"{label} repository directory must preserve canonical owner case")
+            try:
+                inside = subprocess.run(
+                    ["git", "-C", str(parent), "rev-parse", "--is-inside-work-tree"],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip()
+                origin = subprocess.run(
+                    ["git", "-C", str(parent), "remote", "get-url", "origin"],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip()
+                dirty = subprocess.run(
+                    ["git", "-C", str(parent), "status", "--porcelain", "--untracked-files=no"],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip()
+            except subprocess.CalledProcessError as exc:
+                fail(f"{label} owner root is not a verifiable Git repository: {exc}")
+            if inside != "true":
+                fail(f"{label} owner root is not a Git worktree")
+            canonical_origins = {
+                f"https://github.com/HawkinsOperations/{expected_repo}.git".casefold(),
+                f"https://github.com/HawkinsOperations/{expected_repo}".casefold(),
+                f"git@github.com:HawkinsOperations/{expected_repo}.git".casefold(),
+            }
+            if origin.casefold() not in canonical_origins:
+                fail(f"{label} repository origin is not canonical: {origin}")
+            if dirty:
+                fail(f"{label} authority repository has tracked dirty state")
             return parent
     fail(f"{label} is not owned by {expected_repo}")
 

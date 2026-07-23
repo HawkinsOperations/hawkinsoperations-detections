@@ -6,6 +6,7 @@ import importlib.util
 import json
 import re
 import sys
+import unicodedata
 import xml.etree.ElementTree as ET
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from urllib.parse import unquote
@@ -60,6 +61,26 @@ FALSE_ONLY_FIELDS = {
     "case_closed",
     "case_closure",
 }
+
+AFFIRMATIVE_AUTHORITY_CLAIM_RE = re.compile(
+    r"\b(?:"
+    r"(?:customer|socaas)\s+deployment\s+(?:is\s+)?(?:active|live|confirmed|approved)"
+    r"|analyst\s+approval\s+(?:is\s+)?(?:granted|approved)"
+    r"|final\s+authorization\s+(?:is\s+)?(?:granted|approved)"
+    r"|case\s+(?:closure\s+(?:is\s+)?approved|is\s+closed|closed)"
+    r"|public[\s_-]*safe\s+runtime\s+proof\s+(?:is\s+)?(?:established|confirmed)"
+    r"|(?:runtime|signal)\s+(?:status\s+)?(?:is\s+)?(?:active|observed)"
+    r")\b",
+    re.IGNORECASE,
+)
+NEGATED_AUTHORITY_CONTEXT_RE = re.compile(
+    r"\b(?:blocked|denied|false|not|never|no|prohibited|reject(?:ed|s)?|unsupported|without)\b",
+    re.IGNORECASE,
+)
+
+
+def normalize_authority_key(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", unicodedata.normalize("NFKC", value).casefold())
 
 
 class UniqueKeyLoader(yaml.SafeLoader):
@@ -277,14 +298,14 @@ def verify_promotion_block(path: Path, data: dict) -> None:
             for raw_key, nested in value.items():
                 if not isinstance(raw_key, str):
                     fail(f"non-string key blocked in {path.relative_to(ROOT).as_posix()}: {label}")
-                key = raw_key.strip().casefold().replace("-", "_")
+                key = normalize_authority_key(raw_key)
                 nested_label = f"{label}.{raw_key}"
-                if key in FALSE_ONLY_FIELDS and nested is not False:
+                if key in {normalize_authority_key(item) for item in FALSE_ONLY_FIELDS} and nested is not False:
                     fail(
                         f"promotion field must be boolean false in "
                         f"{path.relative_to(ROOT).as_posix()}: {nested_label}={nested}"
                     )
-                if key == "public_safe_status" and nested not in (
+                if key == normalize_authority_key("public_safe_status") and nested not in (
                     "NOT_PUBLIC_SAFE",
                     ["NOT_PUBLIC_SAFE"],
                 ):
@@ -292,7 +313,7 @@ def verify_promotion_block(path: Path, data: dict) -> None:
                         f"public_safe_status must remain NOT_PUBLIC_SAFE in "
                         f"{path.relative_to(ROOT).as_posix()}: {nested_label}={nested}"
                     )
-                if key == "human_review_required" and nested is not True:
+                if key == normalize_authority_key("human_review_required") and nested is not True:
                     fail(
                         f"human_review_required must remain true in "
                         f"{path.relative_to(ROOT).as_posix()}: {nested_label}"
@@ -301,6 +322,16 @@ def verify_promotion_block(path: Path, data: dict) -> None:
         elif isinstance(value, list):
             for index, nested in enumerate(value):
                 walk(nested, f"{label}[{index}]")
+        elif isinstance(value, str):
+            normalized = unicodedata.normalize("NFKC", value)
+            if (
+                AFFIRMATIVE_AUTHORITY_CLAIM_RE.search(normalized)
+                and not NEGATED_AUTHORITY_CONTEXT_RE.search(normalized)
+            ):
+                fail(
+                    f"unsupported affirmative authority claim in "
+                    f"{path.relative_to(ROOT).as_posix()}: {label}"
+                )
         elif value is not None and type(value) not in {str, int, float, bool}:
             fail(
                 f"unsupported structured value in "
