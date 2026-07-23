@@ -353,7 +353,27 @@ class DetectionSourceHardeningTests(unittest.TestCase):
         proof_ids = set(
             matrix_data["detection_side_ledger_eligibility"]["proof_recorded"]
         )
+        legacy_record = (
+            proof_root
+            / "proof"
+            / "records"
+            / "PROOF-HOD-001-2026-04-21-001.json"
+        )
+        legacy_record.parent.mkdir(parents=True, exist_ok=True)
+        legacy_record.write_text(
+            json.dumps(
+                {
+                    "proof_id": "PROOF-HOD-001-2026-04-21-001",
+                    "created_at": "2026-04-21T11:10:31-05:00",
+                    "detection": {"id": "HOD-001"},
+                    "claim_boundary": "Historical baseline record only; not runtime or public proof.",
+                }
+            ),
+            encoding="utf-8",
+        )
         for detection_id in sorted(proof_ids):
+            if detection_id == "HOD-001":
+                continue
             record = proof_root / "proof" / "records" / f"{detection_id}.md"
             card = proof_root / "proof" / "cards" / f"{detection_id}.md"
             record.parent.mkdir(parents=True, exist_ok=True)

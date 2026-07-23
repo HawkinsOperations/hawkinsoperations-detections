@@ -908,6 +908,7 @@ def verify_validation_handoffs(
             fail(f"validation registry duplicates detection_id {detection_id}")
         normalized_ids.add(key)
         by_id[detection_id] = package
+        validation_kind = package.get("validation_kind")
         for field in (
             "validation_package_path",
             "fixture_file",
@@ -915,6 +916,12 @@ def verify_validation_handoffs(
             "report_markdown",
             "validator_script",
         ):
+            if (
+                field in {"report_json", "report_markdown"}
+                and validation_kind == "visibility_contract"
+                and package.get(field) is None
+            ):
+                continue
             relative = canonical_relative_path(
                 ensure_string(package.get(field), f"{detection_id}.{field}"),
                 f"{detection_id}.{field}",
@@ -925,6 +932,13 @@ def verify_validation_handoffs(
                 validation_root, relative, field
             ).is_dir():
                 fail(f"validation registry {detection_id}.{field} is missing")
+        if validation_kind == "visibility_contract" and (
+            (package.get("report_json") is None)
+            != (package.get("report_markdown") is None)
+        ):
+            fail(
+                f"{detection_id} visibility_contract reports must both exist or both remain null"
+            )
 
     for entry in entries:
         detection_id = entry["detection_id"]
@@ -1007,6 +1021,25 @@ def verify_proof_handoffs(
     entry_ids = {entry["detection_id"] for entry in entries}
     for detection_id, ledger_status in id_to_ledger_status.items():
         if ledger_status != "PROOF_RECORDED":
+            continue
+        if detection_id == "HOD-001":
+            legacy_path = (
+                proof_root
+                / "proof"
+                / "records"
+                / "PROOF-HOD-001-2026-04-21-001.json"
+            )
+            legacy = load_strict_json(
+                legacy_path, "HOD-001 historical baseline proof record"
+            )
+            detection = ensure_mapping(
+                legacy.get("detection"),
+                "HOD-001 historical baseline proof record detection",
+            )
+            if detection.get("id") != "HOD-001":
+                fail("HOD-001 historical baseline proof record identity mismatch")
+            if not isinstance(legacy.get("created_at"), str):
+                fail("HOD-001 historical baseline proof record must be point-in-time")
             continue
         if detection_id not in entry_ids or detection_id not in by_id:
             fail(f"{detection_id} proof-recorded handoff is missing from proof index")
