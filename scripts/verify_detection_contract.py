@@ -153,18 +153,19 @@ def normalize_authority_key(value: str) -> str:
 
 def is_compositional_promotion_key(key: str) -> bool:
     return (
-        ("production" in key and any(part in key for part in ("active", "live", "ready", "deploy", "status")))
-        or (any(part in key for part in ("customer", "socaas")) and "deploy" in key)
-        or ("runtime" in key and any(part in key for part in ("active", "status")))
-        or ("signal" in key and any(part in key for part in ("observed", "status")))
-        or ("publicsafe" in key and not key.endswith("count"))
-        or ("final" in key and "authoriz" in key)
-        or ("case" in key and any(part in key for part in ("closed", "closure")))
-        or any(part in key for part in ("approvalstatus", "closurestatus", "casestatus"))
+        ("production" in key and any(part in key for part in ("active", "live", "ready", "deploy", "state", "status")))
+        or (any(part in key for part in ("customer", "socaas")) and any(part in key for part in ("active", "deploy", "state", "status")))
+        or ("runtime" in key and any(part in key for part in ("active", "state", "status")))
+        or ("signal" in key and any(part in key for part in ("observed", "state", "status")))
+        or ("publicsafe" in key and "count" not in key)
+        or ("final" in key and any(part in key for part in ("authoriz", "authority")))
+        or ("case" in key and "count" not in key and any(part in key for part in ("closed", "closure", "state", "status")))
+        or any(part in key for part in ("approvalstate", "approvalstatus", "closurestatus", "casestate", "casestatus"))
         or (
             key.startswith(("ai", "analyst"))
             and any(part in key for part in ("approved", "approval", "authority", "disposition"))
         )
+        or ("review" in key and "disposition" in key)
     )
 
 
@@ -189,12 +190,17 @@ def is_explicitly_bounded_authority_value(value) -> bool:
         "notpublicsafe",
         "notruntimeactive",
         "open",
+        "partial",
         "pending",
+        "existingflowcandidate",
         "privateruntimeboundarycontextonly",
         "privateruntimeevidencecaptured",
         "privateruntimeevidencecapturedlocalwindowsonly",
+        "runtimeevidenceverifiedprivate",
         "runtimeactiveprivate",
         "signalobservedprivate",
+        "satisfiednonpromotionalboundary",
+        "sourceexists",
         "unsupported",
     }
 
@@ -409,29 +415,65 @@ def hero_detection_id(dirname: str) -> str:
 
 
 def verify_promotion_block(path: Path, data: dict) -> None:
-    def walk(value, label):
+    def walk(value, label, normalized_path=(), promotion_context=False):
         if isinstance(value, dict):
             for raw_key, nested in value.items():
                 if not isinstance(raw_key, str):
                     fail(f"non-string key blocked in {path.relative_to(ROOT).as_posix()}: {label}")
                 key = normalize_authority_key(raw_key)
                 nested_label = f"{label}.{raw_key}"
+                child_normalized_path = (*normalized_path, key)
+                cumulative_keys = {key}
+                cumulative_keys.update(
+                    f"{segment}{key}"
+                    for segment in normalized_path
+                    if segment
+                    in {
+                        "runtime",
+                        "signal",
+                        "public",
+                        "approval",
+                        "production",
+                        "customer",
+                        "socaas",
+                        "ai",
+                        "analyst",
+                        "review",
+                        "final",
+                        "case",
+                    }
+                )
+                child_promotion_context = promotion_context or any(
+                    is_compositional_promotion_key(candidate)
+                    for candidate in cumulative_keys
+                )
                 if (
-                    is_compositional_promotion_key(key)
-                    and not is_explicitly_bounded_authority_value(nested)
+                    not isinstance(nested, (dict, list))
+                    and child_promotion_context
+                    and
+                    not is_explicitly_bounded_authority_value(nested)
                 ):
                     fail(
                         f"compositional promotion field must remain explicitly bounded in "
                         f"{path.relative_to(ROOT).as_posix()}: {nested_label}={nested}"
                     )
-                if key in {normalize_authority_key(item) for item in FALSE_ONLY_FIELDS} and nested is not False:
+                if (
+                    not isinstance(nested, (dict, list))
+                    and key
+                    in {normalize_authority_key(item) for item in FALSE_ONLY_FIELDS}
+                    and nested is not False
+                ):
                     fail(
                         f"promotion field must be boolean false in "
                         f"{path.relative_to(ROOT).as_posix()}: {nested_label}={nested}"
                     )
-                if key == normalize_authority_key("public_safe_status") and nested not in (
+                if (
+                    not isinstance(nested, (dict, list))
+                    and key == normalize_authority_key("public_safe_status")
+                    and nested not in (
                     "NOT_PUBLIC_SAFE",
                     ["NOT_PUBLIC_SAFE"],
+                    )
                 ):
                     fail(
                         f"public_safe_status must remain NOT_PUBLIC_SAFE in "
@@ -442,10 +484,20 @@ def verify_promotion_block(path: Path, data: dict) -> None:
                         f"human_review_required must remain true in "
                         f"{path.relative_to(ROOT).as_posix()}: {nested_label}"
                     )
-                walk(nested, nested_label)
+                walk(
+                    nested,
+                    nested_label,
+                    child_normalized_path,
+                    child_promotion_context,
+                )
         elif isinstance(value, list):
             for index, nested in enumerate(value):
-                walk(nested, f"{label}[{index}]")
+                walk(
+                    nested,
+                    f"{label}[{index}]",
+                    normalized_path,
+                    promotion_context,
+                )
         elif isinstance(value, str):
             normalized_parent = normalize_authority_key(label.rsplit("[", 1)[0])
             exact_blocked_leaf = (

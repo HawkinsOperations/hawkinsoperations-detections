@@ -1,9 +1,12 @@
 import copy
 import importlib.util
 import json
+import re
 import shutil
 import subprocess
+import sys
 import tempfile
+import unicodedata
 import unittest
 from pathlib import Path
 
@@ -31,6 +34,41 @@ contract = load_module(
 )
 
 
+def run_workflow_vocabulary_guard(workflow_path: Path, files: dict[str, bytes]):
+    workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+    job = next(iter(workflow["jobs"].values()))
+    step = next(
+        item
+        for item in job["steps"]
+        if item.get("name") == "Reject retired fixture vocabulary"
+    )
+    source = step["run"].split("<<'PY'\n", 1)[1].rsplit("\nPY", 1)[0]
+    with tempfile.TemporaryDirectory() as temp:
+        root = Path(temp)
+        subprocess.run(
+            ["git", "init", "--quiet"],
+            cwd=root,
+            check=True,
+            capture_output=True,
+        )
+        for relative, content in files.items():
+            path = root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(content)
+        subprocess.run(
+            ["git", "add", "--", *files],
+            cwd=root,
+            check=True,
+            capture_output=True,
+        )
+        return subprocess.run(
+            [sys.executable, "-c", source],
+            cwd=root,
+            capture_output=True,
+            text=True,
+        )
+
+
 class DetectionSourceHardeningTests(unittest.TestCase):
     def test_required_ci_uses_exact_authority_shas_and_rejects_retired_vocabulary(
         self,
@@ -41,10 +79,54 @@ class DetectionSourceHardeningTests(unittest.TestCase):
         for env_name in ("VALIDATION_AUTHORITY_SHA", "PROOF_AUTHORITY_SHA"):
             self.assertRegex(job["env"][env_name], r"^[0-9a-f]{40}$")
         text = workflow_path.read_text(encoding="utf-8")
+        action_refs = re.findall(r"^\s*uses:\s*[^@\s]+@([^\s#]+)", text, re.MULTILINE)
+        self.assertTrue(action_refs)
+        self.assertTrue(all(re.fullmatch(r"[0-9a-f]{40}", ref) for ref in action_refs))
+        self.assertIn("PyYAML==6.0.2", text)
         self.assertIn('rev-parse HEAD)" = "$VALIDATION_AUTHORITY_SHA"', text)
         self.assertIn('rev-parse HEAD)" = "$PROOF_AUTHORITY_SHA"', text)
-        self.assertIn("'s[y]nthetic'", text)
+        self.assertIn('retired = "".join(("syn", "thetic"))', text)
+        self.assertIn('unicodedata.normalize("NFKC"', text)
+        self.assertIn('["git", "ls-files", "-z"]', text)
+        self.assertIn('["git", "show", f":{relative}"]', text)
+        self.assertIn("tracked non-binary content contains NUL", text)
+        self.assertGreaterEqual(text.count("check=True"), 2)
+        self.assertNotIn("git grep", text)
         self.assertNotIn("feature/hoxline-case-growth-convergence-v1", text)
+
+    def test_required_vocabulary_guard_rejects_nfkc_utf16_and_git_errors(self) -> None:
+        workflow_path = ROOT / ".github/workflows/baseline-detection-contract.yml"
+        retired = "".join(("syn", "thetic"))
+        fullwidth = "".join(chr(ord(character) + 0xFEE0) for character in retired)
+        self.assertEqual(
+            retired,
+            unicodedata.normalize("NFKC", fullwidth).casefold(),
+        )
+        result = run_workflow_vocabulary_guard(
+            workflow_path,
+            {
+                f"fixture-{fullwidth}.txt": b"controlled-test\n",
+                "content-fixture.txt": f"{fullwidth}\n".encode(),
+                "utf16-fixture.md": f"{retired}\n".encode("utf-16-le"),
+            },
+        )
+        self.assertNotEqual(0, result.returncode)
+        self.assertIn("utf16-fixture.md", result.stderr + result.stdout)
+        workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+        step = next(
+            item
+            for item in next(iter(workflow["jobs"].values()))["steps"]
+            if item.get("name") == "Reject retired fixture vocabulary"
+        )
+        source = step["run"].split("<<'PY'\n", 1)[1].rsplit("\nPY", 1)[0]
+        with tempfile.TemporaryDirectory() as temp:
+            operational = subprocess.run(
+                [sys.executable, "-c", source],
+                cwd=temp,
+                capture_output=True,
+                text=True,
+            )
+        self.assertNotEqual(0, operational.returncode)
 
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -202,10 +284,39 @@ class DetectionSourceHardeningTests(unittest.TestCase):
             {"metadata": {"runtime_status": "active"}},
             {"metadata": {"signal_status": "observed"}},
             {"metadata": {"approval_status": "approved"}},
+            {"metadata": {"approval_state": True}},
             {"metadata": {"closure_status": "closed"}},
             {"metadata": {"case_status": "closed"}},
+            {"metadata": {"case_state": True}},
+            {"metadata": {"customer_state": True}},
+            {"metadata": {"socaas_state": True}},
+            {"metadata": {"production_state": True}},
+            {"metadata": {"runtime_state": True}},
             {"metadata": {"public_safe_runtime": True}},
             {"metadata": {"final_authorized": True}},
+            {"metadata": {"final_authority": True}},
+            {"runtime": {"state": True}},
+            {"signal": {"observed": True}},
+            {"public": {"safe": True}},
+            {"approval": {"status": True}},
+            {"production": {"active": True}},
+            {"customer": {"deployed": True}},
+            {"socaas": {"deployed": True}},
+            {"ai": {"authority": True}},
+            {"analyst": {"approval": True}},
+            {"review": {"disposition": "APPROVED"}},
+            {"final": {"authorization": True}},
+            {"case": {"closed": True}},
+            {"extensions": [{"final": {"authorization": True}}]},
+            {"runtime": {"metadata": {"state": True}}},
+            {"final": {"review": {"authorization": True}}},
+            {"ai": {"metadata": {"authority": True}}},
+            {"customer": {"review": {"deployed": True}}},
+            {"review": {"metadata": {"disposition": "APPROVED"}}},
+            {"production_live": {"enabled": True}},
+            {"ai_authority": {"enabled": True}},
+            {"review_disposition": {"approved": True}},
+            {"final_authorization": {"granted": True}},
             {"metadata": {"%70roduction_active": True}},
         )
         source_path = (
@@ -217,6 +328,54 @@ class DetectionSourceHardeningTests(unittest.TestCase):
                     matrix.scan_nested_authority(attack, "hostile")
                 with self.assertRaises(SystemExit):
                     contract.verify_promotion_block(source_path, attack)
+
+    def test_split_authority_paths_preserve_bounded_scalar_controls(self):
+        source_path = ROOT / "detections/successor/ho-det-013/rule.yml"
+        controls = (
+            {"runtime": {"state": False}},
+            {"signal": {"observed": False}},
+            {"public": {"safe": "NOT_PUBLIC_SAFE"}},
+            {"approval": {"status": "NOT_APPROVED"}},
+            {"production": {"active": "BLOCKED"}},
+            {"customer": {"deployed": False}},
+            {"socaas": {"deployed": False}},
+            {"ai": {"authority": False}},
+            {"analyst": {"approval": "NOT_APPROVED"}},
+            {"review": {"disposition": "NOT_APPROVED"}},
+            {"final": {"authorization": "BLOCKED"}},
+            {"case": {"closed": False}},
+            {"extensions": [{"final": {"authorization": "BLOCKED"}}]},
+            {"runtime_state": False},
+            {"approval_state": "NOT_APPROVED"},
+            {"production_state": "BLOCKED"},
+            {"customer_state": False},
+            {"socaas_state": False},
+            {"final_authority": False},
+            {"case_state": False},
+            {"production_live": {"enabled": False}},
+            {"ai_authority": {"enabled": False}},
+            {"review_disposition": {"approved": "NOT_APPROVED"}},
+            {"final_authorization": {"granted": "BLOCKED"}},
+        )
+        for control in controls:
+            with self.subTest(control=control):
+                matrix.scan_nested_authority(control, "bounded")
+                contract.verify_promotion_block(source_path, control)
+
+    def test_compound_owned_context_names_are_not_split_authority_paths(self):
+        source_path = ROOT / "detections/successor/ho-det-013/rule.yml"
+        value = {
+            "socaas_pilot_receipt_flow": {
+                "pilot_status": "EXISTING_FLOW_CANDIDATE",
+                "customer_safe_summary_status": "PARTIAL",
+            },
+            "platform_case_packet_guardrail_status": (
+                "SATISFIED_NON_PROMOTIONAL_BOUNDARY"
+            ),
+        }
+
+        matrix.scan_nested_authority(value, "owned")
+        contract.verify_promotion_block(source_path, value)
 
     def test_affirmative_authority_prose_fails_closed(self):
         attacks = (

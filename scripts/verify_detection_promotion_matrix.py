@@ -635,18 +635,19 @@ def normalize_authority_key(value: str) -> str:
 
 def is_compositional_promotion_key(key: str) -> bool:
     return (
-        ("production" in key and any(part in key for part in ("active", "live", "ready", "deploy", "status")))
-        or (any(part in key for part in ("customer", "socaas")) and "deploy" in key)
-        or ("runtime" in key and any(part in key for part in ("active", "status")))
-        or ("signal" in key and any(part in key for part in ("observed", "status")))
-        or ("publicsafe" in key and not key.endswith("count"))
-        or ("final" in key and "authoriz" in key)
-        or ("case" in key and any(part in key for part in ("closed", "closure")))
-        or any(part in key for part in ("approvalstatus", "closurestatus", "casestatus"))
+        ("production" in key and any(part in key for part in ("active", "live", "ready", "deploy", "state", "status")))
+        or (any(part in key for part in ("customer", "socaas")) and any(part in key for part in ("active", "deploy", "state", "status")))
+        or ("runtime" in key and any(part in key for part in ("active", "state", "status")))
+        or ("signal" in key and any(part in key for part in ("observed", "state", "status")))
+        or ("publicsafe" in key and "count" not in key)
+        or ("final" in key and any(part in key for part in ("authoriz", "authority")))
+        or ("case" in key and "count" not in key and any(part in key for part in ("closed", "closure", "state", "status")))
+        or any(part in key for part in ("approvalstate", "approvalstatus", "closurestatus", "casestate", "casestatus"))
         or (
             key.startswith(("ai", "analyst"))
             and any(part in key for part in ("approved", "approval", "authority", "disposition"))
         )
+        or ("review" in key and "disposition" in key)
     )
 
 
@@ -671,17 +672,27 @@ def is_explicitly_bounded_authority_value(value: Any) -> bool:
         "notpublicsafe",
         "notruntimeactive",
         "open",
+        "partial",
         "pending",
+        "existingflowcandidate",
         "privateruntimeboundarycontextonly",
         "privateruntimeevidencecaptured",
         "privateruntimeevidencecapturedlocalwindowsonly",
+        "runtimeevidenceverifiedprivate",
         "runtimeactiveprivate",
         "signalobservedprivate",
+        "satisfiednonpromotionalboundary",
+        "sourceexists",
         "unsupported",
     }
 
 
-def scan_nested_authority(value: Any, label: str) -> None:
+def scan_nested_authority(
+    value: Any,
+    label: str,
+    normalized_path: tuple[str, ...] = (),
+    promotion_context: bool = False,
+) -> None:
     """Reject hidden authority promotion at any depth in structured source metadata."""
     if isinstance(value, dict):
         for raw_key, nested in value.items():
@@ -689,16 +700,53 @@ def scan_nested_authority(value: Any, label: str) -> None:
                 fail(f"{label} contains a non-string mapping key")
             key = normalize_authority_key(raw_key)
             nested_label = f"{label}.{raw_key}"
+            child_normalized_path = (*normalized_path, key)
+            cumulative_keys = {key}
+            cumulative_keys.update(
+                f"{segment}{key}"
+                for segment in normalized_path
+                if segment
+                in {
+                    "runtime",
+                    "signal",
+                    "public",
+                    "approval",
+                    "production",
+                    "customer",
+                    "socaas",
+                    "ai",
+                    "analyst",
+                    "review",
+                    "final",
+                    "case",
+                }
+            )
+            child_promotion_context = promotion_context or any(
+                is_compositional_promotion_key(candidate)
+                for candidate in cumulative_keys
+            )
             if (
-                is_compositional_promotion_key(key)
+                not isinstance(nested, (dict, list))
+                and child_promotion_context
                 and not is_explicitly_bounded_authority_value(nested)
             ):
                 fail(f"{nested_label} attempts compositional authority promotion")
-            if key in {normalize_authority_key(item) for item in NESTED_FALSE_ONLY_FIELDS}:
+            if (
+                not isinstance(nested, (dict, list))
+                and key
+                in {normalize_authority_key(item) for item in NESTED_FALSE_ONLY_FIELDS}
+            ):
                 allowed_false = nested is False or nested == [False]
                 if not allowed_false:
                     fail(f"{nested_label} attempts unsupported authority promotion")
-            if key in {normalize_authority_key(item) for item in NESTED_NOT_PUBLIC_SAFE_FIELDS}:
+            if (
+                not isinstance(nested, (dict, list))
+                and key
+                in {
+                    normalize_authority_key(item)
+                    for item in NESTED_NOT_PUBLIC_SAFE_FIELDS
+                }
+            ):
                 allowed = (
                     nested == "NOT_PUBLIC_SAFE"
                     or nested == ["NOT_PUBLIC_SAFE"]
@@ -714,11 +762,21 @@ def scan_nested_authority(value: Any, label: str) -> None:
                 allowed = {"NOT_APPROVED", "BLOCKED", "PENDING", "HUMAN_REVIEW_REQUIRED"}
                 if not isinstance(nested, str) or nested.upper() not in allowed:
                     fail(f"{nested_label} contains unsupported approval state")
-            scan_nested_authority(nested, nested_label)
+            scan_nested_authority(
+                nested,
+                nested_label,
+                child_normalized_path,
+                child_promotion_context,
+            )
         return
     if isinstance(value, list):
         for index, nested in enumerate(value):
-            scan_nested_authority(nested, f"{label}[{index}]")
+            scan_nested_authority(
+                nested,
+                f"{label}[{index}]",
+                normalized_path,
+                promotion_context,
+            )
         return
     if isinstance(value, str):
         normalized_label = normalize_authority_key(label)
