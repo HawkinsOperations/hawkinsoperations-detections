@@ -482,6 +482,106 @@ class DetectionSourceHardeningTests(unittest.TestCase):
                 with self.assertRaises(SystemExit):
                     contract.verify_promotion_block(source_path, {"notes": attack})
 
+    def test_combining_mark_obfuscation_in_nested_shapes_fails_closed(self):
+        source_path = (
+            ROOT / "detections" / "successor" / "ho-det-013" / "rule.yml"
+        )
+        templates = (
+            "public\\u{code} safe is confirmed",
+            "case\\u{code} closure approved",
+            "runtime\\u{code} is active",
+            "AI\\u{code} authority is enabled",
+        )
+        for code in ("034f", "0301", "fe0f", "0000", "0008", "001f", "007f"):
+            for template in templates:
+                value = json.loads(
+                    '{"extensions":[{"notes":[{"deep":"'
+                    + template.format(code=code)
+                    + '"}]}]}'
+                )
+                with self.subTest(code=code, template=template, verifier="matrix"):
+                    with self.assertRaises(matrix.MatrixError):
+                        matrix.scan_nested_authority(value, "hostile")
+                with self.subTest(code=code, template=template, verifier="contract"):
+                    with self.assertRaises(SystemExit):
+                        contract.verify_promotion_block(source_path, value)
+
+        control = {
+            "extensions": [
+                {
+                    "notes": [
+                        "Café résumé – reviewer note.",
+                        {"deep": "Reviewer 👩‍💻️ note."},
+                        {"multiline": "Reviewer note.\n\tStill bounded."},
+                    ]
+                }
+            ]
+        }
+        matrix.scan_nested_authority(control, "bounded")
+        contract.verify_promotion_block(source_path, control)
+
+    def test_connector_independent_affirmative_reset_fails_closed(self):
+        source_path = (
+            ROOT / "detections" / "successor" / "ho-det-013" / "rule.yml"
+        )
+        connectors = (
+            ",",
+            "and",
+            "plus",
+            "though",
+            "because",
+            "therefore",
+            "meanwhile",
+            "furthermore",
+            "also",
+            "nevertheless",
+            "nonetheless",
+            "except",
+            "despite that",
+            "in fact",
+            "so",
+            "consequently",
+            "moreover",
+            "then",
+            "still",
+            "even though",
+        )
+        for connector in connectors:
+            attack = (
+                f"does not prove runtime{connector} customer deployment is active"
+                if connector == ","
+                else f"does not prove runtime {connector} customer deployment is active"
+            )
+            with self.subTest(connector=connector, verifier="matrix"):
+                with self.assertRaises(matrix.MatrixError):
+                    matrix.scan_nested_authority({"notes": attack}, "hostile")
+            with self.subTest(connector=connector, verifier="contract"):
+                with self.assertRaises(SystemExit):
+                    contract.verify_promotion_block(source_path, {"notes": attack})
+
+    def test_trailing_negation_cannot_bound_prior_affirmative_state(self):
+        attacks = (
+            "customer deployment is active and not a typo",
+            "runtime is active and not simulated",
+            "final authorization received and no objections",
+            "AI authority is enabled and not revoked",
+            "public safe is confirmed and not disputed",
+            "case closure approved and not provisional",
+            "production is ready and not delayed",
+            "signal is observed and not inferred",
+            "customer deployment is active without ambiguity",
+        )
+        source_path = (
+            ROOT / "detections" / "successor" / "ho-det-013" / "rule.yml"
+        )
+        for attack in attacks:
+            with self.subTest(attack=attack, verifier="matrix"):
+                with self.assertRaises(matrix.MatrixError):
+                    matrix.scan_nested_authority({"notes": attack}, "hostile")
+            with self.subTest(attack=attack, verifier="contract"):
+                with self.assertRaises(SystemExit):
+                    contract.verify_promotion_block(source_path, {"notes": attack})
+
     def test_earlier_negation_cannot_launder_later_forbidden_claim_line(self):
         path = self.root / "claim-boundary.md"
         path.write_text(
