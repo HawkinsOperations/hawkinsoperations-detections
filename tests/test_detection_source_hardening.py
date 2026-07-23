@@ -417,12 +417,33 @@ class DetectionSourceHardeningTests(unittest.TestCase):
                     )
 
     def test_negated_authority_prose_remains_bounded(self):
-        value = {"notes": "customer deployment is not active and remains blocked"}
-        matrix.scan_nested_authority(value, "bounded")
-        contract.verify_promotion_block(
-            ROOT / "detections" / "successor" / "ho-det-013" / "rule.yml",
-            value,
+        controls = (
+            "customer deployment is not active and remains blocked",
+            (
+                "This does not prove runtime-active status, signal-observed "
+                "status, production-ready status, public-safe status, "
+                "AI-approved status, analyst-approved status, final "
+                "authorization, or case closure."
+            ),
+            (
+                "This does not prove customer deployment, public-safe status, "
+                "final authorization, or case closure."
+            ),
+            (
+                "Runtime, signal, public-safe, live IdP, production identity "
+                "coverage, autonomous SOC, AI-approved disposition, and "
+                "analyst-approved disposition claims remain blocked."
+            ),
+            "Café résumé – reviewer note.",
         )
+        for control in controls:
+            with self.subTest(control=control):
+                value = {"notes": control}
+                matrix.scan_nested_authority(value, "bounded")
+                contract.verify_promotion_block(
+                    ROOT / "detections" / "successor" / "ho-det-013" / "rule.yml",
+                    value,
+                )
 
     def test_cross_clause_negation_cannot_launder_affirmative_claim(self):
         attacks = (
@@ -436,6 +457,19 @@ class DetectionSourceHardeningTests(unittest.TestCase):
             "missing receipt while production is live",
             "no proof currently, customer environment deployed",
             "not approved / production is live",
+            "does not prove runtime, customer deployment is active",
+            "does not prove runtime, AI authority is enabled",
+            "does not prove runtime, analyst approval granted",
+            "does not prove runtime, public safe is confirmed",
+            "does not prove runtime, final authorization received",
+            "does not prove runtime, case closure approved",
+            "does not prove runtime and customer deployment is active",
+            "does not prove runtime plus public safe is confirmed",
+            "does not prove runtime though case closure is approved",
+            "public\u200b safe is confirmed",
+            "case\u200b closure approved",
+            "AI\u200b authority is enabled",
+            "runtime\u200b is active",
         )
         source_path = (
             ROOT / "detections" / "successor" / "ho-det-013" / "rule.yml"

@@ -92,14 +92,22 @@ NEGATIVE_LIST_INTRO_RE = re.compile(
     r"(?:prove|establish|claim|promote|authorize|assert)\b|\bwithout\s+claiming\b",
     re.IGNORECASE,
 )
-AFFIRMATIVE_ACTION_AFTER_NEGATIVE_LIST_RE = re.compile(
-    r"\b(?:customer|socaas)\b.{0,48}\b(?:is|was)?\s*deployed\b"
+AFFIRMATIVE_RESET_AFTER_NEGATIVE_LIST_RE = re.compile(
+    r"(?:,\s*|\b(?:and|plus|though)\b\s*)"
+    r"(?:"
+    r"\b(?:customer|socaas)\b.{0,32}\b(?:deployment\s+)?(?:is|was)\s+"
+    r"(?:active|confirmed|deployed|live|ready)\b"
+    r"|\b(?:customer|socaas)\b.{0,32}\b(?:is|was)\s+deployed\b"
     r"|\bproduction\b.{0,24}\b(?:is|was)\s+(?:active|live|ready)\b"
     r"|\bruntime\b.{0,16}\b(?:is|was)\s+active\b"
     r"|\bsignal\b.{0,16}\b(?:is|was)\s+observed\b"
+    r"|\bpublic[\s_-]*safe\b.{0,24}\b(?:is|was)\s+"
+    r"(?:approved|confirmed|established|ready|released)\b"
     r"|\b(?:ai|analyst)\b.{0,32}\b(?:(?:is|was)\s+approved|approval\s+(?:is\s+)?granted|authority\s+(?:is\s+)?enabled)\b"
     r"|\bfinal\s+authori[sz]ation\b.{0,16}\b(?:is|was)?\s*(?:approved|granted|received)\b"
-    r"|\bcase\b.{0,16}\b(?:is|was)\s+closed\b",
+    r"|\bcase\s+closure\b.{0,16}\b(?:is|was)?\s*(?:approved|complete|granted|received)\b"
+    r"|\bcase\b.{0,16}\b(?:is|was)\s+closed\b"
+    r")",
     re.IGNORECASE,
 )
 NEGATIVE_LIST_SUFFIX_RE = re.compile(
@@ -112,25 +120,40 @@ EXACT_BOUNDED_AUTHORITY_PROSE = {
 }
 
 
+def normalize_authority_security_text(value: str) -> str:
+    normalized = unicodedata.normalize("NFKC", value)
+    return "".join(
+        character
+        for character in normalized
+        if unicodedata.category(character) != "Cf"
+    )
+
+
 def contains_unsupported_affirmative_authority_claim(value: str) -> bool:
     """Bind negation to the same clause as the authority wording it bounds."""
-    normalized = unicodedata.normalize("NFKC", value)
+    normalized = normalize_authority_security_text(value)
     if normalized.strip().casefold() in EXACT_BOUNDED_AUTHORITY_PROSE:
         return False
     for segment in AUTHORITY_STRONG_CLAUSE_SPLIT_RE.split(normalized):
         if not segment.strip():
             continue
         intro = NEGATIVE_LIST_INTRO_RE.search(segment)
-        clauses = [segment]
         suffix = NEGATIVE_LIST_SUFFIX_RE.search(segment)
-        if (
-            not suffix
-            and (
-                not intro
-                or AFFIRMATIVE_ACTION_AFTER_NEGATIVE_LIST_RE.search(segment[intro.end():])
-            )
-        ):
-            clauses = segment.split(",")
+        if suffix:
+            if AFFIRMATIVE_RESET_AFTER_NEGATIVE_LIST_RE.search(
+                ", " + segment[:suffix.start()]
+            ):
+                return True
+            continue
+        if intro:
+            if (
+                AFFIRMATIVE_RESET_AFTER_NEGATIVE_LIST_RE.search(
+                    segment[intro.end():]
+                )
+            ):
+                return True
+            continue
+        clauses = segment.split(",")
         if any(
             AFFIRMATIVE_AUTHORITY_CLAIM_RE.search(clause)
             and not NEGATED_AUTHORITY_CONTEXT_RE.search(clause)
