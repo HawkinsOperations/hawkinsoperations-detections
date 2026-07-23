@@ -5,9 +5,9 @@ proof_level: CONTROLLED_TEST_VALIDATED
 trust_class: CONTROLLED_TEST_VALIDATED
 public_safe_status: NOT_PUBLIC_SAFE
 approval_status: NOT_APPROVED
-runtime_active: "NO"
+runtime_active: false
 validation_status: CONTROLLED_TEST_VALIDATED
-signal_observed: "NO"
+signal_observed: false
 evidence_linked: "NO"
 proof_status: CONTROLLED_TEST_VALIDATED
 description: >

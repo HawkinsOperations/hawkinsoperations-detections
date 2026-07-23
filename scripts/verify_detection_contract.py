@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Detection contract verification across hero/successor/identity/cloud packages."""
+import copy
 import hashlib
 import importlib.util
 import json
 import re
 import sys
 import xml.etree.ElementTree as ET
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
+from urllib.parse import unquote
 
 import yaml
 
@@ -47,6 +49,58 @@ PROMOTION_BLOCK_FIELDS = (
     "evidence_linked_public_proof",
 )
 
+FALSE_ONLY_FIELDS = {
+    "runtime_active",
+    "signal_observed",
+    "evidence_linked_public_proof",
+    "ai_disposition_authority",
+    "ai_decided_disposition",
+    "analyst_approved",
+    "final_authorization",
+    "case_closed",
+    "case_closure",
+}
+
+
+class UniqueKeyLoader(yaml.SafeLoader):
+    pass
+
+
+UniqueKeyLoader.yaml_implicit_resolvers = copy.deepcopy(
+    yaml.SafeLoader.yaml_implicit_resolvers
+)
+for resolver_key, resolvers in list(UniqueKeyLoader.yaml_implicit_resolvers.items()):
+    UniqueKeyLoader.yaml_implicit_resolvers[resolver_key] = [
+        resolver
+        for resolver in resolvers
+        if resolver[0] != "tag:yaml.org,2002:timestamp"
+    ]
+
+
+def _construct_unique_mapping(loader, node, deep=False):
+    mapping = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in mapping:
+            fail(f"duplicate YAML key {key!r} at line {key_node.start_mark.line + 1}")
+        mapping[key] = loader.construct_object(value_node, deep=deep)
+    return mapping
+
+
+UniqueKeyLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+    _construct_unique_mapping,
+)
+
+
+def _unique_json_pairs(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError(f"duplicate JSON key {key!r}")
+        value[key] = item
+    return value
+
 
 def verify_detection_promotion_matrix() -> None:
     matrix_verifier_path = ROOT / "scripts" / "verify_detection_promotion_matrix.py"
@@ -72,8 +126,11 @@ def read_schema_required_keys() -> list[str]:
     if not SCHEMA_PATH.exists():
         fail(f"missing schema file: {SCHEMA_PATH}")
     try:
-        schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
+        schema = json.loads(
+            SCHEMA_PATH.read_text(encoding="utf-8"),
+            object_pairs_hook=_unique_json_pairs,
+        )
+    except (json.JSONDecodeError, ValueError) as exc:
         fail(f"invalid schema JSON: {exc}")
     required = schema.get("required", [])
     if not isinstance(required, list):
@@ -100,7 +157,7 @@ def sha256_of(path: Path) -> str:
 
 def parse_yaml(path: Path) -> dict:
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data = yaml.load(path.read_text(encoding="utf-8"), Loader=UniqueKeyLoader)
     except yaml.YAMLError as exc:
         fail(f"invalid YAML parse: {path.relative_to(ROOT).as_posix()} ({exc})")
     if not isinstance(data, dict):
@@ -110,8 +167,11 @@ def parse_yaml(path: Path) -> dict:
 
 def parse_json(path: Path):
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
+        return json.loads(
+            path.read_text(encoding="utf-8"),
+            object_pairs_hook=_unique_json_pairs,
+        )
+    except (json.JSONDecodeError, ValueError) as exc:
         fail(f"invalid JSON parse: {path.relative_to(ROOT).as_posix()} ({exc})")
 
 
@@ -150,7 +210,32 @@ def verify_manifest(package_dir: Path, drift_warnings: list[str]) -> None:
         expected, rel = parts
         if not HEX64_RE.match(expected):
             fail(f"invalid manifest hash token: {manifest.relative_to(ROOT).as_posix()} :: {expected}")
-        target = package_dir / rel
+        decoded = rel
+        for _ in range(4):
+            next_value = unquote(decoded)
+            if next_value == decoded:
+                break
+            decoded = next_value
+        if (
+            "\\" in decoded
+            or decoded.startswith("/")
+            or re.match(r"^[A-Za-z]:", decoded)
+            or PureWindowsPath(decoded).is_absolute()
+            or PurePosixPath(decoded).is_absolute()
+            or any(part in {"", ".", ".."} for part in decoded.split("/"))
+        ):
+            fail(
+                f"manifest path must be canonical package-relative: "
+                f"{manifest.relative_to(ROOT).as_posix()} :: {rel}"
+            )
+        target = (package_dir / decoded).resolve()
+        try:
+            target.relative_to(package_dir.resolve())
+        except ValueError:
+            fail(
+                f"manifest path escapes package: "
+                f"{manifest.relative_to(ROOT).as_posix()} :: {rel}"
+            )
         if not target.exists():
             fail(f"manifest points to missing file: {target.relative_to(ROOT).as_posix()}")
         actual = sha256_of(target)
@@ -187,9 +272,42 @@ def hero_detection_id(dirname: str) -> str:
 
 
 def verify_promotion_block(path: Path, data: dict) -> None:
-    for key in PROMOTION_BLOCK_FIELDS:
-        if key in data and truthy(data[key]):
-            fail(f"truthy promotion field blocked in {path.relative_to(ROOT).as_posix()}: {key}={data[key]}")
+    def walk(value, label):
+        if isinstance(value, dict):
+            for raw_key, nested in value.items():
+                if not isinstance(raw_key, str):
+                    fail(f"non-string key blocked in {path.relative_to(ROOT).as_posix()}: {label}")
+                key = raw_key.strip().casefold().replace("-", "_")
+                nested_label = f"{label}.{raw_key}"
+                if key in FALSE_ONLY_FIELDS and nested is not False:
+                    fail(
+                        f"promotion field must be boolean false in "
+                        f"{path.relative_to(ROOT).as_posix()}: {nested_label}={nested}"
+                    )
+                if key == "public_safe_status" and nested not in (
+                    "NOT_PUBLIC_SAFE",
+                    ["NOT_PUBLIC_SAFE"],
+                ):
+                    fail(
+                        f"public_safe_status must remain NOT_PUBLIC_SAFE in "
+                        f"{path.relative_to(ROOT).as_posix()}: {nested_label}={nested}"
+                    )
+                if key == "human_review_required" and nested is not True:
+                    fail(
+                        f"human_review_required must remain true in "
+                        f"{path.relative_to(ROOT).as_posix()}: {nested_label}"
+                    )
+                walk(nested, nested_label)
+        elif isinstance(value, list):
+            for index, nested in enumerate(value):
+                walk(nested, f"{label}[{index}]")
+        elif value is not None and type(value) not in {str, int, float, bool}:
+            fail(
+                f"unsupported structured value in "
+                f"{path.relative_to(ROOT).as_posix()}: {label}"
+            )
+
+    walk(data, "root")
 
 
 def verify_package(package_dir: Path, family: str, schema_required: list[str], drift_warnings: list[str]) -> None:
@@ -235,7 +353,7 @@ def verify_package(package_dir: Path, family: str, schema_required: list[str], d
             mapping_id = ensure_detection_id(package_dir / "event-mapping.yml", mapping)
             verify_promotion_block(package_dir / "event-mapping.yml", mapping)
             if mapping_id != rule_id:
-                drift_warnings.append(
+                fail(
                     f"metadata drift: detection_id mismatch rule/event-mapping in {package_dir.relative_to(ROOT).as_posix()} ({rule_id} vs {mapping_id})"
                 )
 
@@ -244,7 +362,7 @@ def verify_package(package_dir: Path, family: str, schema_required: list[str], d
         ensure_blocked_claims(package_dir / "status.yml", status)
         verify_promotion_block(package_dir / "status.yml", status)
         if status_id != rule_id:
-            drift_warnings.append(
+            fail(
                 f"metadata drift: detection_id mismatch rule/status in {package_dir.relative_to(ROOT).as_posix()} ({rule_id} vs {status_id})"
             )
 
