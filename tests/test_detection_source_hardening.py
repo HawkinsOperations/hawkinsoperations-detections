@@ -235,6 +235,12 @@ class DetectionSourceHardeningTests(unittest.TestCase):
             "no signal observed; final authorization is granted",
             "unsupported here; case is closed",
             "runtime is blocked. analyst approval is granted",
+            "pending documentation, production is live",
+            "unsupported note — customer environment deployed",
+            "future issue: signal was observed",
+            "missing receipt while production is live",
+            "no proof currently, customer environment deployed",
+            "not approved / production is live",
         )
         source_path = (
             ROOT / "detections" / "successor" / "ho-det-013" / "rule.yml"
