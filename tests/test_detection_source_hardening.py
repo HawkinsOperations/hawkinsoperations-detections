@@ -181,6 +181,18 @@ class DetectionSourceHardeningTests(unittest.TestCase):
             {"ai disposition authority": True},
             {"runtime.active": True},
             {"public safe status": "PUBLIC_SAFE"},
+            {"metadata": {"production_active": True}},
+            {"metadata": {"production_live": {"enabled": True}}},
+            {"metadata": {"customer_deployment": True}},
+            {"metadata": {"socaas_deployment": True}},
+            {"metadata": {"runtime_status": "active"}},
+            {"metadata": {"signal_status": "observed"}},
+            {"metadata": {"approval_status": "approved"}},
+            {"metadata": {"closure_status": "closed"}},
+            {"metadata": {"case_status": "closed"}},
+            {"metadata": {"public_safe_runtime": True}},
+            {"metadata": {"final_authorized": True}},
+            {"metadata": {"%70roduction_active": True}},
         )
         source_path = (
             ROOT / "detections" / "successor" / "ho-det-013" / "rule.yml"
