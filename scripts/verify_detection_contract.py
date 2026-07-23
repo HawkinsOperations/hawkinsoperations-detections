@@ -63,20 +63,38 @@ FALSE_ONLY_FIELDS = {
 }
 
 AFFIRMATIVE_AUTHORITY_CLAIM_RE = re.compile(
-    r"\b(?:"
-    r"(?:customer|socaas)\s+deployment\s+(?:is\s+)?(?:active|live|confirmed|approved)"
-    r"|analyst\s+approval\s+(?:is\s+)?(?:granted|approved)"
-    r"|final\s+authorization\s+(?:is\s+)?(?:granted|approved)"
-    r"|case\s+(?:closure\s+(?:is\s+)?approved|is\s+closed|closed)"
-    r"|public[\s_-]*safe\s+runtime\s+proof\s+(?:is\s+)?(?:established|confirmed)"
-    r"|(?:runtime|signal)\s+(?:status\s+)?(?:is\s+)?(?:active|observed)"
-    r")\b",
+    r"(?:"
+    r"\b(?:customer|socaas)\b.{0,48}\bdeploy(?:ed|ment|ing)?\b"
+    r"|\bdeploy(?:ed|ment|ing)?\b.{0,48}\b(?:customer|socaas)\b"
+    r"|\bproduction\b.{0,32}\b(?:active|confirmed|deployed|live|ready)\b"
+    r"|\b(?:ai|analyst)\b.{0,40}\b(?:approval|authority|disposition)\b.{0,24}\b(?:approved|enabled|granted)\b"
+    r"|\b(?:ai|analyst)\b.{0,40}\b(?:approved|authori[sz]ed)\b.{0,24}\b(?:case|decision|disposition)\b"
+    r"|\bfinal\s+authori[sz]ation\b.{0,32}\b(?:approved|complete|granted|received)\b"
+    r"|\bcase\s+closure\b.{0,32}\b(?:approved|complete|granted|received)\b"
+    r"|\bcase\b.{0,16}\b(?:is|was)?\s*closed\b"
+    r"|\bpublic[\s_-]*safe\b.{0,32}\b(?:approved|confirmed|established|release|runtime\s+proof)\b"
+    r"|\bruntime\b.{0,24}\b(?:active|live)\b"
+    r"|\bsignal\b.{0,24}\b(?:active|observed)\b"
+    r")",
     re.IGNORECASE,
 )
 NEGATED_AUTHORITY_CONTEXT_RE = re.compile(
-    r"\b(?:blocked|denied|false|not|never|no|prohibited|reject(?:ed|s)?|unsupported|without)\b",
+    r"\b(?:blocked|denied|false|future|not|never|no|pending|prohibited|"
+    r"reject(?:ed|s)?|requires?\s+separate|remain(?:s)?\s+(?:a\s+)?separate|unsupported|without)\b",
     re.IGNORECASE,
 )
+AUTHORITY_CLAUSE_SPLIT_RE = re.compile(r"[;\r\n]+|(?<=[.!?])\s+")
+
+
+def contains_unsupported_affirmative_authority_claim(value: str) -> bool:
+    """Bind negation to the same clause as the authority wording it bounds."""
+    normalized = unicodedata.normalize("NFKC", value)
+    return any(
+        AFFIRMATIVE_AUTHORITY_CLAIM_RE.search(clause)
+        and not NEGATED_AUTHORITY_CONTEXT_RE.search(clause)
+        for clause in AUTHORITY_CLAUSE_SPLIT_RE.split(normalized)
+        if clause.strip()
+    )
 
 
 def normalize_authority_key(value: str) -> str:
@@ -323,10 +341,27 @@ def verify_promotion_block(path: Path, data: dict) -> None:
             for index, nested in enumerate(value):
                 walk(nested, f"{label}[{index}]")
         elif isinstance(value, str):
-            normalized = unicodedata.normalize("NFKC", value)
+            normalized_parent = normalize_authority_key(label.rsplit("[", 1)[0])
+            exact_blocked_leaf = (
+                label.endswith("]")
+                and normalized_parent.endswith(
+                    (
+                        "blockedclaims",
+                        "blockedwording",
+                        "claimsnotsupported",
+                        "doesnotsupport",
+                        "notclaimedhere",
+                    )
+                )
+                and not re.search(
+                    r"\b(?:is|was|has|enabled|granted|received)\b",
+                    value,
+                    re.IGNORECASE,
+                )
+            )
             if (
-                AFFIRMATIVE_AUTHORITY_CLAIM_RE.search(normalized)
-                and not NEGATED_AUTHORITY_CONTEXT_RE.search(normalized)
+                contains_unsupported_affirmative_authority_claim(value)
+                and not exact_blocked_leaf
             ):
                 fail(
                     f"unsupported affirmative authority claim in "

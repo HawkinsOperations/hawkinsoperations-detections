@@ -195,9 +195,19 @@ class DetectionSourceHardeningTests(unittest.TestCase):
     def test_affirmative_authority_prose_fails_closed(self):
         attacks = (
             "customer deployment is active",
+            "deployed to customer Acme",
+            "customer environment deployed",
             "analyst approval granted",
+            "analyst approved this disposition",
             "SOCaaS deployment is live",
+            "SOCaaS is deployed",
             "public safe runtime proof established",
+            "public safe for release",
+            "production is live",
+            "final authorization received",
+            "case closure complete",
+            "runtime is active",
+            "signal was observed",
         )
         source_path = (
             ROOT / "detections" / "successor" / "ho-det-013" / "rule.yml"
@@ -218,6 +228,35 @@ class DetectionSourceHardeningTests(unittest.TestCase):
             ROOT / "detections" / "successor" / "ho-det-013" / "rule.yml",
             value,
         )
+
+    def test_cross_clause_negation_cannot_launder_affirmative_claim(self):
+        attacks = (
+            "not public safe; customer deployment is active",
+            "no signal observed; final authorization is granted",
+            "unsupported here; case is closed",
+            "runtime is blocked. analyst approval is granted",
+        )
+        source_path = (
+            ROOT / "detections" / "successor" / "ho-det-013" / "rule.yml"
+        )
+        for attack in attacks:
+            with self.subTest(attack=attack, verifier="matrix"):
+                with self.assertRaises(matrix.MatrixError):
+                    matrix.scan_nested_authority({"notes": attack}, "hostile")
+            with self.subTest(attack=attack, verifier="contract"):
+                with self.assertRaises(SystemExit):
+                    contract.verify_promotion_block(source_path, {"notes": attack})
+
+    def test_earlier_negation_cannot_launder_later_forbidden_claim_line(self):
+        path = self.root / "claim-boundary.md"
+        path.write_text(
+            "No live claims are made here.\n"
+            + "\n".join(f"bounded context {index}" for index in range(25))
+            + "\nThe package is production-ready.\n",
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(matrix.MatrixError, "unbounded blocked claim"):
+            matrix.scan_claim_lines(path, self.root)
 
     def test_duplicate_package_metadata_key_fails_closed(self):
         rule_path = (

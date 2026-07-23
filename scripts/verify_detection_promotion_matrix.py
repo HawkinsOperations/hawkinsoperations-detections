@@ -222,20 +222,57 @@ NESTED_FALSE_ONLY_FIELDS = {
 NESTED_NOT_PUBLIC_SAFE_FIELDS = {"public_safe_status"}
 
 AFFIRMATIVE_AUTHORITY_CLAIM_RE = re.compile(
-    r"\b(?:"
-    r"(?:customer|socaas)\s+deployment\s+(?:is\s+)?(?:active|live|confirmed|approved)"
-    r"|analyst\s+approval\s+(?:is\s+)?(?:granted|approved)"
-    r"|final\s+authorization\s+(?:is\s+)?(?:granted|approved)"
-    r"|case\s+(?:closure\s+(?:is\s+)?approved|is\s+closed|closed)"
-    r"|public[\s_-]*safe\s+runtime\s+proof\s+(?:is\s+)?(?:established|confirmed)"
-    r"|(?:runtime|signal)\s+(?:status\s+)?(?:is\s+)?(?:active|observed)"
-    r")\b",
+    r"(?:"
+    r"\b(?:customer|socaas)\b.{0,48}\bdeploy(?:ed|ment|ing)?\b"
+    r"|\bdeploy(?:ed|ment|ing)?\b.{0,48}\b(?:customer|socaas)\b"
+    r"|\bproduction\b.{0,32}\b(?:active|confirmed|deployed|live|ready)\b"
+    r"|\b(?:ai|analyst)\b.{0,40}\b(?:approval|authority|disposition)\b.{0,24}\b(?:approved|enabled|granted)\b"
+    r"|\b(?:ai|analyst)\b.{0,40}\b(?:approved|authori[sz]ed)\b.{0,24}\b(?:case|decision|disposition)\b"
+    r"|\bfinal\s+authori[sz]ation\b.{0,32}\b(?:approved|complete|granted|received)\b"
+    r"|\bcase\s+closure\b.{0,32}\b(?:approved|complete|granted|received)\b"
+    r"|\bcase\b.{0,16}\b(?:is|was)?\s*closed\b"
+    r"|\bpublic[\s_-]*safe\b.{0,32}\b(?:approved|confirmed|established|release|runtime\s+proof)\b"
+    r"|\bruntime\b.{0,24}\b(?:active|live)\b"
+    r"|\bsignal\b.{0,24}\b(?:active|observed)\b"
+    r")",
     re.IGNORECASE,
 )
 NEGATED_AUTHORITY_CONTEXT_RE = re.compile(
-    r"\b(?:blocked|denied|false|not|never|no|prohibited|reject(?:ed|s)?|unsupported|without)\b",
+    r"\b(?:blocked|denied|false|future|not|never|no|pending|prohibited|"
+    r"reject(?:ed|s)?|requires?\s+separate|remain(?:s)?\s+(?:a\s+)?separate|unsupported|without)\b",
     re.IGNORECASE,
 )
+AUTHORITY_CLAUSE_SPLIT_RE = re.compile(r"[;\r\n]+|(?<=[.!?])\s+")
+
+
+def contains_unsupported_affirmative_authority_claim(value: str) -> bool:
+    """Bind negation to the same clause as the authority wording it bounds."""
+    normalized = unicodedata.normalize("NFKC", value)
+    return any(
+        AFFIRMATIVE_AUTHORITY_CLAIM_RE.search(clause)
+        and not NEGATED_AUTHORITY_CONTEXT_RE.search(clause)
+        for clause in AUTHORITY_CLAUSE_SPLIT_RE.split(normalized)
+        if clause.strip()
+    )
+
+
+def contains_unbounded_forbidden_claim_term(value: str) -> bool:
+    """Require blocked claim terms to be bounded inside their own semantic clause."""
+    normalized = unicodedata.normalize("NFKC", value)
+    return any(
+        any(term.casefold() in clause.casefold() for term in FORBIDDEN_CLAIM_TERMS)
+        and not ALLOWED_CLAIM_CONTEXT_RE.search(clause)
+        for clause in AUTHORITY_CLAUSE_SPLIT_RE.split(normalized)
+        if clause.strip()
+    )
+
+
+def is_safe_blocked_claim_leaf(value: str) -> bool:
+    return not re.search(
+        r"\b(?:is|was|has|enabled|granted|received)\b",
+        unicodedata.normalize("NFKC", value),
+        re.IGNORECASE,
+    )
 
 VALIDATION_STATUS_VALUES = {
     "CONTROLLED_TEST_VALIDATED_IN_VALIDATION_REPO",
@@ -264,7 +301,8 @@ FORBIDDEN_CLAIM_TERMS = (
 )
 ALLOWED_CLAIM_CONTEXT_RE = re.compile(
     r"(?i)(blocked|blocked_claims|blocked claims|not claimed|not_claimed_here|not-claimed|"
-    r"does not|does_not_support|does-not-prove|not proof|not public-safe|not runtime|not signal|"
+    r"does not|do not|did not|does_not_support|does-not-prove|"
+    r"not proof|not public-safe|not runtime|not signal|no proof|no public-safe|no runtime|no signal|"
     r"out of scope|excluded|without claiming|must not|no live|no .*claim|proof remains|"
     r"not promote|does not promote|source-only|source truth only)"
 )
@@ -578,10 +616,39 @@ def scan_nested_authority(value: Any, label: str) -> None:
             scan_nested_authority(nested, f"{label}[{index}]")
         return
     if isinstance(value, str):
-        normalized = unicodedata.normalize("NFKC", value)
+        normalized_label = normalize_authority_key(label)
+        exact_blocked_claim_leaf = (
+            any(
+                marker in normalized_label
+                for marker in (
+                    "blockedclaims",
+                    "blockedwording",
+                    "claimsnotsupported",
+                    "doesnotsupport",
+                    "notclaimedhere",
+                )
+            )
+            and normalize_authority_key(label.rsplit("[", 1)[0]).endswith(
+                (
+                    "blockedclaims",
+                    "blockedwording",
+                    "claimsnotsupported",
+                    "doesnotsupport",
+                    "notclaimedhere",
+                )
+            )
+            and not re.search(
+                r"\b(?:is|was|has|enabled|granted|received)\b",
+                value,
+                re.IGNORECASE,
+            )
+        )
         if (
-            AFFIRMATIVE_AUTHORITY_CLAIM_RE.search(normalized)
-            and not NEGATED_AUTHORITY_CONTEXT_RE.search(normalized)
+            contains_unsupported_affirmative_authority_claim(value)
+            and not exact_blocked_claim_leaf
+        ) or (
+            contains_unbounded_forbidden_claim_term(value)
+            and not exact_blocked_claim_leaf
         ):
             fail(f"{label} contains an unsupported affirmative authority claim")
         return
@@ -1201,16 +1268,214 @@ def is_local_path(package_path: str) -> bool:
 def scan_claim_lines(path: Path, root: Path) -> None:
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
     for index, line in enumerate(lines):
-        lower = line.lower()
+        normalized_line = unicodedata.normalize("NFKC", line)
+        lower = normalized_line.casefold()
         for term in FORBIDDEN_CLAIM_TERMS:
-            term_index = lower.find(term.lower())
+            term_index = lower.find(term.casefold())
             if term_index == -1:
                 continue
-            promotion_prefix = line[max(0, term_index - 80) : term_index]
-            if POSITIVE_PROMOTION_RE.search(promotion_prefix) and not ALLOWED_CLAIM_CONTEXT_RE.search(line):
+            clause_start = max(
+                normalized_line.rfind(";", 0, term_index),
+                normalized_line.rfind(".", 0, term_index),
+                normalized_line.rfind("!", 0, term_index),
+                normalized_line.rfind("?", 0, term_index),
+            )
+            clause_end_candidates = [
+                position
+                for separator in ";.!?"
+                if (position := normalized_line.find(separator, term_index)) != -1
+            ]
+            clause_end = min(clause_end_candidates, default=len(normalized_line))
+            clause = normalized_line[clause_start + 1 : clause_end]
+            bounded_structured_parent = False
+            bounded_markdown_section = False
+            bounded_markdown_list = False
+            bounded_markdown_table = False
+            bounded_markdown_paragraph = False
+            bounded_xml_comment = False
+            if path.suffix.casefold() in {".yml", ".yaml"}:
+                child_indent = len(line) - len(line.lstrip())
+                for parent_line in reversed(lines[:index]):
+                    if not parent_line.strip() or parent_line.lstrip().startswith("#"):
+                        continue
+                    parent_indent = len(parent_line) - len(parent_line.lstrip())
+                    if parent_indent >= child_indent:
+                        continue
+                    parent_match = re.fullmatch(
+                        r"([A-Za-z0-9_-]+):\s*", parent_line.strip()
+                    )
+                    if parent_match:
+                        bounded_structured_parent = (
+                            normalize_authority_key(parent_match.group(1))
+                            in {
+                                normalize_authority_key("blocked_claims"),
+                                normalize_authority_key("claims_not_supported"),
+                                normalize_authority_key("does_not_support"),
+                                normalize_authority_key("not_claimed_here"),
+                            }
+                        )
+                    break
+            elif path.suffix.casefold() == ".md":
+                section_heading = ""
+                for heading_line in reversed(lines[: index + 1]):
+                    heading_match = re.fullmatch(r"\s*#{1,6}\s+(.+?)\s*", heading_line)
+                    if heading_match:
+                        section_heading = normalize_authority_key(
+                            heading_match.group(1)
+                        )
+                        break
+                stripped = normalized_line.strip()
+                bounded_markdown_section = (
+                    section_heading
+                    in {
+                        normalize_authority_key("Blocked Claims"),
+                        normalize_authority_key("Out of Scope"),
+                        normalize_authority_key("Not Claimed"),
+                        normalize_authority_key("Claims Not Supported"),
+                    }
+                    and stripped.startswith("- ")
+                    and is_safe_blocked_claim_leaf(stripped[2:])
+                )
+                list_label = ""
+                for candidate in reversed(lines[:index]):
+                    candidate_stripped = candidate.strip()
+                    if not candidate_stripped or candidate_stripped.startswith("- "):
+                        continue
+                    list_label = normalize_authority_key(candidate_stripped)
+                    break
+                bounded_markdown_list = (
+                    list_label
+                    in {
+                        normalize_authority_key("Blocked Claims"),
+                        normalize_authority_key("Out of Scope"),
+                        normalize_authority_key("Not Claimed"),
+                        normalize_authority_key("Claims Not Supported"),
+                    }
+                    and stripped.startswith("- ")
+                    and is_safe_blocked_claim_leaf(stripped[2:])
+                )
+                if stripped.startswith("|") and stripped.endswith("|"):
+                    cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+                    term_cell_index = next(
+                        (
+                            cell_index
+                            for cell_index, cell in enumerate(cells)
+                            if term.casefold() in cell.casefold()
+                        ),
+                        None,
+                    )
+                    header_cells = None
+                    for candidate in reversed(lines[:index]):
+                        candidate_stripped = candidate.strip()
+                        if not candidate_stripped.startswith("|"):
+                            if header_cells is not None:
+                                break
+                            continue
+                        candidate_cells = [
+                            cell.strip()
+                            for cell in candidate_stripped.strip("|").split("|")
+                        ]
+                        if all(
+                            re.fullmatch(r":?-{3,}:?", cell) for cell in candidate_cells
+                        ):
+                            continue
+                        header_cells = candidate_cells
+                    if (
+                        term_cell_index is not None
+                        and header_cells is not None
+                        and term_cell_index < len(header_cells)
+                    ):
+                        bounded_markdown_table = (
+                            normalize_authority_key(header_cells[term_cell_index])
+                            in {
+                                normalize_authority_key("Blocked Claims"),
+                                normalize_authority_key("Claims Not Supported"),
+                                normalize_authority_key("Not Claimed"),
+                            }
+                            and is_safe_blocked_claim_leaf(cells[term_cell_index])
+                        )
+                paragraph_start = index
+                while (
+                    paragraph_start > 0
+                    and lines[paragraph_start - 1].strip()
+                    and not lines[paragraph_start - 1].lstrip().startswith("#")
+                ):
+                    paragraph_start -= 1
+                paragraph_end = index
+                while (
+                    paragraph_end + 1 < len(lines)
+                    and lines[paragraph_end + 1].strip()
+                    and not lines[paragraph_end + 1].lstrip().startswith("#")
+                ):
+                    paragraph_end += 1
+                paragraph = unicodedata.normalize(
+                    "NFKC",
+                    " ".join(lines[paragraph_start : paragraph_end + 1]),
+                )
+                paragraph_term_index = paragraph.casefold().find(term.casefold())
+                if paragraph_term_index != -1:
+                    paragraph_clause_start = max(
+                        paragraph.rfind(";", 0, paragraph_term_index),
+                        paragraph.rfind(".", 0, paragraph_term_index),
+                        paragraph.rfind("!", 0, paragraph_term_index),
+                        paragraph.rfind("?", 0, paragraph_term_index),
+                    )
+                    paragraph_clause_ends = [
+                        position
+                        for separator in ";.!?"
+                        if (
+                            position := paragraph.find(
+                                separator, paragraph_term_index
+                            )
+                        )
+                        != -1
+                    ]
+                    paragraph_clause_end = min(
+                        paragraph_clause_ends, default=len(paragraph)
+                    )
+                    paragraph_clause = paragraph[
+                        paragraph_clause_start + 1 : paragraph_clause_end
+                    ]
+                    bounded_markdown_paragraph = bool(
+                        ALLOWED_CLAIM_CONTEXT_RE.search(paragraph_clause)
+                    )
+            elif path.suffix.casefold() == ".xml":
+                before = "\n".join(lines[: index + 1])
+                after = "\n".join(lines[index:])
+                comment_start = before.rfind("<!--")
+                comment_end = after.find("-->")
+                if comment_start != -1 and comment_end != -1:
+                    comment = (
+                        before[comment_start + 4 :]
+                        + "\n"
+                        + after[:comment_end]
+                    )
+                    bounded_xml_comment = bool(
+                        ALLOWED_CLAIM_CONTEXT_RE.search(
+                            unicodedata.normalize("NFKC", comment)
+                        )
+                    )
+            promotion_prefix = clause[max(0, clause.casefold().find(term.casefold()) - 80) :]
+            if (
+                POSITIVE_PROMOTION_RE.search(promotion_prefix)
+                and not ALLOWED_CLAIM_CONTEXT_RE.search(clause)
+                and not bounded_structured_parent
+                and not bounded_markdown_section
+                and not bounded_markdown_list
+                and not bounded_markdown_table
+                and not bounded_markdown_paragraph
+                and not bounded_xml_comment
+            ):
                 fail(f"unbounded blocked claim term in {rel(path, root)}:{index + 1}: {term}")
-            context = " ".join(lines[max(0, index - 25) : index + 1])
-            if not ALLOWED_CLAIM_CONTEXT_RE.search(context):
+            if (
+                not ALLOWED_CLAIM_CONTEXT_RE.search(clause)
+                and not bounded_structured_parent
+                and not bounded_markdown_section
+                and not bounded_markdown_list
+                and not bounded_markdown_table
+                and not bounded_markdown_paragraph
+                and not bounded_xml_comment
+            ):
                 fail(f"unbounded blocked claim term in {rel(path, root)}:{index + 1}: {term}")
 
 
@@ -1226,7 +1491,8 @@ def scan_source_only_claims(package_dir: Path, root: Path) -> None:
                 load_yaml(path), f"{rel(path, root)} structured metadata"
             )
             scan_nested_authority(structured, rel(path, root))
-        scan_claim_lines(path, root)
+        else:
+            scan_claim_lines(path, root)
 
 
 def scan_global_metadata_claims(root: Path) -> None:
@@ -1234,7 +1500,12 @@ def scan_global_metadata_claims(root: Path) -> None:
         path = root / relative_path
         if not path.exists():
             fail(f"missing global metadata file: {relative_path.as_posix()}")
-        scan_claim_lines(path, root)
+        if path.suffix.casefold() in {".yml", ".yaml"}:
+            scan_nested_authority(
+                load_yaml(path), f"{rel(path, root)} structured metadata"
+            )
+        else:
+            scan_claim_lines(path, root)
 
 
 def verify_entry(entry: dict[str, Any], root: Path) -> tuple[str, str]:
