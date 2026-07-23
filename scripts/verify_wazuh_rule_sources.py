@@ -4,7 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import copy
+import re
 import sys
+import unicodedata
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any
@@ -24,6 +27,24 @@ ALLOWED_MAPPING_LANES = {
     "wazuh_rule_source_conditional",
     "private_runtime_design_only",
 }
+ALLOWED_ENTRY_LANE_CONTRACTS = {
+    "wazuh_rule_source": (
+        "SOURCE_EXISTS",
+        "wazuh_candidate_after_controlled_fixture",
+    ),
+    "wazuh_rule_source_planned": (
+        "WAZUH_SOURCE_NEEDED",
+        "wazuh_candidate_after_controlled_fixture",
+    ),
+    "wazuh_rule_source_conditional": (
+        "CONDITIONAL_SOURCE_PLANNED",
+        "wazuh_candidate_after_telemetry_normalization",
+    ),
+    "private_runtime_design_only": (
+        "DESIGN_ONLY",
+        "cribl_splunk_preferred_wazuh_host_context_only",
+    ),
+}
 ALLOWED_DASHBOARD_TILES = {
     "Endpoint Health",
     "Detection Noise",
@@ -34,6 +55,112 @@ ALLOWED_DASHBOARD_TILES = {
     "Rule Tuning Backlog",
     "HawkinsOperations Detection Mapping",
 }
+ALLOWED_DASHBOARD_STATUS = "PRIVATE_DASHBOARD_DESIGN_ONLY"
+ALLOWED_AUTHORITY_ANCHORS = frozenset(
+    {
+        "Wazuh audit tuning backlog",
+        "HO-PIPE-001",
+        "ho-runner-01 private runtime need",
+        "2026-06-01 private Wazuh audit",
+    }
+)
+ROOT_KEYS = frozenset(
+    {
+        "schema_version",
+        "registry_status",
+        "proof_ceiling",
+        "public_safe_status",
+        "runtime_status",
+        "signal_status",
+        "entries",
+        "dashboard_private_runtime_needs",
+    }
+)
+ENTRY_KEYS = frozenset(
+    {
+        "detection_id",
+        "mapping_lane",
+        "status",
+        "detection_package",
+        "wazuh_rule_path",
+        "expected_rule_ids",
+        "expected_groups",
+        "expected_mitre_ids",
+        "preferred_runtime",
+        "runtime_status",
+        "signal_status",
+        "public_safe_status",
+        "notes",
+    }
+)
+DASHBOARD_NEED_KEYS = frozenset(
+    {
+        "need_id",
+        "dashboard_tile",
+        "authority_anchor",
+        "status",
+        "runtime_status",
+        "signal_status",
+        "public_safe_status",
+        "notes",
+    }
+)
+BOUNDARY_FIELD_SUFFIXES = (
+    "runtimestatus",
+    "runtimeactive",
+    "runtimeproof",
+    "signalstatus",
+    "signalobserved",
+    "signalproof",
+    "publicsafestatus",
+    "publicsafe",
+    "publicsaferuntime",
+    "aidispositionauthority",
+    "aiauthority",
+    "aiapproval",
+    "aiapproved",
+    "analystdispositionauthority",
+    "analystapproval",
+    "analystapproved",
+    "finalauthorization",
+    "finalauthority",
+    "caseclosure",
+    "caseclosed",
+    "productionready",
+    "productionactive",
+    "customerdeployment",
+    "customerdeployed",
+    "socaasdeployment",
+    "socaasdeployed",
+)
+AFFIRMATIVE_CLAIM_PATTERNS = (
+    re.compile(r"\bpublic[\s_-]*safe(?:[\s_-]*(?:approved|true|yes))?\b"),
+    re.compile(r"\bruntime[\s_-]*active\b"),
+    re.compile(r"\bsignal[\s_-]*observed\b"),
+    re.compile(r"\bproduction[\s_-]*ready\b"),
+    re.compile(r"\bcustomer[\s_-]*(?:deployed|deployment)\b"),
+    re.compile(r"\bsocaas[\s_-]*(?:deployed|deployment)\b"),
+    re.compile(r"\bai[\s_-]*approved\b"),
+    re.compile(r"\banalyst[\s_-]*approved\b"),
+    re.compile(r"\bfinal[\s_-]*authori[sz](?:ation|ed)\b"),
+    re.compile(r"\bcase[\s_-]*(?:closed|closure)\b"),
+)
+BOUNDED_AUTHORITY_STRINGS = frozenset(
+    {
+        "",
+        "blocked",
+        "disabled",
+        "false",
+        "no",
+        "none",
+        "not claimed",
+        "not proven",
+        "not public safe",
+        "not_public_safe",
+        "null",
+    }
+)
+PACKAGE_METADATA_FILES = ("status.yml", "rule.yml", "event-mapping.yml")
 
 
 class WazuhRuleSourceError(Exception):
@@ -50,6 +177,142 @@ def truthy(value: Any) -> bool:
     return value not in FALSEY
 
 
+def normalized_key(value: str) -> str:
+    return re.sub(
+        r"[^a-z0-9]",
+        "",
+        unicodedata.normalize("NFKC", value).casefold(),
+    )
+
+
+def is_bounded_authority_value(value: Any) -> bool:
+    if value is False or value is None:
+        return True
+    if type(value) is str:
+        normalized = unicodedata.normalize("NFKC", value).strip().casefold()
+        return normalized in BOUNDED_AUTHORITY_STRINGS
+    return False
+
+
+def scan_authority_boundaries(
+    value: Any,
+    label: str = "registry",
+    key_path: tuple[str, ...] = (),
+) -> None:
+    if type(value) is dict:
+        for key, item in value.items():
+            if type(key) is not str:
+                fail(f"{label} mapping keys must be strings")
+            token = normalized_key(key)
+            item_key_path = (*key_path, token)
+            joined_path = "".join(item_key_path[-4:])
+            if any(joined_path.endswith(suffix) for suffix in BOUNDARY_FIELD_SUFFIXES):
+                if not is_bounded_authority_value(item):
+                    fail(f"{label}.{key} contains unsupported authority promotion")
+            scan_authority_boundaries(item, f"{label}.{key}", item_key_path)
+        return
+    if type(value) is list:
+        for index, item in enumerate(value):
+            scan_authority_boundaries(item, f"{label}[{index}]", key_path)
+        return
+    if type(value) is str:
+        normalized = unicodedata.normalize("NFKC", value).strip().casefold()
+        if is_bounded_authority_value(value):
+            return
+        if any(pattern.search(normalized) for pattern in AFFIRMATIVE_CLAIM_PATTERNS):
+            fail(f"{label} contains unsupported affirmative authority claim")
+
+
+def require_exact_keys(value: dict[Any, Any], expected: frozenset[str], label: str) -> None:
+    non_string = [key for key in value if type(key) is not str]
+    if non_string:
+        fail(f"{label} keys must be strings: {non_string!r}")
+    actual = set(value)
+    missing = sorted(expected - actual)
+    unknown = sorted(actual - expected)
+    if missing:
+        fail(f"{label} missing required keys: {missing}")
+    if unknown:
+        fail(f"{label} contains unknown keys: {unknown}")
+
+
+def require_exact_type(value: Any, expected: type, label: str) -> None:
+    if type(value) is not expected:
+        fail(f"{label} must be {expected.__name__}")
+
+
+def require_string_list(value: Any, label: str) -> list[str]:
+    require_exact_type(value, list, label)
+    if any(type(item) is not str for item in value):
+        fail(f"{label} entries must be strings")
+    seen: dict[str, str] = {}
+    for item in value:
+        if item.strip() != item or unicodedata.normalize("NFKC", item) != item:
+            fail(f"{label} entries must use canonical text: {item!r}")
+        normalized = unicodedata.normalize("NFKC", item).casefold()
+        prior = seen.get(normalized)
+        if prior is not None:
+            fail(f"{label} contains duplicate normalized value: {prior!r} and {item!r}")
+        seen[normalized] = item
+    return value
+
+
+def require_integer_list(value: Any, label: str) -> list[int]:
+    require_exact_type(value, list, label)
+    if any(type(item) is not int for item in value):
+        fail(f"{label} entries must be integers")
+    if len(set(value)) != len(value):
+        fail(f"{label} contains duplicate values")
+    return value
+
+
+class UniqueKeyLoader(yaml.SafeLoader):
+    """Safe YAML loader that rejects exact and normalized duplicate keys."""
+
+
+UniqueKeyLoader.yaml_implicit_resolvers = copy.deepcopy(
+    yaml.SafeLoader.yaml_implicit_resolvers
+)
+for resolver_key, resolvers in list(UniqueKeyLoader.yaml_implicit_resolvers.items()):
+    UniqueKeyLoader.yaml_implicit_resolvers[resolver_key] = [
+        resolver
+        for resolver in resolvers
+        if resolver[0] != "tag:yaml.org,2002:timestamp"
+    ]
+
+
+def _construct_unique_mapping(
+    loader: UniqueKeyLoader, node: yaml.nodes.MappingNode, deep: bool = False
+) -> dict[Any, Any]:
+    mapping: dict[Any, Any] = {}
+    normalized_string_keys: dict[str, str] = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        try:
+            duplicate = key in mapping
+        except TypeError:
+            fail(f"unhashable YAML mapping key at line {key_node.start_mark.line + 1}")
+        if duplicate:
+            fail(f"duplicate YAML key {key!r} at line {key_node.start_mark.line + 1}")
+        if isinstance(key, str):
+            normalized = unicodedata.normalize("NFKC", key).casefold()
+            prior = normalized_string_keys.get(normalized)
+            if prior is not None:
+                fail(
+                    "duplicate YAML key after NFKC/casefold normalization "
+                    f"{key!r} aliases {prior!r} at line {key_node.start_mark.line + 1}"
+                )
+            normalized_string_keys[normalized] = key
+        mapping[key] = loader.construct_object(value_node, deep=deep)
+    return mapping
+
+
+UniqueKeyLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+    _construct_unique_mapping,
+)
+
+
 def rel_path(root: Path, value: str, field: str) -> Path:
     path = Path(value)
     if path.is_absolute() or ".." in path.parts:
@@ -59,7 +322,7 @@ def rel_path(root: Path, value: str, field: str) -> Path:
 
 def load_registry(path: Path = REGISTRY_PATH) -> dict[str, Any]:
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data = yaml.load(path.read_text(encoding="utf-8"), Loader=UniqueKeyLoader)
     except FileNotFoundError:
         fail(f"missing Wazuh rule source registry: {path}")
     except yaml.YAMLError as exc:
@@ -67,6 +330,69 @@ def load_registry(path: Path = REGISTRY_PATH) -> dict[str, Any]:
     if not isinstance(data, dict):
         fail("Wazuh rule source registry root must be a mapping")
     return data
+
+
+def load_package_metadata(path: Path, label: str) -> dict[str, Any]:
+    try:
+        data = yaml.load(path.read_text(encoding="utf-8"), Loader=UniqueKeyLoader)
+    except (OSError, UnicodeError) as exc:
+        fail(f"{label} could not be read: {exc}")
+    except yaml.YAMLError as exc:
+        fail(f"{label} is invalid YAML: {exc}")
+    if type(data) is not dict:
+        fail(f"{label} must be a mapping")
+    return data
+
+
+def verify_detection_package(root: Path, detection_id: str, value: str) -> Path:
+    if (
+        unicodedata.normalize("NFKC", detection_id) != detection_id
+        or re.fullmatch(r"HO-(?:DET|PIPE)-[0-9]{3}", detection_id) is None
+    ):
+        fail(f"{detection_id or 'registry entry'} detection_id is not canonical")
+    slug = detection_id.casefold()
+    expected_relative = f"detections/successor/{slug}"
+    if value != expected_relative:
+        fail(
+            f"{detection_id} detection_package must equal canonical path "
+            f"{expected_relative}: {value}"
+        )
+
+    successor_root = root / "detections" / "successor"
+    package_path = root / Path(expected_relative)
+    try:
+        successor_resolved = successor_root.resolve(strict=True)
+        package_resolved = package_path.resolve(strict=True)
+    except OSError as exc:
+        fail(f"{detection_id} detection_package cannot be resolved: {exc}")
+    if package_path.is_symlink():
+        fail(f"{detection_id} detection_package must not be a symlink or junction")
+    if not package_path.is_dir():
+        fail(f"{detection_id} detection_package must be a directory")
+    if package_resolved.parent != successor_resolved or package_resolved.name != slug:
+        fail(f"{detection_id} detection_package escapes canonical package root")
+
+    for filename in PACKAGE_METADATA_FILES:
+        metadata_path = package_path / filename
+        try:
+            metadata_resolved = metadata_path.resolve(strict=True)
+        except OSError as exc:
+            fail(f"{detection_id} missing package metadata {filename}: {exc}")
+        if metadata_path.is_symlink():
+            fail(f"{detection_id} package metadata must not be a symlink: {filename}")
+        if not metadata_path.is_file() or metadata_resolved.parent != package_resolved:
+            fail(f"{detection_id} package metadata escapes package: {filename}")
+        metadata = load_package_metadata(
+            metadata_path,
+            f"{detection_id} {filename}",
+        )
+        metadata_id = metadata.get("detection_id")
+        if type(metadata_id) is not str or metadata_id != detection_id:
+            fail(
+                f"{detection_id} package metadata detection_id mismatch in {filename}: "
+                f"{metadata_id!r}"
+            )
+    return package_path
 
 
 def parse_wazuh_xml(path: Path) -> list[dict[str, Any]]:
@@ -101,7 +427,38 @@ def require_false_boundary(entry: dict[str, Any], label: str) -> None:
 
 
 def verify_entry(root: Path, entry: dict[str, Any], seen_rule_ids: dict[int, str]) -> dict[str, Any]:
-    detection_id = str(entry.get("detection_id", "")).strip()
+    require_exact_keys(entry, ENTRY_KEYS, "registry entry")
+    for field in (
+        "detection_id",
+        "mapping_lane",
+        "status",
+        "detection_package",
+        "preferred_runtime",
+        "public_safe_status",
+        "notes",
+    ):
+        require_exact_type(entry[field], str, f"registry entry {field}")
+    for field in ("runtime_status", "signal_status"):
+        require_exact_type(entry[field], bool, f"registry entry {field}")
+    if entry["wazuh_rule_path"] is not None and type(entry["wazuh_rule_path"]) is not str:
+        fail("registry entry wazuh_rule_path must be a string or null")
+    expected_rule_ids = require_integer_list(
+        entry["expected_rule_ids"],
+        "registry entry expected_rule_ids",
+    )
+    expected_groups = set(
+        require_string_list(entry["expected_groups"], "registry entry expected_groups")
+    )
+    expected_mitre_ids = set(
+        require_string_list(
+            entry["expected_mitre_ids"],
+            "registry entry expected_mitre_ids",
+        )
+    )
+
+    detection_id = entry["detection_id"]
+    if detection_id.strip() != detection_id:
+        fail("registry entry detection_id is not canonical")
     if not detection_id:
         fail("registry entry missing detection_id")
     label = detection_id
@@ -111,23 +468,40 @@ def verify_entry(root: Path, entry: dict[str, Any], seen_rule_ids: dict[int, str
     lane = entry.get("mapping_lane")
     if lane not in ALLOWED_MAPPING_LANES:
         fail(f"{label} invalid mapping_lane: {lane}")
+    expected_status, expected_runtime = ALLOWED_ENTRY_LANE_CONTRACTS[lane]
+    if entry["status"] != expected_status:
+        fail(f"{label} invalid status for {lane}: {entry['status']}")
+    if entry["preferred_runtime"] != expected_runtime:
+        fail(
+            f"{label} invalid preferred_runtime for {lane}: "
+            f"{entry['preferred_runtime']}"
+        )
     require_false_boundary(entry, label)
 
-    package = entry.get("detection_package")
-    if not isinstance(package, str) or not rel_path(root, package, "detection_package").exists():
-        fail(f"{label} missing detection_package: {package}")
+    package = entry["detection_package"]
+    package_path = verify_detection_package(root, detection_id, package)
 
     xml_path = entry.get("wazuh_rule_path")
-    expected_rule_ids = [int(value) for value in entry.get("expected_rule_ids") or []]
-    expected_groups = {str(value) for value in entry.get("expected_groups") or []}
-    expected_mitre_ids = {str(value) for value in entry.get("expected_mitre_ids") or []}
 
     if lane == "wazuh_rule_source":
         if not isinstance(xml_path, str) or not xml_path:
             fail(f"{label} wazuh_rule_path is required for source entries")
-        full_xml_path = rel_path(root, xml_path, "wazuh_rule_path")
-        if not full_xml_path.exists():
-            fail(f"{label} missing wazuh_rule_path: {xml_path}")
+        expected_xml_path = f"{package}/wazuh.xml"
+        if xml_path != expected_xml_path:
+            fail(
+                f"{label} wazuh_rule_path must equal canonical package XML "
+                f"{expected_xml_path}: {xml_path}"
+            )
+        full_xml_path = package_path / "wazuh.xml"
+        try:
+            package_resolved = package_path.resolve(strict=True)
+            xml_resolved = full_xml_path.resolve(strict=True)
+        except OSError as exc:
+            fail(f"{label} missing wazuh_rule_path: {exc}")
+        if full_xml_path.is_symlink():
+            fail(f"{label} wazuh_rule_path must not be a symlink or junction")
+        if not full_xml_path.is_file() or xml_resolved.parent != package_resolved:
+            fail(f"{label} wazuh_rule_path escapes canonical detection package")
         rules = parse_wazuh_xml(full_xml_path)
         actual_rule_ids = [rule["id"] for rule in rules]
         duplicate_rule_ids = sorted(
@@ -136,9 +510,13 @@ def verify_entry(root: Path, entry: dict[str, Any], seen_rule_ids: dict[int, str
         if duplicate_rule_ids:
             fail(f"{label} duplicate Wazuh rule id in {xml_path}: {duplicate_rule_ids}")
         actual_rule_id_set = set(actual_rule_ids)
-        missing_rule_ids = set(expected_rule_ids) - actual_rule_id_set
+        expected_rule_id_set = set(expected_rule_ids)
+        missing_rule_ids = expected_rule_id_set - actual_rule_id_set
+        unexpected_rule_ids = actual_rule_id_set - expected_rule_id_set
         if missing_rule_ids:
             fail(f"{label} expected Wazuh rule ids missing: {sorted(missing_rule_ids)}")
+        if unexpected_rule_ids:
+            fail(f"{label} unexpected Wazuh rule ids present: {sorted(unexpected_rule_ids)}")
         actual_groups = set().union(*(rule["groups"] for rule in rules))
         missing_groups = expected_groups - actual_groups
         if missing_groups:
@@ -147,6 +525,9 @@ def verify_entry(root: Path, entry: dict[str, Any], seen_rule_ids: dict[int, str
         missing_mitre = expected_mitre_ids - actual_mitre_ids
         if missing_mitre:
             fail(f"{label} expected MITRE ids missing: {sorted(missing_mitre)}")
+        unexpected_mitre = actual_mitre_ids - expected_mitre_ids
+        if unexpected_mitre:
+            fail(f"{label} unexpected MITRE ids present: {sorted(unexpected_mitre)}")
         normalized_group = detection_id.lower()
         if normalized_group not in actual_groups:
             fail(f"{label} Wazuh groups must include normalized detection id {normalized_group}")
@@ -164,47 +545,90 @@ def verify_entry(root: Path, entry: dict[str, Any], seen_rule_ids: dict[int, str
 
 
 def verify_dashboard_needs(registry: dict[str, Any]) -> None:
-    needs = registry.get("dashboard_private_runtime_needs", [])
-    if not isinstance(needs, list):
-        fail("dashboard_private_runtime_needs must be a list")
+    needs = registry["dashboard_private_runtime_needs"]
+    require_exact_type(needs, list, "dashboard_private_runtime_needs")
     seen: set[str] = set()
     for need in needs:
-        if not isinstance(need, dict):
+        if type(need) is not dict:
             fail("dashboard_private_runtime_needs entries must be mappings")
-        need_id = str(need.get("need_id", "")).strip()
+        require_exact_keys(need, DASHBOARD_NEED_KEYS, "dashboard need")
+        for field in (
+            "need_id",
+            "dashboard_tile",
+            "authority_anchor",
+            "status",
+            "public_safe_status",
+            "notes",
+        ):
+            require_exact_type(need[field], str, f"dashboard need {field}")
+        for field in ("runtime_status", "signal_status"):
+            require_exact_type(need[field], bool, f"dashboard need {field}")
+        need_id = need["need_id"]
+        if (
+            need_id.strip() != need_id
+            or unicodedata.normalize("NFKC", need_id) != need_id
+            or re.fullmatch(r"[A-Z0-9]+(?:-[A-Z0-9]+)+", need_id) is None
+        ):
+            fail(f"dashboard need_id is not canonical: {need_id!r}")
         if not need_id:
             fail("dashboard need missing need_id")
-        if need_id in seen:
+        normalized_need_id = normalized_key(need_id)
+        if normalized_need_id in seen:
             fail(f"duplicate dashboard need_id: {need_id}")
-        seen.add(need_id)
+        seen.add(normalized_need_id)
         tile = need.get("dashboard_tile")
         if tile not in ALLOWED_DASHBOARD_TILES:
             fail(f"{need_id} invalid dashboard_tile: {tile}")
-        if not need.get("authority_anchor"):
-            fail(f"{need_id} missing authority_anchor")
+        if need["status"] != ALLOWED_DASHBOARD_STATUS:
+            fail(f"{need_id} invalid dashboard status: {need['status']}")
+        if need["authority_anchor"] not in ALLOWED_AUTHORITY_ANCHORS:
+            fail(f"{need_id} invalid authority_anchor: {need['authority_anchor']}")
         require_false_boundary(need, need_id)
 
 
 def verify_repo(root: Path = ROOT, print_summary: bool = True) -> list[dict[str, Any]]:
     registry = load_registry(root / "detections" / "wazuh" / "WAZUH_RULE_SOURCE_REGISTRY.yml")
+    scan_authority_boundaries(registry)
+    require_exact_keys(registry, ROOT_KEYS, "registry")
+    require_exact_type(registry["schema_version"], int, "registry schema_version")
+    for field in (
+        "registry_status",
+        "proof_ceiling",
+        "public_safe_status",
+    ):
+        require_exact_type(registry[field], str, f"registry {field}")
+    for field in ("runtime_status", "signal_status"):
+        require_exact_type(registry[field], bool, f"registry {field}")
+    require_exact_type(registry["entries"], list, "registry entries")
+    require_exact_type(
+        registry["dashboard_private_runtime_needs"],
+        list,
+        "registry dashboard_private_runtime_needs",
+    )
+    if registry["schema_version"] != 1:
+        fail("registry schema_version must be 1")
     if registry.get("registry_status") != ALLOWED_REGISTRY_STATUS:
         fail("registry_status must be WAZUH_RULE_SOURCE_CONTRACT_ENFORCED")
     if registry.get("proof_ceiling") != ALLOWED_PROOF_CEILING:
         fail("proof_ceiling must preserve source/static CI boundary")
     require_false_boundary(registry, "registry")
     entries = registry.get("entries")
-    if not isinstance(entries, list) or not entries:
+    if not entries:
         fail("registry entries must be a non-empty list")
     seen_detection_ids: set[str] = set()
     seen_rule_ids: dict[int, str] = {}
     verified = []
     for entry in entries:
-        if not isinstance(entry, dict):
+        if type(entry) is not dict:
             fail("registry entries must be mappings")
-        detection_id = str(entry.get("detection_id", "")).strip()
-        if detection_id in seen_detection_ids:
+        detection_id = entry.get("detection_id")
+        if type(detection_id) is not str:
+            fail("registry entry detection_id must be str")
+        detection_id = detection_id.strip()
+        normalized_detection_id = normalized_key(detection_id)
+        if normalized_detection_id in seen_detection_ids:
             fail(f"duplicate detection_id: {detection_id}")
-        seen_detection_ids.add(detection_id)
+        seen_detection_ids.add(normalized_detection_id)
         verified.append(verify_entry(root, entry, seen_rule_ids))
     verify_dashboard_needs(registry)
     if print_summary:
