@@ -778,6 +778,8 @@ def scan_nested_authority(
                 promotion_context,
             )
         return
+    if promotion_context and not is_explicitly_bounded_authority_value(value):
+        fail(f"{label} attempts compositional authority promotion")
     if isinstance(value, str):
         normalized_label = normalize_authority_key(label)
         exact_blocked_claim_leaf = (

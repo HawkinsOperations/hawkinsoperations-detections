@@ -317,6 +317,10 @@ class DetectionSourceHardeningTests(unittest.TestCase):
             {"ai_authority": {"enabled": True}},
             {"review_disposition": {"approved": True}},
             {"final_authorization": {"granted": True}},
+            {"production_live": [True]},
+            {"ai_authority": ["APPROVED"]},
+            {"review_disposition": [True]},
+            {"final_authorization": [1]},
             {"metadata": {"%70roduction_active": True}},
         )
         source_path = (
@@ -356,6 +360,10 @@ class DetectionSourceHardeningTests(unittest.TestCase):
             {"ai_authority": {"enabled": False}},
             {"review_disposition": {"approved": "NOT_APPROVED"}},
             {"final_authorization": {"granted": "BLOCKED"}},
+            {"production_live": [False]},
+            {"ai_authority": ["BLOCKED"]},
+            {"review_disposition": ["NOT_APPROVED"]},
+            {"final_authorization": ["BLOCKED"]},
         )
         for control in controls:
             with self.subTest(control=control):

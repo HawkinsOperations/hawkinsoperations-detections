@@ -498,6 +498,14 @@ def verify_promotion_block(path: Path, data: dict) -> None:
                     normalized_path,
                     promotion_context,
                 )
+        elif (
+            promotion_context
+            and not is_explicitly_bounded_authority_value(value)
+        ):
+            fail(
+                f"compositional promotion field must remain explicitly bounded in "
+                f"{path.relative_to(ROOT).as_posix()}: {label}={value}"
+            )
         elif isinstance(value, str):
             normalized_parent = normalize_authority_key(label.rsplit("[", 1)[0])
             exact_blocked_leaf = (
