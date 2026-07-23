@@ -11,6 +11,9 @@ permissions:
 jobs:
   baseline-hero-artifact-contract:
     runs-on: ubuntu-latest
+    env:
+      VALIDATION_AUTHORITY_SHA: acda60147222a8aae8f45d799beb21b7024f31c2
+      PROOF_AUTHORITY_SHA: 643ec75743bf9f8aa5552472ce8566643531d6bb
     steps:
       - uses: actions/checkout@v4
         with:
@@ -19,22 +22,34 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: HawkinsOperations/hawkinsoperations-validation
-          ref: feature/hoxline-case-growth-convergence-v1
+          ref: ${{ env.VALIDATION_AUTHORITY_SHA }}
           path: _sources/hawkinsoperations-validation
+          fetch-depth: 0
           persist-credentials: false
       - name: Checkout proof authority
         uses: actions/checkout@v4
         with:
           repository: HawkinsOperations/hawkinsoperations-proof
-          ref: feature/hoxline-case-growth-convergence-v1
+          ref: ${{ env.PROOF_AUTHORITY_SHA }}
           path: _sources/hawkinsoperations-proof
+          fetch-depth: 0
           persist-credentials: false
+      - name: Verify exact immutable authority revisions
+        run: |
+          test "$(git -C _sources/hawkinsoperations-validation rev-parse HEAD)" = "$VALIDATION_AUTHORITY_SHA"
+          test "$(git -C _sources/hawkinsoperations-proof rev-parse HEAD)" = "$PROOF_AUTHORITY_SHA"
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
       - name: Install verifier dependencies
         run: python3 -m pip install --disable-pip-version-check pyyaml
+      - name: Reject retired fixture vocabulary
+        run: |
+          if git grep -n -I -i -E 's[y]nthetic' -- .; then
+            echo "retired fixture vocabulary found in tracked source" >&2
+            exit 1
+          fi
       - name: Validate Detection Contract
         run: |
           python3 ./scripts/verify_detection_contract.py

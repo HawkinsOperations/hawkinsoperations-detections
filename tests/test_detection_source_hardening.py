@@ -32,6 +32,20 @@ contract = load_module(
 
 
 class DetectionSourceHardeningTests(unittest.TestCase):
+    def test_required_ci_uses_exact_authority_shas_and_rejects_retired_vocabulary(
+        self,
+    ) -> None:
+        workflow_path = ROOT / ".github/workflows/baseline-detection-contract.yml"
+        workflow = yaml.safe_load(workflow_path.read_text(encoding="utf-8"))
+        job = workflow["jobs"]["baseline-hero-artifact-contract"]
+        for env_name in ("VALIDATION_AUTHORITY_SHA", "PROOF_AUTHORITY_SHA"):
+            self.assertRegex(job["env"][env_name], r"^[0-9a-f]{40}$")
+        text = workflow_path.read_text(encoding="utf-8")
+        self.assertIn('rev-parse HEAD)" = "$VALIDATION_AUTHORITY_SHA"', text)
+        self.assertIn('rev-parse HEAD)" = "$PROOF_AUTHORITY_SHA"', text)
+        self.assertIn("'s[y]nthetic'", text)
+        self.assertNotIn("feature/hoxline-case-growth-convergence-v1", text)
+
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.base = Path(self.tmp.name)
