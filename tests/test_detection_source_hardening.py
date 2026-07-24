@@ -95,6 +95,13 @@ class DetectionSourceHardeningTests(unittest.TestCase):
         self.assertGreaterEqual(text.count("check=True"), 2)
         self.assertNotIn("git grep", text)
         self.assertNotIn("feature/hoxline-case-growth-convergence-v1", text)
+        self.assertIn("fetch-depth: 0", text)
+        self.assertIn(
+            'git diff --check "${{ github.event.pull_request.base.sha }}...'
+            '${{ github.event.pull_request.head.sha }}"',
+            text,
+        )
+        self.assertIn("git show --check --format= HEAD", text)
 
     def test_required_vocabulary_guard_rejects_nfkc_utf16_and_git_errors(self) -> None:
         workflow_path = ROOT / ".github/workflows/baseline-detection-contract.yml"
@@ -1093,8 +1100,14 @@ class DetectionSourceHardeningTests(unittest.TestCase):
             card = proof_root / "proof" / "cards" / f"{detection_id}.md"
             record.parent.mkdir(parents=True, exist_ok=True)
             card.parent.mkdir(parents=True, exist_ok=True)
-            record.write_text(f"# {detection_id}\n", encoding="utf-8")
-            card.write_text(f"# {detection_id}\n", encoding="utf-8")
+            record.write_text(
+                f"# {detection_id}\ndetection_id: {detection_id}\n",
+                encoding="utf-8",
+            )
+            card.write_text(
+                f"# {detection_id} ProofCard\ncase_id: {detection_id}\n",
+                encoding="utf-8",
+            )
             proof_entries.append(
                 {
                     "detection_id": detection_id,
@@ -1132,6 +1145,61 @@ class DetectionSourceHardeningTests(unittest.TestCase):
             require_sibling_handoffs=True,
         )
         self.assertEqual(len(verified), len(entries))
+
+    def test_swapped_proof_handoff_identity_fails_closed(self):
+        entries = self.verify()
+        registry_path = self.make_validation_registry(entries)
+        proof_path = self.make_proof_index(self.load_matrix())
+        proof_index = yaml.safe_load(proof_path.read_text(encoding="utf-8"))
+        by_id = {
+            item["detection_id"]: item
+            for item in proof_index["entries"]
+        }
+        by_id["HO-DET-011"]["proof_record_path"], by_id["HO-DET-012"][
+            "proof_record_path"
+        ] = (
+            by_id["HO-DET-012"]["proof_record_path"],
+            by_id["HO-DET-011"]["proof_record_path"],
+        )
+        proof_path.write_text(
+            yaml.safe_dump(proof_index, sort_keys=False),
+            encoding="utf-8",
+        )
+        self.commit_repo(proof_path.parents[2], "hostile swapped proof records")
+        with self.assertRaisesRegex(matrix.MatrixError, "identity mismatch"):
+            matrix.verify_repo(
+                self.root,
+                print_summary=False,
+                validation_registry_path=registry_path,
+                proof_index_path=proof_path,
+                require_sibling_handoffs=True,
+            )
+
+    def test_rule_validation_and_claim_ceiling_must_match_status(self):
+        for detection_id, field, value, message in (
+            ("HO-DET-013", "validation_status", "VALIDATION_PLANNED", "validation status disagreement"),
+            ("HO-DET-013", "claim_ceiling", "SOURCE_EXISTS", "claim ceiling disagreement"),
+        ):
+            with self.subTest(field=field):
+                package = (
+                    self.root
+                    / "detections"
+                    / "successor"
+                    / detection_id.casefold()
+                )
+                rule_path = package / "rule.yml"
+                rule = yaml.safe_load(rule_path.read_text(encoding="utf-8"))
+                rule[field] = value
+                rule_path.write_text(
+                    yaml.safe_dump(rule, sort_keys=False),
+                    encoding="utf-8",
+                )
+                with self.assertRaisesRegex(matrix.MatrixError, message):
+                    matrix.verify_repo(self.root, print_summary=False)
+                shutil.copy2(
+                    ROOT / "detections" / "successor" / detection_id.casefold() / "rule.yml",
+                    rule_path,
+                )
 
     def test_validation_handoff_path_forgery_fails_closed(self):
         entries = self.verify()

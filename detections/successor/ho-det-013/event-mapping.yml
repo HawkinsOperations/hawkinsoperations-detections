@@ -1,10 +1,10 @@
 detection_id: HO-DET-013
 truth_surface: detection_source
 mapping_status: SOURCE_EXISTS
-validation_status: VALIDATION_PLANNED
+validation_status: CONTROLLED_TEST_VALIDATED
 description: >
   Source-only event mapping for defense tool and telemetry tamper attempts.
-  This mapping prepares future controlled-test validation and does not prove
+  This mapping is bound to validation-owned controlled fixtures and does not prove
   runtime activity, signal observation, live SIEM ingestion, routing, public-safe
   status, or evidence-linked public proof claims.
 telemetry_boundary:
@@ -200,10 +200,10 @@ backend_notes:
   wazuh:
     boundary: Intended telemetry context only; no Wazuh-routed proof or live manager observation claim.
   generic:
-    boundary: Field mapping is source scope only and must be adapted before deployment or validation.
+    boundary: Field mapping is source scope only and must be adapted before deployment.
 validation_fixture_boundary:
   detections_repo_fixtures_found: false
-  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
+  validation_repo_fixture_set: SATISFIED_IN_VALIDATION_REPO
 blocked_claims:
   - controlled-test validated
   - runtime-active

@@ -17,6 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
+          fetch-depth: 0
           persist-credentials: false
       - name: Checkout validation authority
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -100,4 +101,11 @@ jobs:
       - name: Run hostile path, ownership, and handoff tests
         run: python3 -B -m unittest discover -s tests -v
       - name: Reject whitespace errors
-        run: git diff --check
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --check "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
+          else
+            git show --check --format= HEAD
+          fi

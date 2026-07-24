@@ -1471,8 +1471,35 @@ def verify_proof_handoffs(
                     f"{normalized_paths[key]} and {detection_id}"
                 )
             normalized_paths[key] = detection_id
-            if not repo_relative_path(proof_root, relative, field).is_file():
+            artifact_path = repo_relative_path(proof_root, relative, field)
+            if not artifact_path.is_file():
                 fail(f"{detection_id} proof handoff points to missing {field}")
+            text = artifact_path.read_text(encoding="utf-8")
+            heading = next(
+                (line[2:].strip() for line in text.splitlines() if line.startswith("# ")),
+                "",
+            )
+            heading_ids = re.findall(
+                r"\b[A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+\b",
+                heading,
+            )
+            if not heading_ids or heading_ids[0] != detection_id:
+                fail(
+                    f"{detection_id} {field} heading identity mismatch: "
+                    f"{heading_ids[0] if heading_ids else 'missing'}"
+                )
+            identity_field = (
+                "detection_id" if field == "proof_record_path" else "case_id"
+            )
+            identity_matches = re.findall(
+                rf"(?m)^{identity_field}:\s*([A-Z][A-Z0-9]*(?:-[A-Z0-9]+)+)\s*$",
+                text,
+            )
+            if identity_matches != [detection_id]:
+                fail(
+                    f"{detection_id} {field} embedded {identity_field} mismatch: "
+                    f"{identity_matches or ['missing']}"
+                )
         if item.get("public_safe_status") != "NOT_PUBLIC_SAFE":
             fail(f"{detection_id} proof handoff exceeds NOT_PUBLIC_SAFE")
 
@@ -1923,6 +1950,36 @@ def verify_entry(entry: dict[str, Any], root: Path) -> tuple[str, str]:
                         f"matrix={entry['validation_status_if_known']}, "
                         f"status.yml={status.get('validation_status')}"
                     )
+                for document_name in ("rule.yml",):
+                    document_path = package_dir / document_name
+                    if not document_path.exists():
+                        continue
+                    document = ensure_mapping(
+                        load_yaml(document_path),
+                        f"{detection_id} {document_name}",
+                    )
+                    declared_validation = document.get("validation_status")
+                    if (
+                        expected_validation
+                        and declared_validation is not None
+                        and declared_validation != expected_validation
+                    ):
+                        fail(
+                            f"{detection_id} {document_name} validation status disagreement: "
+                            f"expected={expected_validation}, actual={declared_validation}"
+                        )
+                if rule_path.exists():
+                    rule_claim_ceiling = rule.get("claim_ceiling")
+                    status_claim_ceiling = status.get("claim_ceiling")
+                    if (
+                        rule_claim_ceiling is not None
+                        and status_claim_ceiling is not None
+                        and rule_claim_ceiling != status_claim_ceiling
+                    ):
+                        fail(
+                            f"{detection_id} rule.yml claim ceiling disagreement: "
+                            f"status.yml={status_claim_ceiling}, rule.yml={rule_claim_ceiling}"
+                        )
                 if not isinstance(status.get("blocked_claims"), list) or not status["blocked_claims"]:
                     fail(f"{detection_id} status.yml must preserve blocked_claims")
                 for field, expected_name in STATUS_SOURCE_FIELDS.items():

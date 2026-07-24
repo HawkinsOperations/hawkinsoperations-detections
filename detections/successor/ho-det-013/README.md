@@ -142,8 +142,8 @@ This source must not be cited as evidence for:
 - customer-ready product
 - website/public-surface promotion
 
-Website rendering is not proof. Validation fixtures and reports are pending until a later validation PR. Human review is required before promotion.
+Website rendering is not proof. Validation fixtures and reports are owned by `hawkinsoperations-validation`; their controlled-test result does not promote runtime, signal, proof, or public-safe status. Human review is required before promotion.
 
 ## Next Gate
 
-The next gate is controlled-test validation in `hawkinsoperations-validation` with positive and negative telemetry/security-control tamper fixtures and deterministic report parity. Public proof, website use, runtime claims, signal-observed claims, and evidence-linked claims remain blocked until separately approved and proven.
+The current controlled-test validation gate is satisfied in `hawkinsoperations-validation` with positive and negative telemetry/security-control tamper fixtures and deterministic report parity. Public proof, website use, runtime claims, signal-observed claims, and evidence-linked claims remain blocked until separately approved and proven.

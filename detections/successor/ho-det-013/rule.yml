@@ -1,23 +1,23 @@
 title: HO-DET-013 Defense Tool and Telemetry Tamper Attempt
 detection_id: HO-DET-013
 name: Defense Tool and Telemetry Tamper Attempt
-status: experimental/source-validation-planned
+status: experimental/controlled-test-validated
 proof_level: SOURCE_EXISTS
 trust_class: SOURCE_EXISTS
 public_safe_status: NOT_PUBLIC_SAFE
 approval_status: NOT_APPROVED
 runtime_active: false
-validation_status: VALIDATION_PLANNED
+validation_status: CONTROLLED_TEST_VALIDATED
 signal_observed: false
 evidence_linked_public_proof: false
-claim_ceiling: SOURCE_EXISTS
+claim_ceiling: CONTROLLED_TEST_VALIDATED
 description: >
   Source-only detection record for suspicious attempts to stop, disable,
   impair, clear, reconfigure, or blind endpoint telemetry and security controls
   in the HawkinsOperations Windows lab. This source uses process creation,
   service-control, event-log clearing, registry or policy edit, and Defender
   preference tamper patterns where telemetry is available. It does not establish
-  runtime, signal, validation, routing, evidence, production coverage, or
+  runtime, signal, routing, evidence, production coverage, or
   public-safe proof claims.
 author: HawkinsOperations
 date: 2026-05-20
@@ -98,10 +98,9 @@ source_assumptions:
   - Registry and policy indicators are source strings for detection logic, not instructions to change controls.
   - Backend-specific routing, deployment, tuning, and validation are not part of this source artifact.
 current_scope:
-  phase: SOURCE_EXISTS
-  summary: Source package only; validation fixtures and reports are pending under separate validation scope.
+  phase: CONTROLLED_TEST_VALIDATED
+  summary: Source package with validation-owned parity for 10 controlled telemetry/security-control tamper fixtures.
 not_claimed_here:
-  - controlled-test validation
   - runtime observation
   - signal observation
   - live SIEM ingestion
@@ -261,7 +260,7 @@ tuning_guidance:
     - Approved Defender policy baselines.
     - Documented log retention, rotation, or lab reset activity.
 level: high
-supported_claim: HO-DET-013 source artifacts exist and validation is planned for telemetry/security-control tamper fixtures.
+supported_claim: HO-DET-013 source artifacts exist and validation-owned parity passed for 10 controlled telemetry/security-control tamper fixtures.
 blocked_claims:
   - controlled-test validated
   - runtime-active
@@ -292,10 +291,9 @@ blocked_claims:
 promotion_boundaries:
   source_supports:
     - HO-DET-013 source artifacts exist in this repository path.
-    - HO-DET-013 documents planned telemetry and security-control tamper source logic.
-    - HO-DET-013 is prepared for future controlled-test validation.
+    - HO-DET-013 documents telemetry and security-control tamper source logic.
+    - HO-DET-013 passed validation-owned parity for 10 controlled fixtures.
   source_does_not_support:
-    - controlled-test validation
     - runtime-active status
     - signal-observed status
     - live SIEM ingestion
@@ -304,5 +302,7 @@ promotion_boundaries:
     - public-safe status
     - production coverage
 next_validation_gate:
-  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
-  controlled_test_validation_harness: REQUIRED_SEPARATE_SCOPE
+  validation_repo_fixture_set: SATISFIED_IN_VALIDATION_REPO
+  controlled_test_validation_harness: SATISFIED_IN_VALIDATION_REPO
+  runtime_evidence: BLOCKED
+  public_proof: BLOCKED

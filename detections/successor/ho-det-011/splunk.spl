@@ -12,7 +12,7 @@ OR
   (Image="*\\sc.exe" OR Image="*\\powershell.exe" OR Image="*\\pwsh.exe" OR Image="*\\cmd.exe")
 )
 | eval ho_event_id=coalesce(EventCode, EventID, event_id)
-| eval ho_source_boundary="HO-DET-011 source-only candidate; validation planned; no live firing, runtime, signal, public-safe, or evidence-linked public proof claim"
+| eval ho_source_boundary="HO-DET-011 source with validation-owned controlled-test parity; no live firing, runtime, signal, public-safe, or evidence-linked public proof claim"
 | eval ho_service_name=coalesce(ServiceName, service_name, param1, winlog_event_data_ServiceName, "")
 | eval ho_service_path=lower(coalesce(ImagePath, ServiceFileName, service_file_name, param2, winlog_event_data_ImagePath, winlog_event_data_ServiceFileName, ""))
 | eval ho_process_image=lower(coalesce(Image, process_path, winlog_event_data_Image, ""))

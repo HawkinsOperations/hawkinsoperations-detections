@@ -1,12 +1,12 @@
 title: HO-DET-011 Suspicious Windows Service Creation or Service Binary Change
 detection_id: HO-DET-011
-status: experimental/source-only
+status: experimental/controlled-test-validated
 proof_level: SOURCE_EXISTS
 trust_class: SOURCE_EXISTS
 public_safe_status: NOT_PUBLIC_SAFE
 approval_status: NOT_APPROVED
 runtime_active: false
-validation_status: VALIDATION_PLANNED
+validation_status: CONTROLLED_TEST_VALIDATED
 signal_observed: false
 evidence_linked: "NO"
 description: >
@@ -14,7 +14,7 @@ description: >
   binary change behavior. This source uses Windows System Event ID 7045 from
   Service Control Manager, Windows Security Event ID 4697 where audit policy
   records service installation, and Sysmon Event ID 1 process context where
-  available. It does not establish runtime, signal, validation, or public-safe
+  available. It does not establish runtime, signal, proof promotion, or public-safe
   proof.
 author: HawkinsOperations
 date: 2026-05-10
@@ -64,7 +64,7 @@ source_assumptions:
   - Process image and command line may be available through Sysmon Event ID 1 or equivalent process telemetry.
   - Command-line review is opportunistic; service-install telemetry can exist without creator process command-line context.
   - Matching is intended to be case-insensitive where the backend supports it.
-  - Backend-specific deployment, routing, tuning, and validation are not part of this source artifact.
+  - Backend-specific deployment, routing, and runtime tuning are not part of this source artifact.
 detection:
   selection_system_7045:
     EventID: 7045
@@ -158,7 +158,7 @@ tuning_guidance:
     - Driver, print, backup, monitoring, security, and remote-support agents.
     - Known managed application paths and approved maintenance windows.
 level: medium
-allowed_claim: HO-DET-011 source artifacts exist and are prepared for future controlled-test validation.
+allowed_claim: HO-DET-011 source artifacts exist and validation-owned parity passed for 17 controlled Windows service creation fixtures.
 blocked_claims:
   - runtime-active
   - signal-observed
@@ -177,11 +177,10 @@ blocked_claims:
   - analyst-approved disposition
   - attack coverage
   - service-creation coverage completeness
-  - validation passed
 promotion_boundaries:
   source_exists_supports:
     - HO-DET-011 source artifacts exist in this repository path.
-    - HO-DET-011 is prepared for future controlled-test validation.
+    - HO-DET-011 passed validation-owned parity for 17 controlled fixtures.
   source_exists_does_not_support:
     - runtime-active status
     - signal-observed status
@@ -189,7 +188,6 @@ promotion_boundaries:
     - public-safe status
     - live Splunk firing
     - Wazuh-routed telemetry
-    - validation passage
 validation_fixture_boundary:
   detections_repo_fixtures_found: false
-  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
+  validation_repo_fixture_set: SATISFIED_IN_VALIDATION_REPO
