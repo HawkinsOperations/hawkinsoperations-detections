@@ -262,7 +262,6 @@ tuning_guidance:
 level: high
 supported_claim: HO-DET-013 source artifacts exist and validation-owned parity passed for 10 controlled telemetry/security-control tamper fixtures.
 blocked_claims:
-  - controlled-test validated
   - runtime-active
   - signal-observed
   - public-safe

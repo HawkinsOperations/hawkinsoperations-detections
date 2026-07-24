@@ -166,6 +166,27 @@ class PromotionMatrixVerifierTests(unittest.TestCase):
         with self.assertRaises(matrix.MatrixError):
             matrix.verify_repo(self.root, print_summary=False)
 
+    def test_completed_validation_cannot_remain_validation_ready(self):
+        data = self.load_matrix()
+        data["detection_side_ledger_eligibility"]["dry_run_ready"].remove(
+            "HO-DET-013"
+        )
+        data["detection_side_ledger_eligibility"]["validation_ready"].append(
+            "HO-DET-013"
+        )
+        reviewer = next(
+            item
+            for item in data["reviewer_expansion_map"]
+            if item["detection_id"] == "HO-DET-013"
+        )
+        reviewer["ledger_eligibility_status"] = "VALIDATION_READY"
+        self.write_matrix(data)
+        with self.assertRaisesRegex(
+            matrix.MatrixError,
+            "ledger eligibility contradicts completed validation",
+        ):
+            matrix.verify_repo(self.root, print_summary=False)
+
     def test_factory_current_state_disagreement_fails(self):
         index_path = self.root / "detections" / "DETECTION_FACTORY_INDEX.md"
         text = index_path.read_text(encoding="utf-8")

@@ -205,7 +205,6 @@ validation_fixture_boundary:
   detections_repo_fixtures_found: false
   validation_repo_fixture_set: SATISFIED_IN_VALIDATION_REPO
 blocked_claims:
-  - controlled-test validated
   - runtime-active
   - signal-observed
   - public-safe

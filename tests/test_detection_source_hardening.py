@@ -1281,6 +1281,48 @@ class DetectionSourceHardeningTests(unittest.TestCase):
                 target, "hawkinsoperations-validation", "validation registry"
             )
 
+    def test_external_authority_root_must_equal_git_top_level(self):
+        for expected_repo, relative_path, label in (
+            (
+                "hawkinsoperations-validation",
+                Path("validation") / "VALIDATION_REGISTRY.yml",
+                "validation registry",
+            ),
+            (
+                "hawkinsoperations-proof",
+                Path("proof")
+                / "indexes"
+                / "DETECTION_PROOF_STATUS_INDEX.yml",
+                "proof status index",
+            ),
+        ):
+            with self.subTest(expected_repo=expected_repo):
+                outer_root = self.base / f"outer-{expected_repo}"
+                authority_root = outer_root / expected_repo
+                target = authority_root / relative_path
+                target.parent.mkdir(parents=True)
+                target.write_text(
+                    f"owner_repo: {expected_repo}\n",
+                    encoding="utf-8",
+                )
+                self.commit_repo(outer_root)
+                subprocess.run(
+                    [
+                        "git",
+                        "remote",
+                        "set-url",
+                        "origin",
+                        f"https://github.com/HawkinsOperations/{expected_repo}.git",
+                    ],
+                    cwd=outer_root,
+                    check=True,
+                )
+                with self.assertRaisesRegex(
+                    matrix.MatrixError,
+                    "Git top-level must exactly match supplied authority root",
+                ):
+                    matrix.external_repo_root(target, expected_repo, label)
+
     def test_duplicate_json_key_fails_closed(self):
         target = self.base / "duplicate.json"
         target.write_text('{"id":"A","id":"B"}\n', encoding="utf-8")

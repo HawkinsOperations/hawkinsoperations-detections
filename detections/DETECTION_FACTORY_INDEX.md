@@ -63,8 +63,8 @@ This section classifies detection-side ledger and reviewer expansion posture. It
 | Ledger eligibility | Detection IDs | Reviewer expansion posture |
 |---|---|---|
 | `APPENDED` | none | No source-side eligibility append records are recorded in this detections metadata. |
-| `DRY_RUN_READY` | `ID-DET-001`, `ID-DET-002`, `ID-DET-003`, `ID-DET-004` | Identity detections have source and controlled-test validation; proof records, live IdP evidence, runtime, signal, and public-safe claims remain separate gates. |
-| `VALIDATION_READY` | `HO-DET-009`, `HO-DET-010`, `HO-DET-013` | Source packages and controlled-test validation exist; proof, runtime, signal, and public-safe claims remain separate gates. |
+| `DRY_RUN_READY` | `HO-DET-009`, `HO-DET-010`, `HO-DET-013`, `ID-DET-001`, `ID-DET-002`, `ID-DET-003`, `ID-DET-004` | Source packages and controlled-test validation exist; proof records, runtime, signal, and public-safe claims remain separate gates. |
+| `VALIDATION_READY` | none | No current source package has validation as its next gate. |
 | `PROOF_RECORDED` | `HOD-001`, `HO-DET-001`, `HO-DET-011`, `HO-DET-012`, `AWS-DET-001` | Proof-record routes exist; they preserve their own claim ceilings and do not imply detection-side ledger append, runtime, signal, or public-safe proof. |
 | `BLOCKED` | `HO-NDR-001` | Boundary contract is external to this source repo; runtime packet, evidence route, and public wording review are required before reviewer expansion. |
 | `NEEDS_TELEMETRY_CONTRACT` | `HO-DET-014`, `HO-DET-015`, `HO-DET-016`, `HO-NDR-002`, `HO-PIPE-001` | Telemetry-field, route, or event contract work must precede source/validation expansion or ledger dry-run. |

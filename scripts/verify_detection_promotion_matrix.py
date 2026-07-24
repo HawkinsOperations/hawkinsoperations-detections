@@ -1183,6 +1183,13 @@ def external_repo_root(path: Path, expected_repo: str, label: str) -> Path:
                     text=True,
                     env=sanitized_git_environment(),
                 ).stdout.strip()
+                top_level = subprocess.run(
+                    ["git", "-C", str(parent), "rev-parse", "--show-toplevel"],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    env=sanitized_git_environment(),
+                ).stdout.strip()
                 origin = stored_repository_origin(parent, label)
                 dirty = subprocess.run(
                     ["git", "-C", str(parent), "status", "--porcelain", "--untracked-files=no"],
@@ -1195,6 +1202,11 @@ def external_repo_root(path: Path, expected_repo: str, label: str) -> Path:
                 fail(f"{label} owner root is not a verifiable Git repository: {exc}")
             if inside != "true":
                 fail(f"{label} owner root is not a Git worktree")
+            if Path(top_level).resolve() != parent.resolve():
+                fail(
+                    f"{label} Git top-level must exactly match supplied authority root: "
+                    f"expected={parent.resolve()}, actual={Path(top_level).resolve()}"
+                )
             expected_origin = (
                 f"https://github.com/HawkinsOperations/{expected_repo}.git"
             )
@@ -2115,6 +2127,23 @@ def verify_reviewer_expansion_map(matrix: dict[str, Any], id_to_status: dict[str
         fail(f"reviewer expansion map missing detection IDs: {', '.join(missing_ids)}")
 
 
+def verify_ledger_status_semantics(
+    entries: list[dict[str, Any]], id_to_status: dict[str, str]
+) -> None:
+    for entry in entries:
+        detection_id = entry["detection_id"]
+        validation_status = entry["validation_status_if_known"]
+        ledger_status = id_to_status[detection_id]
+        if (
+            validation_status == "CONTROLLED_TEST_VALIDATED_IN_VALIDATION_REPO"
+            and ledger_status == "VALIDATION_READY"
+        ):
+            fail(
+                f"{detection_id} ledger eligibility contradicts completed validation: "
+                "VALIDATION_READY means validation is still the next gate"
+            )
+
+
 def verify_matrix_contract_header(matrix: dict[str, Any]) -> None:
     if matrix["schema_version"] != "phase2c-detection-promotion-matrix-v1":
         fail("matrix schema_version is unsupported")
@@ -2226,6 +2255,7 @@ def verify_repo(
         normalized_entries.append(copy.deepcopy(entry))
 
     id_to_status = verify_ledger_eligibility_map(matrix, set(seen))
+    verify_ledger_status_semantics(normalized_entries, id_to_status)
     verify_reviewer_expansion_map(matrix, id_to_status)
     verify_factory_ledger_table(
         root,
