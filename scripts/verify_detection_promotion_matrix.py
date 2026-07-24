@@ -1121,6 +1121,42 @@ def load_strict_json(path: Path, label: str) -> dict[str, Any]:
     return ensure_mapping(data, label)
 
 
+def canonical_repository_origin(value: str) -> str:
+    normalized = value.strip().rstrip("/").casefold()
+    if normalized.startswith("git@github.com:"):
+        normalized = "https://github.com/" + normalized.removeprefix(
+            "git@github.com:"
+        )
+    elif normalized.startswith("ssh://git@github.com/"):
+        normalized = "https://github.com/" + normalized.removeprefix(
+            "ssh://git@github.com/"
+        )
+    if not normalized.endswith(".git"):
+        normalized += ".git"
+    return normalized
+
+
+def stored_repository_origin(repo_root: Path, label: str) -> str:
+    result = subprocess.run(
+        [
+            "git",
+            "-C",
+            str(repo_root),
+            "config",
+            "--local",
+            "--get-all",
+            "remote.origin.url",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    values = [value.strip() for value in result.stdout.splitlines()]
+    if result.returncode != 0 or len(values) != 1 or not values[0]:
+        fail(f"{label} stored origin must contain exactly one nonempty local URL")
+    return values[0]
+
+
 def external_repo_root(path: Path, expected_repo: str, label: str) -> Path:
     resolved = path.resolve()
     for parent in (resolved.parent, *resolved.parents):
@@ -1134,12 +1170,7 @@ def external_repo_root(path: Path, expected_repo: str, label: str) -> Path:
                     capture_output=True,
                     text=True,
                 ).stdout.strip()
-                origin = subprocess.run(
-                    ["git", "-C", str(parent), "remote", "get-url", "origin"],
-                    check=True,
-                    capture_output=True,
-                    text=True,
-                ).stdout.strip()
+                origin = stored_repository_origin(parent, label)
                 dirty = subprocess.run(
                     ["git", "-C", str(parent), "status", "--porcelain", "--untracked-files=no"],
                     check=True,
@@ -1150,12 +1181,12 @@ def external_repo_root(path: Path, expected_repo: str, label: str) -> Path:
                 fail(f"{label} owner root is not a verifiable Git repository: {exc}")
             if inside != "true":
                 fail(f"{label} owner root is not a Git worktree")
-            canonical_origins = {
-                f"https://github.com/HawkinsOperations/{expected_repo}.git".casefold(),
-                f"https://github.com/HawkinsOperations/{expected_repo}".casefold(),
-                f"git@github.com:HawkinsOperations/{expected_repo}.git".casefold(),
-            }
-            if origin.casefold() not in canonical_origins:
+            expected_origin = (
+                f"https://github.com/HawkinsOperations/{expected_repo}.git"
+            )
+            if canonical_repository_origin(origin) != canonical_repository_origin(
+                expected_origin
+            ):
                 fail(f"{label} repository origin is not canonical: {origin}")
             if dirty:
                 fail(f"{label} authority repository has tracked dirty state")

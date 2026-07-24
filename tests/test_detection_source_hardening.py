@@ -1,6 +1,7 @@
 import copy
 import importlib.util
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -9,6 +10,7 @@ import tempfile
 import unicodedata
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import yaml
 
@@ -177,6 +179,101 @@ class DetectionSourceHardeningTests(unittest.TestCase):
             ["git", "commit", "--allow-empty", "-m", message],
             cwd=repo_root, check=True, capture_output=True,
         )
+
+    def test_origin_rewrite_cannot_launder_wrong_stored_handoff_origin(self):
+        validation_root = self.base / "hawkinsoperations-validation"
+        registry_path = validation_root / "validation" / "VALIDATION_REGISTRY.yml"
+        registry_path.parent.mkdir(parents=True)
+        registry_path.write_text("owner_repo: hawkinsoperations-validation\n", encoding="utf-8")
+        self.commit_repo(validation_root)
+        canonical = (
+            "https://github.com/HawkinsOperations/"
+            "hawkinsoperations-validation.git"
+        )
+        wrong = "https://local.invalid/hawkinsoperations-validation.git"
+        subprocess.run(
+            ["git", "remote", "set-url", "origin", wrong],
+            cwd=validation_root,
+            check=True,
+        )
+        rewrite_env = {
+            "GIT_CONFIG_COUNT": "1",
+            "GIT_CONFIG_KEY_0": f"url.{canonical}.insteadOf",
+            "GIT_CONFIG_VALUE_0": wrong,
+        }
+        with mock.patch.dict(os.environ, rewrite_env, clear=False):
+            interpreted = subprocess.run(
+                ["git", "remote", "get-url", "origin"],
+                cwd=validation_root,
+                check=True,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            self.assertEqual(canonical, interpreted)
+            with self.assertRaisesRegex(
+                matrix.MatrixError, "repository origin is not canonical"
+            ):
+                matrix.external_repo_root(
+                    registry_path,
+                    "hawkinsoperations-validation",
+                    "validation registry",
+                )
+
+    def test_missing_empty_or_multiple_stored_handoff_origins_fail_closed(self):
+        for attack in ("missing", "empty", "multiple"):
+            with self.subTest(attack=attack):
+                validation_root = self.base / f"{attack}" / "hawkinsoperations-validation"
+                registry_path = (
+                    validation_root / "validation" / "VALIDATION_REGISTRY.yml"
+                )
+                registry_path.parent.mkdir(parents=True)
+                registry_path.write_text(
+                    "owner_repo: hawkinsoperations-validation\n", encoding="utf-8"
+                )
+                self.commit_repo(validation_root)
+                subprocess.run(
+                    ["git", "config", "--unset-all", "remote.origin.url"],
+                    cwd=validation_root,
+                    check=True,
+                )
+                if attack == "empty":
+                    subprocess.run(
+                        ["git", "config", "--add", "remote.origin.url", ""],
+                        cwd=validation_root,
+                        check=True,
+                    )
+                elif attack == "multiple":
+                    subprocess.run(
+                        [
+                            "git",
+                            "config",
+                            "--add",
+                            "remote.origin.url",
+                            "https://github.com/HawkinsOperations/"
+                            "hawkinsoperations-validation.git",
+                        ],
+                        cwd=validation_root,
+                        check=True,
+                    )
+                    subprocess.run(
+                        [
+                            "git",
+                            "config",
+                            "--add",
+                            "remote.origin.url",
+                            "https://local.invalid/hawkinsoperations-validation.git",
+                        ],
+                        cwd=validation_root,
+                        check=True,
+                    )
+                with self.assertRaisesRegex(
+                    matrix.MatrixError, "exactly one nonempty local URL"
+                ):
+                    matrix.external_repo_root(
+                        registry_path,
+                        "hawkinsoperations-validation",
+                        "validation registry",
+                    )
 
     def test_duplicate_yaml_key_fails_closed(self):
         text = self.matrix_path.read_text(encoding="utf-8")
