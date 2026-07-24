@@ -219,6 +219,153 @@ class DetectionSourceHardeningTests(unittest.TestCase):
                     "validation registry",
                 )
 
+    def test_git_environment_scrub_rejects_every_ambient_git_control(self):
+        hostile = {
+            "GIT_DIR": "decoy",
+            "GIT_WORK_TREE": "decoy",
+            "GIT_COMMON_DIR": "decoy",
+            "GIT_INDEX_FILE": "decoy",
+            "GIT_OBJECT_DIRECTORY": "decoy",
+            "GIT_ALTERNATE_OBJECT_DIRECTORIES": "decoy",
+            "GIT_CONFIG": "decoy",
+            "GIT_CONFIG_GLOBAL": "decoy",
+            "GIT_CONFIG_SYSTEM": "decoy",
+            "GIT_CONFIG_NOSYSTEM": "0",
+            "GIT_CONFIG_COUNT": "1",
+            "GIT_CONFIG_KEY_0": "core.repositoryformatversion",
+            "GIT_CONFIG_VALUE_0": "1",
+            "GIT_CEILING_DIRECTORIES": "decoy",
+            "GIT_DISCOVERY_ACROSS_FILESYSTEM": "1",
+            "GIT_SHALLOW_FILE": "decoy",
+            "GIT_NAMESPACE": "decoy",
+            "GIT_REPLACE_REF_BASE": "refs/decoy",
+            "GIT_IMPLICIT_WORK_TREE": "1",
+            "GIT_NO_REPLACE_OBJECTS": "0",
+            "GIT_TERMINAL_PROMPT": "1",
+        }
+        with mock.patch.dict(os.environ, hostile, clear=False):
+            sanitized = matrix.sanitized_git_environment()
+        self.assertEqual("1", sanitized["GIT_NO_REPLACE_OBJECTS"])
+        self.assertEqual("0", sanitized["GIT_TERMINAL_PROMPT"])
+        self.assertEqual(
+            {"git_no_replace_objects", "git_terminal_prompt"},
+            {
+                key.casefold()
+                for key in sanitized
+                if key.casefold().startswith("git_")
+            },
+        )
+
+    def test_git_dir_decoy_cannot_redirect_handoff_origin_authority(self):
+        validation_root = self.base / "hawkinsoperations-validation"
+        registry_path = validation_root / "validation" / "VALIDATION_REGISTRY.yml"
+        registry_path.parent.mkdir(parents=True)
+        registry_path.write_text(
+            "owner_repo: hawkinsoperations-validation\n", encoding="utf-8"
+        )
+        self.commit_repo(validation_root)
+        canonical = (
+            "https://github.com/HawkinsOperations/"
+            "hawkinsoperations-validation.git"
+        )
+        wrong = "https://local.invalid/hawkinsoperations-validation.git"
+        subprocess.run(
+            ["git", "remote", "set-url", "origin", wrong],
+            cwd=validation_root,
+            check=True,
+        )
+        decoy = self.base / "decoy"
+        decoy.mkdir()
+        subprocess.run(
+            ["git", "init", "--quiet"], cwd=decoy, check=True, capture_output=True
+        )
+        subprocess.run(
+            ["git", "remote", "add", "origin", canonical],
+            cwd=decoy,
+            check=True,
+        )
+        raw_env = os.environ.copy()
+        raw_env["GIT_DIR"] = str(decoy / ".git")
+        interpreted = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(validation_root),
+                "config",
+                "--local",
+                "--get-all",
+                "remote.origin.url",
+            ],
+            cwd=validation_root,
+            check=True,
+            capture_output=True,
+            text=True,
+            env=raw_env,
+        ).stdout.strip()
+        self.assertEqual(canonical, interpreted)
+        with mock.patch.dict(
+            os.environ, {"GIT_DIR": str(decoy / ".git")}, clear=False
+        ):
+            self.assertEqual(
+                wrong,
+                matrix.stored_repository_origin(
+                    validation_root, "validation registry"
+                ),
+            )
+            with self.assertRaisesRegex(
+                matrix.MatrixError, "repository origin is not canonical"
+            ):
+                matrix.external_repo_root(
+                    registry_path,
+                    "hawkinsoperations-validation",
+                    "validation registry",
+                )
+
+    def test_git_index_file_cannot_hide_staged_dirty_handoff_authority(self):
+        validation_root = self.base / "hawkinsoperations-validation"
+        registry_path = validation_root / "validation" / "VALIDATION_REGISTRY.yml"
+        registry_path.parent.mkdir(parents=True)
+        original = "owner_repo: hawkinsoperations-validation\n"
+        registry_path.write_text(original, encoding="utf-8")
+        self.commit_repo(validation_root)
+        clean_index = self.base / "clean.index"
+        alternate_env = os.environ.copy()
+        alternate_env["GIT_INDEX_FILE"] = str(clean_index)
+        subprocess.run(
+            ["git", "read-tree", "HEAD"],
+            cwd=validation_root,
+            check=True,
+            capture_output=True,
+            env=alternate_env,
+        )
+        registry_path.write_text("owner_repo: attacker-owned\n", encoding="utf-8")
+        subprocess.run(
+            ["git", "add", "validation/VALIDATION_REGISTRY.yml"],
+            cwd=validation_root,
+            check=True,
+        )
+        registry_path.write_text(original, encoding="utf-8")
+        hidden = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=no"],
+            cwd=validation_root,
+            check=True,
+            capture_output=True,
+            text=True,
+            env=alternate_env,
+        ).stdout.strip()
+        self.assertEqual("", hidden, "attack precondition: alternate index is clean")
+        with mock.patch.dict(
+            os.environ, {"GIT_INDEX_FILE": str(clean_index)}, clear=False
+        ):
+            with self.assertRaisesRegex(
+                matrix.MatrixError, "tracked dirty state"
+            ):
+                matrix.external_repo_root(
+                    registry_path,
+                    "hawkinsoperations-validation",
+                    "validation registry",
+                )
+
     def test_missing_empty_or_multiple_stored_handoff_origins_fail_closed(self):
         for attack in ("missing", "empty", "multiple"):
             with self.subTest(attack=attack):

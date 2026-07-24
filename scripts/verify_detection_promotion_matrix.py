@@ -6,6 +6,7 @@ import argparse
 import copy
 import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -19,6 +20,15 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 MATRIX_PATH = ROOT / "detections" / "DETECTION_PROMOTION_MATRIX.yml"
 INDEX_PATH = ROOT / "detections" / "DETECTION_FACTORY_INDEX.md"
+def sanitized_git_environment() -> dict[str, str]:
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.casefold().startswith("git_")
+    }
+    environment["GIT_NO_REPLACE_OBJECTS"] = "1"
+    environment["GIT_TERMINAL_PROMPT"] = "0"
+    return environment
 
 REQUIRED_FIELDS = {
     "detection_id",
@@ -472,6 +482,7 @@ def git_output(root: Path, *args: str) -> str:
         capture_output=True,
         text=True,
         check=False,
+        env=sanitized_git_environment(),
     )
     return result.stdout.strip() if result.returncode == 0 else "UNRESOLVED"
 
@@ -1150,6 +1161,7 @@ def stored_repository_origin(repo_root: Path, label: str) -> str:
         check=False,
         capture_output=True,
         text=True,
+        env=sanitized_git_environment(),
     )
     values = [value.strip() for value in result.stdout.splitlines()]
     if result.returncode != 0 or len(values) != 1 or not values[0]:
@@ -1169,6 +1181,7 @@ def external_repo_root(path: Path, expected_repo: str, label: str) -> Path:
                     check=True,
                     capture_output=True,
                     text=True,
+                    env=sanitized_git_environment(),
                 ).stdout.strip()
                 origin = stored_repository_origin(parent, label)
                 dirty = subprocess.run(
@@ -1176,6 +1189,7 @@ def external_repo_root(path: Path, expected_repo: str, label: str) -> Path:
                     check=True,
                     capture_output=True,
                     text=True,
+                    env=sanitized_git_environment(),
                 ).stdout.strip()
             except subprocess.CalledProcessError as exc:
                 fail(f"{label} owner root is not a verifiable Git repository: {exc}")
