@@ -11,15 +11,101 @@ permissions:
 jobs:
   baseline-hero-artifact-contract:
     runs-on: ubuntu-latest
+    env:
+      VALIDATION_AUTHORITY_SHA: 08d583f7dbdabac90ebff6ce99bca57a8dac2d9e
+      PROOF_AUTHORITY_SHA: b42ba945ae1ea540037643bb25f7165ab55dab21
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Checkout validation authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: HawkinsOperations/hawkinsoperations-validation
+          ref: ${{ env.VALIDATION_AUTHORITY_SHA }}
+          path: _sources/hawkinsoperations-validation
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Checkout proof authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          repository: HawkinsOperations/hawkinsoperations-proof
+          ref: ${{ env.PROOF_AUTHORITY_SHA }}
+          path: _sources/hawkinsoperations-proof
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact immutable authority revisions
+        run: |
+          test "$(git -C _sources/hawkinsoperations-validation rev-parse HEAD)" = "$VALIDATION_AUTHORITY_SHA"
+          test "$(git -C _sources/hawkinsoperations-proof rev-parse HEAD)" = "$PROOF_AUTHORITY_SHA"
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
         with:
           python-version: "3.11"
       - name: Install verifier dependencies
-        run: python3 -m pip install --disable-pip-version-check pyyaml
+        run: python3 -m pip install --disable-pip-version-check PyYAML==6.0.2
+      - name: Reject retired fixture vocabulary
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          import unicodedata
+          from pathlib import PurePosixPath
+
+          retired = "".join(("syn", "thetic"))
+          binary_extensions = frozenset({
+              ".7z", ".avif", ".avi", ".bz2", ".dll", ".dylib", ".eot", ".exe", ".gif",
+              ".gz", ".ico", ".jpeg", ".jpg", ".mov", ".mp3", ".mp4", ".pdf",
+              ".png", ".pyc", ".so", ".tar", ".tgz", ".ttf", ".wasm", ".webp",
+              ".woff", ".woff2", ".xz", ".zip",
+          })
+          paths = subprocess.run(
+              ["git", "ls-files", "-z"],
+              check=True,
+              capture_output=True,
+          ).stdout.decode("utf-8").split("\0")
+          findings = []
+          for relative in filter(None, paths):
+              if retired in unicodedata.normalize("NFKC", relative).casefold():
+                  findings.append(f"tracked filename: {relative}")
+              if PurePosixPath(relative).suffix.casefold() in binary_extensions:
+                  continue
+              blob = subprocess.run(
+                  ["git", "show", f":{relative}"],
+                  check=True,
+                  capture_output=True,
+              ).stdout
+              if b"\0" in blob:
+                  findings.append(f"tracked non-binary content contains NUL: {relative}")
+                  continue
+              try:
+                  text = blob.decode("utf-8")
+              except UnicodeDecodeError:
+                  findings.append(f"tracked non-binary content is not UTF-8: {relative}")
+                  continue
+              if retired in unicodedata.normalize("NFKC", text).casefold():
+                  findings.append(f"tracked content: {relative}")
+          if findings:
+              raise SystemExit(
+                  "retired fixture vocabulary found:\n- " + "\n- ".join(findings)
+              )
+          PY
       - name: Validate Detection Contract
         run: |
           python3 ./scripts/verify_detection_contract.py
+          python3 ./scripts/verify_detection_promotion_matrix.py \
+            --validation-registry ./_sources/hawkinsoperations-validation/validation/VALIDATION_REGISTRY.yml \
+            --proof-index ./_sources/hawkinsoperations-proof/proof/indexes/DETECTION_PROOF_STATUS_INDEX.yml \
+            --require-sibling-handoffs
           python3 ./scripts/verify_wazuh_rule_sources.py
+      - name: Run hostile path, ownership, and handoff tests
+        run: python3 -B -m unittest discover -s tests -v
+      - name: Reject whitespace errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --check "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}"
+          else
+            git show --check --format= HEAD
+          fi

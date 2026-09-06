@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """Detection contract verification across hero/successor/identity/cloud packages."""
+import copy
 import hashlib
 import importlib.util
 import json
 import re
 import sys
+import unicodedata
 import xml.etree.ElementTree as ET
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
+from urllib.parse import unquote
 
 import yaml
 
@@ -47,6 +50,234 @@ PROMOTION_BLOCK_FIELDS = (
     "evidence_linked_public_proof",
 )
 
+FALSE_ONLY_FIELDS = {
+    "runtime_active",
+    "signal_observed",
+    "evidence_linked_public_proof",
+    "ai_disposition_authority",
+    "ai_decided_disposition",
+    "analyst_approved",
+    "final_authorization",
+    "case_closed",
+    "case_closure",
+}
+
+AFFIRMATIVE_AUTHORITY_CLAIM_RE = re.compile(
+    r"(?:"
+    r"\b(?:customer|socaas)\b.{0,48}\bdeploy(?:ed|ment|ing)?\b"
+    r"|\bdeploy(?:ed|ment|ing)?\b.{0,48}\b(?:customer|socaas)\b"
+    r"|\bproduction\b.{0,32}\b(?:active|confirmed|deployed|live|ready)\b"
+    r"|\b(?:ai|analyst)\b.{0,40}\b(?:approval|authority|disposition)\b.{0,24}\b(?:approved|enabled|granted)\b"
+    r"|\b(?:ai|analyst)\b.{0,40}\b(?:approved|authori[sz]ed)\b.{0,24}\b(?:case|decision|disposition)\b"
+    r"|\bfinal\s+authori[sz]ation\b.{0,32}\b(?:approved|complete|granted|received)\b"
+    r"|\bcase\s+closure\b.{0,32}\b(?:approved|complete|granted|received)\b"
+    r"|\bcase\b.{0,16}\b(?:is|was)?\s*closed\b"
+    r"|\bpublic[\s_-]*safe\b.{0,32}\b(?:approved|confirmed|established|release|runtime\s+proof)\b"
+    r"|\bruntime\b.{0,24}\b(?:active|live)\b"
+    r"|\bsignal\b.{0,24}\b(?:active|observed)\b"
+    r")",
+    re.IGNORECASE,
+)
+NEGATED_AUTHORITY_CONTEXT_RE = re.compile(
+    r"\b(?:blocked|denied|false|future|not|never|no|pending|prohibited|"
+    r"reject(?:ed|s)?|requires?\s+separate|remain(?:s)?\s+(?:a\s+)?separate|unsupported|without)\b",
+    re.IGNORECASE,
+)
+AUTHORITY_STRONG_CLAUSE_SPLIT_RE = re.compile(
+    r"[;:/\r\n—–]+|\b(?:but|however|although|yet|while|whereas)\b|(?<=[.!?])\s+",
+    re.IGNORECASE,
+)
+NEGATIVE_LIST_INTRO_RE = re.compile(
+    r"\b(?:does|do|did|must|is|are|was|were|can|cannot|could|should|will|would)\s+not\s+"
+    r"(?:prove|establish|claim|promote|authorize|assert)\b|\bwithout\s+claiming\b",
+    re.IGNORECASE,
+)
+AFFIRMATIVE_STATE_AFTER_NEGATIVE_LIST_RE = re.compile(
+    r"(?:"
+    r"\b(?:customer|socaas)\b.{0,32}\b(?:deployment\s+)?(?:is|was)\s+"
+    r"(?:active|confirmed|deployed|live|ready)\b"
+    r"|\b(?:customer|socaas)\b.{0,32}\b(?:is|was)\s+deployed\b"
+    r"|\bproduction\b.{0,24}\b(?:is|was)\s+(?:active|live|ready)\b"
+    r"|\bruntime\b.{0,16}\b(?:is|was)\s+active\b"
+    r"|\bsignal\b.{0,16}\b(?:is|was)\s+observed\b"
+    r"|\bpublic[\s_-]*safe\b.{0,24}\b(?:is|was)\s+"
+    r"(?:approved|confirmed|established|ready|released)\b"
+    r"|\b(?:ai|analyst)\b.{0,32}\b(?:(?:is|was)\s+approved|approval\s+(?:is\s+)?granted|authority\s+(?:is\s+)?enabled)\b"
+    r"|\bfinal\s+authori[sz]ation\b.{0,16}\b(?:is|was)?\s*(?:approved|granted|received)\b"
+    r"|\bcase\s+closure\b.{0,16}\b(?:is|was)?\s*(?:approved|complete|granted|received)\b"
+    r"|\bcase\b.{0,16}\b(?:is|was)\s+closed\b"
+    r")",
+    re.IGNORECASE,
+)
+NEGATIVE_LIST_SUFFIX_RE = re.compile(
+    r"\bclaims?\s+(?:remain|remains|are|is)\s+(?:blocked|unsupported|not\s+approved)\.?$",
+    re.IGNORECASE,
+)
+EXACT_BOUNDED_AUTHORITY_PROSE = {
+    "dry-run reviewer proof/ledger route without claiming live idp, runtime, or public-safe proof.",
+    "dry-run reviewer proof/ledger route without claiming live idp, runtime, completeness, or public-safe proof.",
+}
+
+
+def normalize_authority_security_text(value: str) -> str:
+    normalized = unicodedata.normalize("NFKD", value).translate(
+        {ord("\t"): " ", ord("\n"): " ", ord("\r"): " "}
+    )
+    return "".join(
+        character
+        for character in normalized
+        if not unicodedata.category(character).startswith(("C", "M"))
+    )
+
+
+def contains_unnegated_affirmative_state(value: str) -> bool:
+    return any(
+        not NEGATED_AUTHORITY_CONTEXT_RE.search(value[:match.start()])
+        for match in AFFIRMATIVE_STATE_AFTER_NEGATIVE_LIST_RE.finditer(value)
+    )
+
+
+def contains_unsupported_affirmative_authority_claim(value: str) -> bool:
+    """Bind negation to the same clause as the authority wording it bounds."""
+    normalized = normalize_authority_security_text(value)
+    if normalized.strip().casefold() in EXACT_BOUNDED_AUTHORITY_PROSE:
+        return False
+    for segment in AUTHORITY_STRONG_CLAUSE_SPLIT_RE.split(normalized):
+        if not segment.strip():
+            continue
+        intro = NEGATIVE_LIST_INTRO_RE.search(segment)
+        suffix = NEGATIVE_LIST_SUFFIX_RE.search(segment)
+        if suffix:
+            if AFFIRMATIVE_STATE_AFTER_NEGATIVE_LIST_RE.search(
+                segment[:suffix.start()]
+            ):
+                return True
+            continue
+        if intro:
+            if (
+                AFFIRMATIVE_STATE_AFTER_NEGATIVE_LIST_RE.search(
+                    segment[intro.end():]
+                )
+            ):
+                return True
+            continue
+        clauses = segment.split(",")
+        if any(
+            contains_unnegated_affirmative_state(clause)
+            or (
+                AFFIRMATIVE_AUTHORITY_CLAIM_RE.search(clause)
+                and not NEGATED_AUTHORITY_CONTEXT_RE.search(clause)
+            )
+            for clause in clauses
+            if clause.strip()
+        ):
+            return True
+    return False
+
+
+def normalize_authority_key(value: str) -> str:
+    decoded = value
+    for _ in range(4):
+        next_value = unquote(decoded)
+        if next_value == decoded:
+            break
+        decoded = next_value
+    return re.sub(r"[^a-z0-9]", "", unicodedata.normalize("NFKC", decoded).casefold())
+
+
+def is_compositional_promotion_key(key: str) -> bool:
+    return (
+        ("production" in key and any(part in key for part in ("active", "live", "ready", "deploy", "state", "status")))
+        or (any(part in key for part in ("customer", "socaas")) and any(part in key for part in ("active", "deploy", "state", "status")))
+        or ("runtime" in key and any(part in key for part in ("active", "state", "status")))
+        or ("signal" in key and any(part in key for part in ("observed", "state", "status")))
+        or ("publicsafe" in key and "count" not in key)
+        or ("final" in key and any(part in key for part in ("authoriz", "authority")))
+        or ("case" in key and "count" not in key and any(part in key for part in ("closed", "closure", "state", "status")))
+        or any(part in key for part in ("approvalstate", "approvalstatus", "closurestatus", "casestate", "casestatus"))
+        or (
+            key.startswith(("ai", "analyst"))
+            and any(part in key for part in ("approved", "approval", "authority", "disposition"))
+        )
+        or ("review" in key and "disposition" in key)
+    )
+
+
+def is_explicitly_bounded_authority_value(value) -> bool:
+    if isinstance(value, list) and len(value) == 1:
+        return is_explicitly_bounded_authority_value(value[0])
+    if value is False or value is None or value == 0:
+        return True
+    if not isinstance(value, str):
+        return False
+    normalized = normalize_authority_key(value)
+    return normalized in {
+        "blocked",
+        "false",
+        "humanreviewrequired",
+        "missing",
+        "none",
+        "notapproved",
+        "notauthorized",
+        "notclosed",
+        "notproven",
+        "notpublicsafe",
+        "notruntimeactive",
+        "open",
+        "partial",
+        "pending",
+        "existingflowcandidate",
+        "privateruntimeboundarycontextonly",
+        "privateruntimeevidencecaptured",
+        "privateruntimeevidencecapturedlocalwindowsonly",
+        "runtimeevidenceverifiedprivate",
+        "runtimeactiveprivate",
+        "signalobservedprivate",
+        "satisfiednonpromotionalboundary",
+        "sourceexists",
+        "unsupported",
+    }
+
+
+class UniqueKeyLoader(yaml.SafeLoader):
+    pass
+
+
+UniqueKeyLoader.yaml_implicit_resolvers = copy.deepcopy(
+    yaml.SafeLoader.yaml_implicit_resolvers
+)
+for resolver_key, resolvers in list(UniqueKeyLoader.yaml_implicit_resolvers.items()):
+    UniqueKeyLoader.yaml_implicit_resolvers[resolver_key] = [
+        resolver
+        for resolver in resolvers
+        if resolver[0] != "tag:yaml.org,2002:timestamp"
+    ]
+
+
+def _construct_unique_mapping(loader, node, deep=False):
+    mapping = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in mapping:
+            fail(f"duplicate YAML key {key!r} at line {key_node.start_mark.line + 1}")
+        mapping[key] = loader.construct_object(value_node, deep=deep)
+    return mapping
+
+
+UniqueKeyLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+    _construct_unique_mapping,
+)
+
+
+def _unique_json_pairs(pairs):
+    value = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError(f"duplicate JSON key {key!r}")
+        value[key] = item
+    return value
+
 
 def verify_detection_promotion_matrix() -> None:
     matrix_verifier_path = ROOT / "scripts" / "verify_detection_promotion_matrix.py"
@@ -72,8 +303,11 @@ def read_schema_required_keys() -> list[str]:
     if not SCHEMA_PATH.exists():
         fail(f"missing schema file: {SCHEMA_PATH}")
     try:
-        schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
+        schema = json.loads(
+            SCHEMA_PATH.read_text(encoding="utf-8"),
+            object_pairs_hook=_unique_json_pairs,
+        )
+    except (json.JSONDecodeError, ValueError) as exc:
         fail(f"invalid schema JSON: {exc}")
     required = schema.get("required", [])
     if not isinstance(required, list):
@@ -100,7 +334,7 @@ def sha256_of(path: Path) -> str:
 
 def parse_yaml(path: Path) -> dict:
     try:
-        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+        data = yaml.load(path.read_text(encoding="utf-8"), Loader=UniqueKeyLoader)
     except yaml.YAMLError as exc:
         fail(f"invalid YAML parse: {path.relative_to(ROOT).as_posix()} ({exc})")
     if not isinstance(data, dict):
@@ -110,8 +344,11 @@ def parse_yaml(path: Path) -> dict:
 
 def parse_json(path: Path):
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as exc:
+        return json.loads(
+            path.read_text(encoding="utf-8"),
+            object_pairs_hook=_unique_json_pairs,
+        )
+    except (json.JSONDecodeError, ValueError) as exc:
         fail(f"invalid JSON parse: {path.relative_to(ROOT).as_posix()} ({exc})")
 
 
@@ -150,7 +387,32 @@ def verify_manifest(package_dir: Path, drift_warnings: list[str]) -> None:
         expected, rel = parts
         if not HEX64_RE.match(expected):
             fail(f"invalid manifest hash token: {manifest.relative_to(ROOT).as_posix()} :: {expected}")
-        target = package_dir / rel
+        decoded = rel
+        for _ in range(4):
+            next_value = unquote(decoded)
+            if next_value == decoded:
+                break
+            decoded = next_value
+        if (
+            "\\" in decoded
+            or decoded.startswith("/")
+            or re.match(r"^[A-Za-z]:", decoded)
+            or PureWindowsPath(decoded).is_absolute()
+            or PurePosixPath(decoded).is_absolute()
+            or any(part in {"", ".", ".."} for part in decoded.split("/"))
+        ):
+            fail(
+                f"manifest path must be canonical package-relative: "
+                f"{manifest.relative_to(ROOT).as_posix()} :: {rel}"
+            )
+        target = (package_dir / decoded).resolve()
+        try:
+            target.relative_to(package_dir.resolve())
+        except ValueError:
+            fail(
+                f"manifest path escapes package: "
+                f"{manifest.relative_to(ROOT).as_posix()} :: {rel}"
+            )
         if not target.exists():
             fail(f"manifest points to missing file: {target.relative_to(ROOT).as_posix()}")
         actual = sha256_of(target)
@@ -187,9 +449,131 @@ def hero_detection_id(dirname: str) -> str:
 
 
 def verify_promotion_block(path: Path, data: dict) -> None:
-    for key in PROMOTION_BLOCK_FIELDS:
-        if key in data and truthy(data[key]):
-            fail(f"truthy promotion field blocked in {path.relative_to(ROOT).as_posix()}: {key}={data[key]}")
+    def walk(value, label, normalized_path=(), promotion_context=False):
+        if isinstance(value, dict):
+            for raw_key, nested in value.items():
+                if not isinstance(raw_key, str):
+                    fail(f"non-string key blocked in {path.relative_to(ROOT).as_posix()}: {label}")
+                key = normalize_authority_key(raw_key)
+                nested_label = f"{label}.{raw_key}"
+                child_normalized_path = (*normalized_path, key)
+                cumulative_keys = {key}
+                cumulative_keys.update(
+                    f"{segment}{key}"
+                    for segment in normalized_path
+                    if segment
+                    in {
+                        "runtime",
+                        "signal",
+                        "public",
+                        "approval",
+                        "production",
+                        "customer",
+                        "socaas",
+                        "ai",
+                        "analyst",
+                        "review",
+                        "final",
+                        "case",
+                    }
+                )
+                child_promotion_context = promotion_context or any(
+                    is_compositional_promotion_key(candidate)
+                    for candidate in cumulative_keys
+                )
+                if (
+                    not isinstance(nested, (dict, list))
+                    and child_promotion_context
+                    and
+                    not is_explicitly_bounded_authority_value(nested)
+                ):
+                    fail(
+                        f"compositional promotion field must remain explicitly bounded in "
+                        f"{path.relative_to(ROOT).as_posix()}: {nested_label}={nested}"
+                    )
+                if (
+                    not isinstance(nested, (dict, list))
+                    and key
+                    in {normalize_authority_key(item) for item in FALSE_ONLY_FIELDS}
+                    and nested is not False
+                ):
+                    fail(
+                        f"promotion field must be boolean false in "
+                        f"{path.relative_to(ROOT).as_posix()}: {nested_label}={nested}"
+                    )
+                if (
+                    not isinstance(nested, (dict, list))
+                    and key == normalize_authority_key("public_safe_status")
+                    and nested not in (
+                    "NOT_PUBLIC_SAFE",
+                    ["NOT_PUBLIC_SAFE"],
+                    )
+                ):
+                    fail(
+                        f"public_safe_status must remain NOT_PUBLIC_SAFE in "
+                        f"{path.relative_to(ROOT).as_posix()}: {nested_label}={nested}"
+                    )
+                if key == normalize_authority_key("human_review_required") and nested is not True:
+                    fail(
+                        f"human_review_required must remain true in "
+                        f"{path.relative_to(ROOT).as_posix()}: {nested_label}"
+                    )
+                walk(
+                    nested,
+                    nested_label,
+                    child_normalized_path,
+                    child_promotion_context,
+                )
+        elif isinstance(value, list):
+            for index, nested in enumerate(value):
+                walk(
+                    nested,
+                    f"{label}[{index}]",
+                    normalized_path,
+                    promotion_context,
+                )
+        elif (
+            promotion_context
+            and not is_explicitly_bounded_authority_value(value)
+        ):
+            fail(
+                f"compositional promotion field must remain explicitly bounded in "
+                f"{path.relative_to(ROOT).as_posix()}: {label}={value}"
+            )
+        elif isinstance(value, str):
+            normalized_parent = normalize_authority_key(label.rsplit("[", 1)[0])
+            exact_blocked_leaf = (
+                label.endswith("]")
+                and normalized_parent.endswith(
+                    (
+                        "blockedclaims",
+                        "blockedwording",
+                        "claimsnotsupported",
+                        "doesnotsupport",
+                        "notclaimedhere",
+                    )
+                )
+                and not re.search(
+                    r"\b(?:is|was|has|enabled|granted|received)\b",
+                    value,
+                    re.IGNORECASE,
+                )
+            )
+            if (
+                contains_unsupported_affirmative_authority_claim(value)
+                and not exact_blocked_leaf
+            ):
+                fail(
+                    f"unsupported affirmative authority claim in "
+                    f"{path.relative_to(ROOT).as_posix()}: {label}"
+                )
+        elif value is not None and type(value) not in {str, int, float, bool}:
+            fail(
+                f"unsupported structured value in "
+                f"{path.relative_to(ROOT).as_posix()}: {label}"
+            )
+
+    walk(data, "root")
 
 
 def verify_package(package_dir: Path, family: str, schema_required: list[str], drift_warnings: list[str]) -> None:
@@ -235,7 +619,7 @@ def verify_package(package_dir: Path, family: str, schema_required: list[str], d
             mapping_id = ensure_detection_id(package_dir / "event-mapping.yml", mapping)
             verify_promotion_block(package_dir / "event-mapping.yml", mapping)
             if mapping_id != rule_id:
-                drift_warnings.append(
+                fail(
                     f"metadata drift: detection_id mismatch rule/event-mapping in {package_dir.relative_to(ROOT).as_posix()} ({rule_id} vs {mapping_id})"
                 )
 
@@ -244,7 +628,7 @@ def verify_package(package_dir: Path, family: str, schema_required: list[str], d
         ensure_blocked_claims(package_dir / "status.yml", status)
         verify_promotion_block(package_dir / "status.yml", status)
         if status_id != rule_id:
-            drift_warnings.append(
+            fail(
                 f"metadata drift: detection_id mismatch rule/status in {package_dir.relative_to(ROOT).as_posix()} ({rule_id} vs {status_id})"
             )
 

@@ -4,7 +4,7 @@
 
 HO-DET-011 defines source artifacts for suspicious Windows service creation or service binary change behavior across Sigma-style YAML, Splunk SPL, Wazuh XML, event mapping, and status metadata.
 
-This source does not prove runtime activity, signal observation, validation passage, or public-safe proof.
+This source does not prove runtime activity, signal observation, proof promotion, or public-safe proof.
 
 ## Scope
 
@@ -45,7 +45,7 @@ The detection is not intended to flag every service creation event. Service crea
 - `splunk.spl` provides a Splunk source query candidate.
 - `wazuh.xml` provides a Wazuh XML source candidate.
 - `event-mapping.yml` maps expected fields across Windows System 7045, Windows Security 4697, Sysmon Event ID 1, Splunk, and Wazuh.
-- `status.yml` records the source-only truth boundary.
+- `status.yml` records the source and validation-handoff truth boundary.
 
 ## Telemetry Requirements
 
@@ -59,7 +59,7 @@ Command-line review depends on process telemetry collection. Windows System 7045
 
 ## False-Positive Boundary
 
-Expected benign sources include software installation, endpoint management, driver installation, patching, backup agents, monitoring agents, and authorized administrator activity. Future validation must separate expected service-install activity from suspicious service image paths or suspicious creation tooling.
+Expected benign sources include software installation, endpoint management, driver installation, patching, backup agents, monitoring agents, and authorized administrator activity. Validation-owned fixtures separate expected service-install activity from suspicious service image paths or suspicious creation tooling.
 
 Tuning should account for:
 
@@ -116,7 +116,6 @@ This source must not be cited as evidence for:
 - analyst-approved disposition
 - attack coverage
 - service-creation coverage completeness
-- validation passed
 
 ## Next Gate
 

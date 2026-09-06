@@ -19,7 +19,7 @@
     sourcetype="WinEventLog:Microsoft-Windows-Windows Defender/Operational"
   )
 )
-| eval ho_source_boundary="HO-DET-013 source-only candidate; validation planned; no exact runtime index truth, live firing, runtime, signal, public-safe, routed telemetry, or evidence-linked public proof claim"
+| eval ho_source_boundary="HO-DET-013 source with validation-owned controlled-test parity; no exact runtime index truth, live firing, runtime, signal, public-safe, routed telemetry, or evidence-linked public proof claim"
 | eval ho_event_id=tostring(coalesce(EventCode, EventID, event_id))
 | eval ho_host=coalesce(host, Computer)
 | eval ho_user=coalesce(User, user, SubjectUserName, AccountName, winlog_event_data_SubjectUserName)

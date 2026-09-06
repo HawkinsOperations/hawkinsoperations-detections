@@ -5,9 +5,9 @@ proof_level: CONTROLLED_TEST_VALIDATED
 trust_class: CONTROLLED_TEST_VALIDATED
 public_safe_status: NOT_PUBLIC_SAFE
 approval_status: NOT_APPROVED
-runtime_active: "NO"
+runtime_active: false
 validation_status: CONTROLLED_TEST_VALIDATED
-signal_observed: "NO"
+signal_observed: false
 evidence_linked: "NO"
 proof_status: CONTROLLED_TEST_VALIDATED
 description: >
@@ -135,10 +135,33 @@ detection:
       - 'windows'
       - 'security'
       - 'svc'
+  selection_suspicious_action:
+    Action|contains:
+      - \AppData\
+      - \Temp\
+      - \ProgramData\
+      - \Public\
+      - \Users\Public\
+      - \Downloads\
+      - \Windows\Temp\
+      - \PerfLogs\
+      - powershell
+      - pwsh
+      - cmd.exe
+      - wscript
+      - cscript
+      - mshta
+      - rundll32
+      - regsvr32
+      - .ps1
+      - .vbs
+      - .js
+      - .hta
+      - .bat
+      - .cmd
   condition: >
-    ((selection_security_task_change or selection_taskscheduler_operational) and
-    selection_suspicious_task_action) or
-    (selection_sysmon_tooling and selection_suspicious_command_line)
+    ((selection_security_task_change or selection_taskscheduler_operational) and (selection_suspicious_task_action
+    or selection_suspicious_action)) or (selection_sysmon_tooling and selection_suspicious_command_line)
 falsepositives:
   - Authorized enterprise software deployment tools.
   - Vendor updater, browser updater, and application updater tasks.

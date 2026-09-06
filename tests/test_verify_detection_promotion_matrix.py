@@ -51,12 +51,60 @@ class PromotionMatrixVerifierTests(unittest.TestCase):
         with self.assertRaises(matrix.MatrixError):
             matrix.verify_repo(self.root, print_summary=False)
 
+    def test_duplicate_package_path_fails(self):
+        data = self.load_matrix()
+        planned = [item for item in data["entries"] if item["source_status"] == "VALIDATION_PLANNED"]
+        planned[1]["package_path"] = planned[0]["package_path"]
+        self.write_matrix(data)
+        with self.assertRaisesRegex(matrix.MatrixError, "canonical|duplicate package_path"):
+            matrix.verify_repo(self.root, print_summary=False)
+
+    def test_duplicate_package_path_alias_fails(self):
+        data = self.load_matrix()
+        planned = [item for item in data["entries"] if item["source_status"] == "VALIDATION_PLANNED"]
+        planned[1]["package_path"] = planned[0]["package_path"].upper()
+        self.write_matrix(data)
+        with self.assertRaisesRegex(matrix.MatrixError, "canonical|duplicate package_path"):
+            matrix.verify_repo(self.root, print_summary=False)
+
+    def test_local_package_path_escape_fails(self):
+        data = self.load_matrix()
+        entry = next(item for item in data["entries"] if item["detection_id"] == "HO-DET-013")
+        entry["package_path"] = "../hawkinsoperations-validation"
+        self.write_matrix(data)
+        with self.assertRaisesRegex(matrix.MatrixError, "repository-relative|traversal"):
+            matrix.verify_repo(self.root, print_summary=False)
+
     def test_missing_required_file_fails(self):
         data = self.load_matrix()
         entry = next(item for item in data["entries"] if item["detection_id"] == "HO-DET-013")
         entry["required_files"].append("missing-required-file.yml")
         self.write_matrix(data)
         with self.assertRaises(matrix.MatrixError):
+            matrix.verify_repo(self.root, print_summary=False)
+
+    def test_required_file_path_traversal_fails(self):
+        data = self.load_matrix()
+        entry = next(item for item in data["entries"] if item["detection_id"] == "HO-DET-013")
+        entry["required_files"].append("../outside.yml")
+        self.write_matrix(data)
+        with self.assertRaisesRegex(matrix.MatrixError, "package-relative|traversal"):
+            matrix.verify_repo(self.root, print_summary=False)
+
+    def test_status_source_disagreement_fails(self):
+        status_path = self.root / "detections" / "successor" / "ho-det-013" / "status.yml"
+        status = yaml.safe_load(status_path.read_text(encoding="utf-8"))
+        status["source_status"] = "VALIDATION_PLANNED"
+        status_path.write_text(yaml.safe_dump(status, sort_keys=False), encoding="utf-8")
+        with self.assertRaisesRegex(matrix.MatrixError, "source status disagreement"):
+            matrix.verify_repo(self.root, print_summary=False)
+
+    def test_status_validation_disagreement_fails(self):
+        status_path = self.root / "detections" / "identity" / "id-det-001" / "status.yml"
+        status = yaml.safe_load(status_path.read_text(encoding="utf-8"))
+        status["validation_status"] = "VALIDATION_PLANNED"
+        status_path.write_text(yaml.safe_dump(status, sort_keys=False), encoding="utf-8")
+        with self.assertRaisesRegex(matrix.MatrixError, "validation status disagreement"):
             matrix.verify_repo(self.root, print_summary=False)
 
     def test_truthy_runtime_signal_or_public_safe_promotion_fails(self):
@@ -117,6 +165,75 @@ class PromotionMatrixVerifierTests(unittest.TestCase):
         self.write_matrix(data)
         with self.assertRaises(matrix.MatrixError):
             matrix.verify_repo(self.root, print_summary=False)
+
+    def test_completed_validation_cannot_remain_validation_ready(self):
+        data = self.load_matrix()
+        data["detection_side_ledger_eligibility"]["dry_run_ready"].remove(
+            "HO-DET-013"
+        )
+        data["detection_side_ledger_eligibility"]["validation_ready"].append(
+            "HO-DET-013"
+        )
+        reviewer = next(
+            item
+            for item in data["reviewer_expansion_map"]
+            if item["detection_id"] == "HO-DET-013"
+        )
+        reviewer["ledger_eligibility_status"] = "VALIDATION_READY"
+        self.write_matrix(data)
+        with self.assertRaisesRegex(
+            matrix.MatrixError,
+            "ledger eligibility contradicts completed validation",
+        ):
+            matrix.verify_repo(self.root, print_summary=False)
+
+    def test_factory_current_state_disagreement_fails(self):
+        index_path = self.root / "detections" / "DETECTION_FACTORY_INDEX.md"
+        text = index_path.read_text(encoding="utf-8")
+        index_path.write_text(
+            text.replace(
+                "| HO-DET-013 | Defense Tool and Telemetry Tamper Attempt "
+                "| Sigma-style YAML + Splunk SPL + event mapping "
+                "| `.yml` + `.spl` + event mapping "
+                "| Windows process creation, Sysmon Event ID 1 where available, "
+                "Windows service/log-clearing/Defender context where collected "
+                "| `CONTROLLED_TEST_VALIDATED` |",
+                "| HO-DET-013 | Defense Tool and Telemetry Tamper Attempt "
+                "| Sigma-style YAML + Splunk SPL + event mapping "
+                "| `.yml` + `.spl` + event mapping "
+                "| Windows process creation, Sysmon Event ID 1 where available, "
+                "Windows service/log-clearing/Defender context where collected "
+                "| `VALIDATION_PLANNED` |",
+                1,
+            ),
+            encoding="utf-8",
+        )
+        with self.assertRaisesRegex(matrix.MatrixError, "current state disagrees"):
+            matrix.verify_repo(self.root, print_summary=False)
+
+    def test_inventory_is_source_linked_and_repo_relative(self):
+        entries = matrix.verify_repo(self.root, print_summary=False)
+        inventory = matrix.build_inventory(entries, self.root)
+        ho_det_013 = next(item for item in inventory["entries"] if item["detection_id"] == "HO-DET-013")
+        self.assertEqual(inventory["authority_role"], "detection_source")
+        self.assertEqual(inventory["authoritative_path"], "detections/DETECTION_PROMOTION_MATRIX.yml")
+        self.assertEqual(len(inventory["authoritative_fingerprint"]), 64)
+        self.assertIn(
+            len(inventory["authoritative_git_blob_sha"]),
+            {10, 40},  # "UNRESOLVED" in a filesystem-only fixture, SHA in Git.
+        )
+        self.assertEqual(len(inventory["authoritative_semantic_fingerprint"]), 64)
+        self.assertIn("current_observed_head_sha", inventory)
+        self.assertIn(inventory["source_freshness_state"], {"CURRENT", "WORKTREE_MODIFIED_OR_UNRESOLVED"})
+        self.assertIn("worktree_clean", inventory)
+        self.assertIn("rule.yml", ho_det_013["required_file_fingerprints"])
+        self.assertIn("rule.yml", ho_det_013["required_file_git_blobs"])
+        self.assertIn(
+            "rule.yml", ho_det_013["required_file_observed_head_git_blobs"]
+        )
+        self.assertIn("content_matches_observed_head", ho_det_013)
+        self.assertIn("rule.yml", ho_det_013["required_file_semantic_fingerprints"])
+        self.assertNotIn(str(self.root), str(inventory))
 
     def load_matrix_from_repo(self):
         return yaml.safe_load((ROOT / "detections" / "DETECTION_PROMOTION_MATRIX.yml").read_text(encoding="utf-8"))

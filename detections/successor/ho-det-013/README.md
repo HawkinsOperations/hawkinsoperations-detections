@@ -4,7 +4,7 @@
 
 HO-DET-013 defines source artifacts for suspicious attempts to stop, disable, impair, clear, reconfigure, or blind endpoint telemetry and security controls in the HawkinsOperations Windows lab.
 
-This package is source truth only. It does not prove runtime observation, signal observation, live SIEM ingestion, production coverage, evidence-linked public proof, public-safe proof, or deployment readiness.
+This package remains detection source truth. The validation repository separately records controlled-test fixture validation. This source does not prove runtime observation, signal observation, live SIEM ingestion, production coverage, evidence-linked public proof, public-safe proof, or deployment readiness.
 
 ## Scope
 
@@ -89,11 +89,11 @@ Tuning should not suppress event-log clearing, Defender disablement, telemetry-a
 
 ## Validation Boundary
 
-Validation is planned, not complete. Future validation should use controlled positive and negative fixtures that distinguish suspicious tamper attempts from approved maintenance, endpoint management, Defender policy baselines, and lab reset behavior.
+Controlled-test validation is complete for 10 sanitized telemetry/security-control tamper fixtures: 5 positive cases and 5 negative cases. The validation-owned deterministic report records 5 matched positives, no missed positives, and no false-positive negative cases.
 
-No HO-DET-013 fixtures were created in this detections repository. Fixture work belongs in a separately scoped `hawkinsoperations-validation` lane.
+No HO-DET-013 fixtures were created in this detections repository. Fixtures, validator logic, result reports, parity verification, and claim-boundary scanning remain owned by `hawkinsoperations-validation`.
 
-Suggested future fixture coverage:
+Current controlled fixture coverage includes:
 
 - Positive process creation for service stop or disable against a telemetry service.
 - Positive process creation for Defender preference tamper strings.
@@ -106,17 +106,16 @@ Suggested future fixture coverage:
 
 ## Supported Claims
 
-This package supports only these source-quality claims:
+This package supports these bounded source and cross-repository validation claims:
 
 - HO-DET-013 source artifacts exist in this repository.
-- HO-DET-013 validation is planned for controlled telemetry/security-control tamper fixtures.
+- HO-DET-013 passed controlled-test validation against 10 controlled telemetry/security-control tamper fixtures in the validation repository.
 - HO-DET-013 documents source-only tamper detection assumptions and false-positive review guidance.
 
 ## Blocked Claims
 
 This source must not be cited as evidence for:
 
-- controlled-test validated
 - runtime-active
 - signal-observed
 - public-safe
@@ -143,8 +142,8 @@ This source must not be cited as evidence for:
 - customer-ready product
 - website/public-surface promotion
 
-Website rendering is not proof. Validation fixtures and reports are pending until a later validation PR. Human review is required before promotion.
+Website rendering is not proof. Validation fixtures and reports are owned by `hawkinsoperations-validation`; their controlled-test result does not promote runtime, signal, proof, or public-safe status. Human review is required before promotion.
 
 ## Next Gate
 
-The next gate is controlled-test validation in `hawkinsoperations-validation` with positive and negative telemetry/security-control tamper fixtures and deterministic report parity. Public proof, website use, runtime claims, signal-observed claims, and evidence-linked claims remain blocked until separately approved and proven.
+The current controlled-test validation gate is satisfied in `hawkinsoperations-validation` with positive and negative telemetry/security-control tamper fixtures and deterministic report parity. Public proof, website use, runtime claims, signal-observed claims, and evidence-linked claims remain blocked until separately approved and proven.

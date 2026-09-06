@@ -1,10 +1,10 @@
 detection_id: HO-DET-011
 truth_surface: detection_source
 mapping_status: SOURCE_EXISTS
-validation_status: VALIDATION_PLANNED
+validation_status: CONTROLLED_TEST_VALIDATED
 description: >
   Source-only event mapping for suspicious Windows service creation or service
-  binary change behavior. This mapping prepares future controlled-test validation and
+  binary change behavior. This mapping is bound to validation-owned controlled fixtures and
   does not prove runtime activity, signal observation, public-safe status, or
   evidence-linked public proof.
 telemetry_correction:
@@ -162,7 +162,7 @@ tuning_fields:
     - approved maintenance window
 validation_fixture_boundary:
   detections_repo_fixtures_found: false
-  validation_repo_fixture_set: REQUIRED_SEPARATE_SCOPE
+  validation_repo_fixture_set: SATISFIED_IN_VALIDATION_REPO
 blocked_claims:
   - runtime-active
   - signal-observed
@@ -181,4 +181,3 @@ blocked_claims:
   - analyst-approved disposition
   - attack coverage
   - service-creation coverage completeness
-  - validation passed

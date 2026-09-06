@@ -67,12 +67,9 @@ detection:
       - '\pwsh.exe'
       - '\cmd.exe'
   selection_account_creation_command:
-    CommandLine|contains:
+    CommandLine|contains|all:
       - ' user '
-      - 'New-LocalUser'
-      - 'net user'
-      - 'net1 user'
-      - '/add'
+      - /add
   suspicious_account_name:
     TargetUserName|contains:
       - 'svc'
@@ -81,7 +78,15 @@ detection:
       - 'temp'
       - 'admin'
       - '$'
-  condition: selection_security_4720 or (selection_process_context and selection_account_creation_command)
+  selection_powershell_account_creation:
+    CommandLine|contains: New-LocalUser
+  filter_approved_change:
+    ChangeWindow:
+      - approved-onboarding
+      - approved-lab-reset
+  condition: >
+    (selection_security_4720 or (selection_process_context and (selection_account_creation_command or
+    selection_powershell_account_creation))) and not filter_approved_change
 falsepositives:
   - Approved helpdesk local account provisioning.
   - Documented classroom, training, or lab reset account creation.

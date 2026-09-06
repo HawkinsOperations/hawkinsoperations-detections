@@ -73,4 +73,4 @@ Controlled validation belongs in `hawkinsoperations-validation`. This source pac
 
 ## Next Gate
 
-The next gate is controlled-test validation in `hawkinsoperations-validation` using synthetic local-account creation fixtures. Runtime evidence and public proof remain blocked until separately approved.
+The next gate is controlled-test validation in `hawkinsoperations-validation` using controlled-test local-account creation fixtures. Runtime evidence and public proof remain blocked until separately approved.
