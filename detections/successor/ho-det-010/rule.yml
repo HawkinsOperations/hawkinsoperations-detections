@@ -62,8 +62,6 @@ detection:
       - 4732
       - 4733
   selection_administrators_group:
-    TargetSid|contains:
-      - S-1-5-32-544
     TargetUserName|contains:
       - Administrators
       - BUILTIN\Administrators
@@ -76,14 +74,29 @@ detection:
       - '\pwsh.exe'
       - '\cmd.exe'
   selection_group_change_command:
+    CommandLine|contains: ' localgroup administrators '
+  selection_administrators_sid:
+    TargetSid:
+      - S-1-5-32-544
+  selection_membership_operation:
     CommandLine|contains:
-      - ' localgroup administrators '
-      - 'Add-LocalGroupMember'
-      - 'Remove-LocalGroupMember'
-      - 'Administrators'
-      - '/add'
-      - '/delete'
-  condition: selection_security_local_group_membership and selection_administrators_group or (selection_process_context and selection_group_change_command)
+      - /add
+      - /delete
+  selection_powershell_group_change:
+    CommandLine|contains:
+      - Add-LocalGroupMember
+      - Remove-LocalGroupMember
+  selection_command_admin_group:
+    CommandLine|contains: Administrators
+  filter_approved_change:
+    ChangeWindow:
+      - approved-helpdesk
+      - approved-endpoint-remediation
+  condition: >
+    ((selection_security_local_group_membership and (selection_administrators_group or
+    selection_administrators_sid)) or (selection_process_context and ((selection_group_change_command and
+    selection_membership_operation) or (selection_powershell_group_change and selection_command_admin_group)))) and
+    not filter_approved_change
 falsepositives:
   - Approved helpdesk local administrator provisioning.
   - Break-glass account rotation under approved change control.

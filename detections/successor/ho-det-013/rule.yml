@@ -228,20 +228,23 @@ detection:
   selection_event_log_cleared:
     EventID:
       - 1102
+  selection_audit_policy_process:
+    Image|endswith: \auditpol.exe
+  selection_audit_policy_set:
+    CommandLine|contains: /set
+  selection_audit_policy_disable:
+    CommandLine|contains:
+      - /success:disable
+      - /failure:disable
   condition: >
-    (selection_process_creation and
-      (
-        (selection_service_control_process and selection_service_stop_or_disable_command and selection_security_or_telemetry_target) or
-        (selection_event_log_process and selection_log_clear_command) or
-        (selection_defender_tamper_command) or
-        (selection_registry_policy_process and selection_registry_policy_target) or
-        (selection_service_control_process and selection_security_or_telemetry_target and selection_registry_policy_target)
-      )
-    ) or selection_event_log_cleared or
-    (
-      selection_service_event and selection_service_event_target and
-      (selection_service_stop_or_state_change or selection_service_start_type_disable)
-    )
+    (selection_process_creation and ( (selection_service_control_process and
+    selection_service_stop_or_disable_command and selection_security_or_telemetry_target) or
+    (selection_event_log_process and selection_log_clear_command) or (selection_defender_tamper_command) or
+    (selection_audit_policy_process and selection_audit_policy_set and selection_audit_policy_disable) or
+    (selection_registry_policy_process and selection_registry_policy_target) or (selection_service_control_process
+    and selection_security_or_telemetry_target and selection_registry_policy_target) ) ) or
+    selection_event_log_cleared or ( selection_service_event and selection_service_event_target and
+    (selection_service_stop_or_state_change or selection_service_start_type_disable) )
 falsepositives:
   - Approved security-agent upgrade, repair, or maintenance windows.
   - Endpoint management activity that temporarily restarts telemetry agents.
