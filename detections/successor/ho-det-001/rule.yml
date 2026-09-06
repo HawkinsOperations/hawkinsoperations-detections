@@ -42,11 +42,8 @@ source_assumptions:
 detection:
   selection_image:
     Image|endswith:
-      - '\powershell.exe'
-      - '\pwsh.exe'
-    OriginalFileName|contains:
-      - PowerShell
-      - pwsh
+      - \powershell.exe
+      - \pwsh.exe
   selection_cli:
     CommandLine|contains:
       - ' -enc '
@@ -58,7 +55,11 @@ detection:
       - ' /encodedcommand '
       - ' /encodedcommand:'
       - FromBase64String(
-  condition: selection_image and selection_cli
+  selection_original_filename:
+    OriginalFileName|contains:
+      - PowerShell
+      - pwsh
+  condition: (selection_image or selection_original_filename) and selection_cli
 falsepositives:
   - Legitimate administrative tooling, automation, deployment scripts, or endpoint management workflows can use encoded PowerShell commands.
   - Environment-specific tuning and allowlisting are required before any runtime claim.

@@ -27,6 +27,15 @@ This repo does not prove runtime execution, live signal, public-safe proof, prod
 
 ## Source To Validation To Proof
 
+The source-executed mutation factory in the validation repository evaluates the
+canonical `detection` predicates for HO-DET-001/009/010/011/012/013 against the
+existing controlled corpus. It mutates source predicates in memory and reports
+behavioral kills, survivors, and errors separately. This is offline predicate
+execution; SPL/Wazuh backend parity and runtime behavior require separate checks.
+The exact `ChangeWindow` exclusions for HO-DET-009/010 model existing controlled
+fixture context. They require trusted enrichment before any runtime use; an
+event-supplied label is not human approval or authority to suppress real alerts.
+
 | Truth surface | Owner | What it can show | What it cannot show |
 |---|---|---|---|
 | Source package | `hawkinsoperations-detections` | Detection logic, metadata, ATT&CK framing, event-field mapping, required source files, readiness metadata, and source-side blocked claims. | Runtime execution, signal observation, public-safe proof, production coverage, SOCaaS/customer deployment, or final disposition. |
