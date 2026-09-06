@@ -12,7 +12,7 @@ jobs:
   baseline-hero-artifact-contract:
     runs-on: ubuntu-latest
     env:
-      VALIDATION_AUTHORITY_SHA: 677b704150b0f5f333c27913dd481b4be6a78ab7
+      VALIDATION_AUTHORITY_SHA: 08d583f7dbdabac90ebff6ce99bca57a8dac2d9e
       PROOF_AUTHORITY_SHA: b42ba945ae1ea540037643bb25f7165ab55dab21
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
